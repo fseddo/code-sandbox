@@ -3,11 +3,12 @@
 import {
   SandpackCodeEditor,
   SandpackConsole,
-  SandpackFileExplorer,
   SandpackPreview,
 } from "@codesandbox/sandpack-react";
 import { Group, Panel, Separator } from "react-resizable-panels";
 import { PadToolbar } from "@/components/pad-toolbar";
+import { PadFilesPanel } from "@/components/pad-files-panel";
+import { usePadShortcuts } from "@/components/use-pad-shortcuts";
 
 const fill = { height: "100%" } as const;
 
@@ -20,6 +21,8 @@ function ResizeBar({ axis }: { axis: "x" | "y" }) {
 
 /** Three-pane layout: file tree, code editor, and live preview + console. */
 export function PadWorkspace({ padId }: { padId: string }) {
+  usePadShortcuts();
+
   return (
     <div className="flex h-full flex-col bg-background">
       <PadToolbar padId={padId} />
@@ -32,7 +35,7 @@ export function PadWorkspace({ padId }: { padId: string }) {
           collapsible
           collapsedSize="0%"
         >
-          <SandpackFileExplorer style={fill} />
+          <PadFilesPanel />
         </Panel>
         <ResizeBar axis="x" />
         <Panel id="editor" className="min-w-0" defaultSize="44%" minSize="22%">

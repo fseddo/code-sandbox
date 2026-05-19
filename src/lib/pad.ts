@@ -3,6 +3,28 @@ import type { SandpackFiles } from "@codesandbox/sandpack-react";
 /** The Sandpack template every CoderPad-style pad boots from. */
 export const PAD_TEMPLATE = "vite-react-ts" as const;
 
+/**
+ * Files force-applied on top of the template and any saved pad.
+ *
+ * `clearScreen: false` stops Vite from calling `readline.clearScreenDown()` on
+ * startup — Sandpack's in-browser Node (Nodebox) doesn't implement it and logs
+ * a "not yet implemented" warning into the preview console.
+ */
+export const PAD_BASE_FILES: SandpackFiles = {
+  "/vite.config.ts": {
+    code: `import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [react()],
+  // Sandpack's in-browser Node has no terminal to clear.
+  clearScreen: false,
+})
+`,
+  },
+};
+
 const PREFIX = "codepad:pad:";
 const keyFor = (id: string) => `${PREFIX}${id}`;
 
