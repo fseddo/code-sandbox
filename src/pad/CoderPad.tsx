@@ -2,23 +2,27 @@
 
 import { useMemo } from "react";
 import { SandpackProvider, type SandpackFiles } from "@codesandbox/sandpack-react";
-import { PAD_BASE_FILES, PAD_TEMPLATE, loadPad } from "@/pad/pad";
+import { loadPad } from "@/pad/pad";
+import { typescriptFrontend } from "@/pad/padProfiles/typescriptFrontend";
 import { PadWorkspace } from "@/pad/PadWorkspace";
 
+const profile = typescriptFrontend;
+
 /** Sandpack bundler scoped to one pad. Client-only (Sandpack needs the DOM). */
-const CoderPad = ({ padId }: { padId: string }) => {
+export const CoderPad = ({ padId }: { padId: string }) => {
   const files = useMemo<SandpackFiles>(
-    () => ({ ...(loadPad(padId) ?? {}), ...PAD_BASE_FILES }),
+    () => ({ ...(loadPad(padId) ?? profile.seedFiles), ...profile.baseFiles }),
     [padId],
   );
 
   return (
     <SandpackProvider
       key={padId}
-      template={PAD_TEMPLATE}
+      template={profile.template}
       theme="dark"
       files={files}
       options={{
+        activeFile: "/src/App.tsx",
         autorun: false,
         autoReload: false,
       }}
@@ -29,5 +33,3 @@ const CoderPad = ({ padId }: { padId: string }) => {
     </SandpackProvider>
   );
 };
-
-export default CoderPad;

@@ -17,10 +17,10 @@ The CoderPad pane: a Sandpack bundler scoped to one pad, with a file tree, code 
                       ├─ <PadEditor>       src/pad/PadEditor.tsx
                       └─ <Group orientation="vertical">
                           ├─ <SandpackPreview />
-                          └─ <SandpackConsole />
+                          └─ <PadConsolePanel>     src/pad/PadConsolePanel.tsx
 ```
 
-[react-resizable-panels v4](https://github.com/bvaughn/react-resizable-panels): `Group` / `Panel` / `Separator`, with percentage-string sizes (`defaultSize="44%"`, `minSize="22%"`). The files and console panels are `collapsible` with `collapsedSize="0%"`.
+[react-resizable-panels v4](https://github.com/bvaughn/react-resizable-panels): `Group` / `Panel` / `Separator`, with percentage-string sizes (`defaultSize="44%"`, `minSize="22%"`). The files panel is `collapsible` with `collapsedSize="0%"`; the console panel is `collapsible` with `collapsedSize="6%"` so its tab header stays visible — see [Preview / console](#preview--console) below.
 
 ## Why client-side only
 
@@ -44,15 +44,15 @@ Saving is a manual, code-editor-like action. Two paths trigger it:
 
 [usePadSave.ts](../../src/pad/usePadSave.ts) is the source of truth, and it's deliberately **event-driven, not observation-driven**:
 
-- The `savedSnapshot` (a `Record<path, code>` of "what's currently on the preview") is `useState`, not `useRef`, and it's only ever mutated at the *events* that actually change it: `save()`, `addFile()`, `deleteFile()`. There is no `useEffect` watching `sandpack.files`. This matters: the "react to state by setting other state" pattern is forbidden by [CLAUDE.md](../../CLAUDE.md) — the events themselves own the snapshot updates.
+- The `savedSnapshot` (a `Record<path, code>` of "what's currently on the preview") is `useState`, not `useRef`, and it's only ever mutated at the _events_ that actually change it: `save()`, `addFile()`, `deleteFile()`. There is no `useEffect` watching `sandpack.files`. This matters: the "react to state by setting other state" pattern is forbidden by [CLAUDE.md](../../CLAUDE.md) — the events themselves own the snapshot updates.
 - On mount, a one-shot `useEffect` calls `sandpack.runSandpack()` (since `autorun` is off). The baseline itself is derived in `useState`'s lazy initializer from `sandpack.files` — a one-shot derivation at first render, not an observation step, so the bullet above reads true end-to-end.
 - `save()` HMR-pushes the active file via `sp.updateFile(path, code, true)` and updates the snapshot for that path. **It does NOT call `runSandpack()`**, which would cold-restart the dev server (new port, multi-second white screen).
 - `isDirty` is derived at render time via `useMemo` — iterate the snapshot, return `true` if any path's recorded code differs from `sandpack.files[path]?.code`. The toolbar's "Unsaved / Saved" dot reads it.
-- Returns `{ isDirty, save, addFile, deleteFile }`. The file-op wrappers are the *only* way `PadFilesPanel` mutates the bundler — see [Files panel](#files-panel) below.
+- Returns `{ isDirty, save, addFile, deleteFile }`. The file-op wrappers are the _only_ way `PadFilesPanel` mutates the bundler — see [Files panel](#files-panel) below.
 
 ### React 19: sandpack ref synced in `useLayoutEffect`
 
-`useSandpack()` returns a new object every render. Holding a `sandpackRef` so the stable `save`/`addFile`/`deleteFile` callbacks can read the latest is the standard pattern, but React 19 forbids writing to refs *during render* ("Cannot access refs during render"). The fix: assign in a `useLayoutEffect`, which runs sync after render, before paint — listeners attached in effects see the up-to-date ref immediately.
+`useSandpack()` returns a new object every render. Holding a `sandpackRef` so the stable `save`/`addFile`/`deleteFile` callbacks can read the latest is the standard pattern, but React 19 forbids writing to refs _during render_ ("Cannot access refs during render"). The fix: assign in a `useLayoutEffect`, which runs sync after render, before paint — listeners attached in effects see the up-to-date ref immediately.
 
 ### Autosave
 
@@ -64,34 +64,50 @@ Mirrors local Vite: saving a new file is what makes Vite see it. Sandpack's `add
 
 ## Persistence
 
-[`pad.ts`](../../src/pad/pad.ts) is the localStorage layer — pads are keyed `codepad:pad:<id>` and stored as `{ files, updatedAt }`. Pure functions, no React; safe to call from the client only (no-ops when `window` is undefined).
+[`pad.ts`](../../src/pad/pad.ts) is the localStorage layer — pads are keyed `noodle:pad:<id>` and stored as `{ files, updatedAt }`. Pure functions, no React; safe to call from the client only (no-ops when `window` is undefined).
 
 - [`newPadId()`](../../src/pad/pad.ts) — 12-char hex via `crypto.getRandomValues`. Used by [src/app/pad/page.tsx](../../src/app/pad/page.tsx) (`export const dynamic = "force-dynamic"` so a fresh id mints on every visit, never cached).
-- [`loadPad(id)`](../../src/pad/pad.ts) — read on mount in [CoderPad.tsx](../../src/pad/CoderPad.tsx), merged under `PAD_BASE_FILES` so the Vite config override always wins.
+- [`loadPad(id)`](../../src/pad/pad.ts) — read on mount in [CoderPad.tsx](../../src/pad/CoderPad.tsx), merged under the active profile's `baseFiles` so the Vite config override always wins.
 - [`savePad(id, files)`](../../src/pad/pad.ts) — debounced (600ms) by [usePadPersistence.ts](../../src/pad/usePadPersistence.ts), fire-and-forget. The hook returns `void`; the persistence layer has no UI surface. Distinct from the manual save model above: this is "the pad survives a reload"; that is "the preview reflects my edits."
 - [`clearPad(id)`](../../src/pad/pad.ts) — called by the Reset action in [PadToolbar.tsx](../../src/pad/PadToolbar.tsx); a hard reload rehydrates from the template.
 - [`listPads()`](../../src/pad/pad.ts) — drives the home-page [RecentPads](../../src/components/RecentPads.tsx) list. Subscribed via `useSyncExternalStore` against the `storage` event, so a pad created in another tab shows up on the home page without a refresh. Same-tab writes don't fire `storage`; the list there is good-enough-on-navigation.
 
 The two save concepts run in parallel:
 
-| Concept | Trigger | Destination | Hook |
-| --- | --- | --- | --- |
+| Concept                | Trigger                           | Destination            | Hook                         |
+| ---------------------- | --------------------------------- | ---------------------- | ---------------------------- |
 | Apply edits to preview | ⌘S / Save button / autosave timer | Sandpack bundler (HMR) | `usePadSave` / `useAutosave` |
-| Survive a reload | 600ms debounce on any file change | localStorage | `usePadPersistence` |
+| Survive a reload       | 600ms debounce on any file change | localStorage           | `usePadPersistence`          |
 
 Planned: move "survive a reload" to a server DB so pads are shareable across devices.
 
-## Sandpack template + base files
+## Pad profiles
+
+A *pad profile* is "one kind of pad" — which Sandpack template it boots from, the files seeded on first load, and the files force-applied on every load. Profiles live in [`src/pad/padProfiles/`](../../src/pad/padProfiles/); the per-file content snippets each profile assembles live in [`src/pad/padDefaults/`](../../src/pad/padDefaults/). [`CoderPad.tsx`](../../src/pad/CoderPad.tsx) holds a `const profile = typescriptFrontend` at the top — that's the only seam to swap when new profiles land (planned: `fullstack`, etc.).
+
+The shape, exported from each profile module:
 
 ```ts
-PAD_TEMPLATE = "vite-react-ts"
+type PadProfile = {
+  template: SandpackPredefinedTemplate;
+  seedFiles: SandpackFiles;  // first-load seed
+  baseFiles: SandpackFiles;  // force-applied every load
+};
 ```
 
-`PAD_BASE_FILES` (in [pad.ts](../../src/pad/pad.ts)) is force-applied on top of every pad load. Today it holds only `/vite.config.ts`, which sets `clearScreen: false` — Sandpack's in-browser Node (Nodebox) doesn't implement `readline.clearScreenDown()`, and without the override, every preview boot logs a "not yet implemented" warning into the console.
+Today there's one profile, [`typescriptFrontend`](../../src/pad/padProfiles/typescriptFrontend.ts):
+
+- `template: "vite-react-ts"` — Sandpack's flat Vite + React + TS template.
+- `seedFiles` — reshapes the template into a conventional Vite layout under `/src/` (`main.tsx`, `App.tsx`, `App.css`, `index.css`, `global.d.ts`) plus a root `index.html` whose script tag points at `/src/main.tsx`. The template's orphan `/App.tsx` and `/index.tsx` are kept and marked `hidden: true` so they don't show in the file tree but stay in the bundler's view. Seeded files become part of the saved pad — renames and deletes stick.
+- `baseFiles` — currently just `/vite.config.ts` with `clearScreen: false`, because Sandpack's in-browser Node (Nodebox) doesn't implement `readline.clearScreenDown()` and would otherwise log a "not yet implemented" warning into the console on every preview boot.
+
+The file content snippets in `padDefaults/` are each a single `export const fooTsx = \`…\``. Named exports, no defaults — per [CLAUDE.md](../../CLAUDE.md#function-syntax). Multiple profiles can share a snippet (e.g. `globalDTs` is generic enough to live in any TS pad).
+
+Merge in [CoderPad.tsx](../../src/pad/CoderPad.tsx): `{ ...(loadPad(padId) ?? profile.seedFiles), ...profile.baseFiles }`.
 
 ## Files panel
 
-[PadFilesPanel.tsx](../../src/pad/PadFilesPanel.tsx) wraps `SandpackFileExplorer` with a slim toolbar for create + delete. It does **not** call `sandpack.addFile` / `sandpack.deleteFile` directly — it receives `addFile` and `deleteFile` from [`usePadSave`](../../src/pad/usePadSave.ts) (via `PadWorkspace`) so the snapshot stays in sync as a side effect of the action, not after-the-fact via a files watcher.
+[PadFilesPanel.tsx](../../src/pad/PadFilesPanel.tsx) is a slim header (Files label + root-level `+ file`) over [PadFileTree.tsx](../../src/pad/PadFileTree.tsx). It does **not** call `sandpack.addFile` / `sandpack.deleteFile` directly — it receives `addFile` and `deleteFile` from [`usePadSave`](../../src/pad/usePadSave.ts) (via `PadWorkspace`) so the snapshot stays in sync as a side effect of the action, not after-the-fact via a files watcher.
 
 The props are typed off the hook's return so the prop shape tracks the source:
 
@@ -99,11 +115,79 @@ The props are typed off the hook's return so the prop shape tracks the source:
 type PadSaveOps = Pick<ReturnType<typeof usePadSave>, "addFile" | "deleteFile">;
 ```
 
-- **New file** opens a Dialog with a path input. `normalizePath` adds a leading `/` if missing; duplicates report inline. `.tsx` / `.jsx` files get a component stub (capitalized from the filename), other extensions start blank.
-- **Delete** targets `sandpack.activeFile`, guarded by an AlertDialog with the path inlined.
+### Custom tree (not `SandpackFileExplorer`)
 
-Both use the shadcn Base UI variant — note `<AlertDialogTrigger render={<Button … />}>` rather than `asChild`.
+`SandpackFileExplorer` is a black box — no row-level hover affordances, no per-directory `+ file` / `+ folder`, no extension-aware icons, no styling of the selected row. [PadFileTree.tsx](../../src/pad/PadFileTree.tsx) replaces it:
+
+- Builds a `FileNode` tree from `sandpack.files`, filtering entries where `hidden: true` (so the template orphans stay out of view).
+- Renders rows recursively, each indented by `depth * 12 + 6` px. Folders sort before files; both alphabetical within a level.
+- Extension → icon + color via a `Record<string, { Icon, color }>` lookup; folders use `Folder` / `FolderOpen` based on expanded state.
+- Active file: `aria-selected`, `bg-accent` + accent foreground. Folders on the path to the active file get foreground (not muted) so the breadcrumb reads visually.
+- Whole row is clickable (folders toggle expand, files set active). Per-row hover surfaces inline actions: `+ file` / `+ folder` on directories, `Trash2` on files. Action clicks `stopPropagation()` so they don't also activate the row.
+
+### Create / delete dialogs
+
+Both dialogs are **controlled by `PadFilesPanel`** — the tree only signals intent (`onCreateInDir(dirPath, kind)`, `onDelete(path)`). Per [CLAUDE.md](../../CLAUDE.md), dialog visibility lives in the parent.
+
+- **New file**: opens with the clicked directory prefilled; user supplies just a name (no slashes allowed — nesting comes from which row you clicked). `.tsx` / `.jsx` get a component stub, others start blank.
+- **New folder**: prompts for a folder name and creates `<dir>/<folder>/index.ts` empty — Sandpack has no concept of empty directories, so a placeholder file is what makes the folder real.
+- **Delete**: row-targeted (not "delete active"). Confirmation runs through [`ConfirmDialog`](../../src/components/ConfirmDialog.tsx), which accepts either a `trigger` element (uncontrolled) or `open` + `onOpenChange` (controlled) via a discriminated-union prop type. The delete case uses the controlled mode since the dialog isn't tied to a single trigger.
 
 ## Editor
 
-[PadEditor.tsx](../../src/pad/PadEditor.tsx) — `SandpackCodeEditor` with `showTabs={false}` (the file tree is the source of truth for what's open) plus a slim toolbar (Save button + autosave Switch) and a breadcrumb of the active file's path. `pathSegments` splits on `/` and drops the leading empty segment so `/components/Button.tsx` reads as `components › Button.tsx`.
+[PadEditor.tsx](../../src/pad/PadEditor.tsx) — `SandpackCodeEditor` with `showTabs={false}` (the file tree is the source of truth for what's open) plus a slim toolbar (Save button + autosave Switch) and a breadcrumb of the active file's path. `pathSegments` splits on `/` and drops the leading empty segment so `/components/Button.tsx` reads as `components › Button.tsx`. The Save button uses the `success` Button variant — green is the conventional "commit / save" affordance.
+
+## Palette
+
+[globals.css](../../src/app/globals.css) ships the **"D · Midnight"** dark theme — a deep navy base with an electric-blue primary. Token values come from the handoff; the shadcn token names stay because every shadcn primitive (Button, Dialog, Card, …) is wired to them. Five extra tokens carry semantics shadcn doesn't cover:
+
+- `--ok` — green; used by `bg-ok` on the toolbar saved-state dot and by ANSI `32`/`92` in the console.
+- `--warn` — amber; `bg-warn` on the unsaved dot, ANSI `33`/`93`.
+- `--link` — purple; URL auto-links in the console rows, ANSI `34`/`35`/`94`/`95`, and as a row-tint for `console.info`.
+- `--danger` — red; alias for `--destructive`, used as `bg-danger/8` row-tint for `console.error` and by ANSI `31`/`91`.
+- `--accent-dim` — muted blue; for low-emphasis accent strokes (currently unused in chrome, available for future shell prompts / faded UI accents).
+
+Surfaces flatten into three layers: the editor body uses `bg-background` (the canvas), all chrome (`PadToolbar`, `PadConsolePanel`) sits on `bg-card`, and the file sidebar uses `bg-sidebar` (a separate shadcn token wired to the same panel value, so it reads as visually peer to the toolbar). Selected/hover rows tint with the shadcn `--accent` (which Midnight maps to the slightly-lifted `--raise` value).
+
+`SandpackProvider theme="dark"` styles the bundler's own internals (the CodeMirror editor inside `SandpackCodeEditor`, the preview's iframe chrome) independently — our palette only controls the chrome around it.
+
+### Handoff → shadcn name map
+
+The Midnight handoff names its tokens semantically (`--bg`, `--panel`, `--raise`, …); the codebase keeps shadcn's names so the component library keeps working. The mapping:
+
+| Handoff       | shadcn slot(s)                                                      | Use site                                                |
+| ------------- | ------------------------------------------------------------------- | ------------------------------------------------------- |
+| `--bg`        | `--background`                                                      | app canvas, editor body                                 |
+| `--panel`     | `--card` / `--popover` / `--sidebar`                                | top bar, file sidebar, console frame                    |
+| `--raise`     | `--muted` / `--secondary` / `--accent` / `--sidebar-accent`         | hover row, selected file, button hover bg               |
+| `--border`    | `--border` / `--input`                                              | outlines, input borders                                 |
+| `--hairline`  | `--sidebar-border`                                                  | dividers between regions                                |
+| `--text`      | `--foreground` and every `*-foreground` slot                        | primary text                                            |
+| `--mute`      | `--muted-foreground`                                                | secondary labels, breadcrumb separators                 |
+| `--accent`    | `--primary` / `--ring`                                              | Save button / primary CTA / active tab underline / focus ring |
+| `--ok`        | `--success` and `--ok`                                              | saved-state dot, server stdout green                    |
+| `--warn`      | `--warn`                                                            | unsaved dot, caution                                    |
+| `--link`      | `--link`                                                            | URL highlights, `console.info` rows                     |
+| `--danger`    | `--destructive` and `--danger`                                      | `console.error` rows, destructive buttons               |
+
+## Preview / console
+
+The right column splits into `SandpackPreview` on top and a custom `<PadConsolePanel>` (replaces the inline `<SandpackConsole>` from earlier revisions) on the bottom, wired through a `react-resizable-panels` Group with an imperative `panelRef`.
+
+### Preview
+
+`<SandpackPreview>` ships with a refresh button (reloads the iframe — fast) *and* a restart button (cold-restarts the bundler — slow). The console pane also has a restart. We pass `showRestartButton={false}` to the preview so the cold-restart lives only on the console (conceptually "the dev server lives in the console"), avoiding the duplicate-button confusion. The iframe refresh stays.
+
+### Console — [PadConsolePanel.tsx](../../src/pad/PadConsolePanel.tsx)
+
+Two tabs (**Server** | **Client**) with a `bg-primary` underline on the active tab, a "Restart server" button (wired to `useSandpackShell().restart`), and a collapse chevron at the right.
+
+**Both views stay mounted at all times.** Each owns its own subscription to the Sandpack message bus — `ServerView` via [`useSandpackShellStdout`](../../node_modules/@codesandbox/sandpack-react/dist/hooks/useSandpackShellStdout.d.ts), `ConsoleView` via [`useSandpackConsole`](../../node_modules/@codesandbox/sandpack-react/dist/hooks/useSandpackConsole.d.ts). Switching tabs toggles a CSS `hidden` class on the inactive view's wrapper; nothing remounts, so messages that fire while a tab is hidden are still captured when the user switches back. The previous "conditional render" shape lost the inactive tab's history on every switch — see the same warning if anyone tries to revert to it.
+
+**Server view** renders Vite's stdout. The stdout often carries SGR escape sequences for color (`\x1b[32m` green for `VITE`, `\x1b[36m` cyan for hostnames, etc.); a tiny in-file parser splits the text into `{ text, color, bold, dim }` segments and renders them as `<span>`s with the matching Midnight palette utility class. URL detection runs on top of that via a `<RichText>` helper — anything matching `https?://\S+` becomes a `target="_blank"` `<a>` styled as `text-link`.
+
+**Client view** renders JS-runtime console messages from the running app. Each entry gets a row with a divider (`border-b border-border/40`) and a severity-based tint (`bg-danger/8` for `error`, `bg-warn/8` for `warn`, `bg-link/8` for `info`, plain for `log`). Non-string args go through `JSON.stringify(arg, null, 2)`. Same URL highlighting as Server.
+
+**Collapse.** The Panel uses `panelRef={consolePanelRef}` (imperative handle from `react-resizable-panels` v4) with both `minSize` and `collapsedSize` set to `"6%"` — enough to keep the tab header reachable when the body is collapsed, so the user always sees a chevron to expand. The wired `onResize` callback derives `consoleCollapsed = size.asPercentage <= 7`; that state drives the chevron icon (`LuChevronDown` vs. `LuChevronUp`) and applies a `hidden` class to the body so a 6%-tall Sandpack pane doesn't render an ugly slice.
+
+The `collapsed` prop on `<PadConsolePanel>` is named `isCollapsed` to follow the "boolean props named for action" rule — see [CLAUDE.md](../../CLAUDE.md#file--symbol-naming).

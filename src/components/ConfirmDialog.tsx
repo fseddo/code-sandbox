@@ -11,8 +11,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-type ConfirmDialogProps = {
-  trigger: ReactElement;
+type ConfirmDialogBase = {
   title: ReactNode;
   description: ReactNode;
   confirmLabel: ReactNode;
@@ -20,17 +19,35 @@ type ConfirmDialogProps = {
   cancelLabel?: ReactNode;
 };
 
-/** A yes/no confirmation built on AlertDialog. Trigger element keeps its own children. */
+/**
+ * Either uncontrolled (caller supplies a `trigger` element) or controlled
+ * (caller owns `open` + `onOpenChange`). The two modes are mutually exclusive.
+ */
+type ConfirmDialogProps =
+  | (ConfirmDialogBase & {
+      trigger: ReactElement;
+      open?: never;
+      onOpenChange?: never;
+    })
+  | (ConfirmDialogBase & {
+      trigger?: never;
+      open: boolean;
+      onOpenChange: (open: boolean) => void;
+    });
+
+/** A yes/no confirmation built on AlertDialog. */
 export const ConfirmDialog = ({
   trigger,
+  open,
+  onOpenChange,
   title,
   description,
   confirmLabel,
   onConfirm,
   cancelLabel = "Cancel",
 }: ConfirmDialogProps) => (
-  <AlertDialog>
-    <AlertDialogTrigger render={trigger} />
+  <AlertDialog open={open} onOpenChange={onOpenChange}>
+    {trigger ? <AlertDialogTrigger render={trigger} /> : null}
     <AlertDialogContent>
       <AlertDialogHeader>
         <AlertDialogTitle>{title}</AlertDialogTitle>

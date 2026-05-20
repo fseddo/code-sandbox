@@ -1,25 +1,6 @@
 import type { SandpackFiles } from "@codesandbox/sandpack-react";
 
-/** The Sandpack template every CoderPad-style pad boots from. */
-export const PAD_TEMPLATE = "vite-react-ts" as const;
-export type PadTemplate = typeof PAD_TEMPLATE;
-
-/** Files force-applied on top of the template and any saved pad. */
-export const PAD_BASE_FILES: SandpackFiles = {
-  "/vite.config.ts": {
-    code: `import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-
-export default defineConfig({
-  plugins: [react()],
-  // Sandpack's in-browser Node has no terminal to clear.
-  clearScreen: false,
-})
-`,
-  },
-};
-
-const PREFIX = "codepad:pad:";
+const PREFIX = "noodle:pad:";
 const keyFor = (id: string) => `${PREFIX}${id}`;
 
 type StoredPad = {

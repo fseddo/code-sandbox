@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "codepad — live code playground",
+  title: "noodle — live code playground",
   description: "Write code and watch a live bundled preview, side by side.",
 };
 

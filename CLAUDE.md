@@ -2,7 +2,7 @@
 
 # Repo orientation
 
-codepad — a CoderPad + LeetCode hybrid. Single Next.js 16 (App Router) app, React 19, no separate backend yet. The CoderPad pane is built; the LeetCode side (problem bank, server-side judge via Next.js API routes) is the next phase.
+noodle — a CoderPad + LeetCode hybrid. Single Next.js 16 (App Router) app, React 19, no separate backend yet. The CoderPad pane is built; the LeetCode side (problem bank, server-side judge via Next.js API routes) is the next phase.
 
 ## Stack notes
 
@@ -38,7 +38,7 @@ When the LeetCode phase lands, it gets its own folder (e.g. `src/judge/`), not a
 
 Inside files: components are PascalCase, hooks `useThing`, functions/variables camelCase, types/interfaces PascalCase. Boolean props are named for the action, not the structure: `isDirty`, `showCount`, `withBackdrop` — not `pill`, `chip`, `slim`.
 
-Name what the value *is*, not its position or its return type: `columnCount: number` over `columns: number` (reads as an array); `selectedPadId` over `selected` when the value is the id.
+Name what the value _is_, not its position or its return type: `columnCount: number` over `columns: number` (reads as an array); `selectedPadId` over `selected` when the value is the id.
 
 ## State
 
@@ -64,25 +64,26 @@ The project leans into clever TypeScript as a learning exercise. When the same f
 ## Function syntax
 
 - **Arrow functions for all declarations, including React components.** `const Foo = (props: Props) => { ... }`, never `function Foo() {}`. Same for utilities, hooks, event handlers, and inner helpers — `const onKeyDown = (event: KeyboardEvent) => {}`.
-- **Default exports get a named const first**, then `export default Foo`. Keeps stack traces and devtools readable; avoids anonymous-default lint warnings.
+- **Prefer `export const` over default exports.** Components, hooks, utilities, data — `export const Foo = …` everywhere. It's one construct, the symbol is explicit, and every caller imports the same name (so renames update at the source and Find Usages always works). No `const X = …; export default X` ceremony; no inline `export default () => …`.
+- **Default exports only when the framework forces it.** Next's route files (`page.tsx`, `layout.tsx`, `error.tsx`, `loading.tsx`, `not-found.tsx`, `route.ts`) require a default export — there, declare `const Foo = …` and `export default Foo` on a separate line (never inline). Everywhere else (including components loaded via `next/dynamic`, which accepts named exports via `.then(m => m.Foo)`), use `export const`.
 - **One component per file** by default.
 - **Drop `async`** from arrow functions whose body is a single returned promise: `() => fetch(...)` over `async () => await fetch(...)`.
 
 ## className concatenation
 
 - Use **[`cn()`](src/lib/utils.ts)** (clsx + tailwind-merge) for any className combining multiple values or conditionals. Pass each fragment as a separate argument; never template-literal concat.
-- Once a className gains responsive variants or arbitrary values, reach for `cn()` even with no conditionals, and group arguments by *purpose* (visual identity / layout / responsive sizing), not by breakpoint.
+- Once a className gains responsive variants or arbitrary values, reach for `cn()` even with no conditionals, and group arguments by _purpose_ (visual identity / layout / responsive sizing), not by breakpoint.
 - A single static string with no conditionals stays a plain string literal — `cn("flex items-center")` with one arg is just ceremony.
 
 ## Extract when repetition is real, or when the inline form isn't readable
 
 Don't abstract on the first instance — you don't know the variation surface yet. After that:
 
-- **At 2 near-identical bodies**, *raise it*. Surface the pair, propose an extraction shape (props, what's variant vs. invariant), and let the user decide whether the variation surface is clear enough to commit to. Don't silently extract on instance 2; don't silently leave it either.
+- **At 2 near-identical bodies**, _raise it_. Surface the pair, propose an extraction shape (props, what's variant vs. invariant), and let the user decide whether the variation surface is clear enough to commit to. Don't silently extract on instance 2; don't silently leave it either.
 - **At 3+ near-identical bodies**, extract. The variation surface is now observed, not guessed.
-- **Readability override.** Even a *single* instance is an extraction candidate if the inline form is hard to read — deeply nested primitive ceremony (e.g. 5+ levels of `<AlertDialog*>` children), long render blocks where the structure obscures intent, or repeated boilerplate inside one component. Code lives to be read; if a named component would orient a reader faster than the inline JSX does, lift it out. Trigger here is *readability*, not repetition.
+- **Readability override.** Even a _single_ instance is an extraction candidate if the inline form is hard to read — deeply nested primitive ceremony (e.g. 5+ levels of `<AlertDialog*>` children), long render blocks where the structure obscures intent, or repeated boilerplate inside one component. Code lives to be read; if a named component would orient a reader faster than the inline JSX does, lift it out. Trigger here is _readability_, not repetition.
 
-Trigger for the first two rules is *observed* repetition, not anticipated future use. Trigger for the third is *clarity*, judged at the call site.
+Trigger for the first two rules is _observed_ repetition, not anticipated future use. Trigger for the third is _clarity_, judged at the call site.
 
 ## Comments
 
@@ -90,14 +91,14 @@ A single-line JSDoc above a file's main export, helper, or hook is fine and ofte
 
 - **No 3+ line comment blocks.** If a JSDoc spans more than one line, either it's saying too much (most of it is WHAT — drop it) or the WHY belongs in the relevant doc under `docs/`. The exception is a multi-bullet JSDoc on a public API where each line is a distinct invariant.
 - **No clusters of in-body comments.** One short single-line WHY at a non-obvious spot is fine. Three or more comments littering one function body is a smell — the comments are usually narrating WHAT, or papering over a function that should be split.
-- **Same content rules still apply.** Comments explain *why*, not *what*. Don't reference the current task, fix, or callers — those belong in commit messages / PR descriptions and rot fast.
+- **Same content rules still apply.** Comments explain _why_, not _what_. Don't reference the current task, fix, or callers — those belong in commit messages / PR descriptions and rot fast.
 
 ## Where to read before starting work
 
 Auto-loaded CLAUDE files are not enough for area-specific work — read the relevant feature doc first.
 
-| Touching | Read first |
-| --- | --- |
+| Touching                                 | Read first                                   |
+| ---------------------------------------- | -------------------------------------------- |
 | [src/pad/](src/pad/) — the CoderPad pane | [docs/features/pad.md](docs/features/pad.md) |
 
 Touching an area not listed here? That's a doc gap — flag it before writing.

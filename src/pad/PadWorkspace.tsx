@@ -1,15 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { SandpackPreview } from "@codesandbox/sandpack-react";
 import {
-  SandpackConsole,
-  SandpackPreview,
-} from "@codesandbox/sandpack-react";
-import { Group, Panel, Separator } from "react-resizable-panels";
+  Group,
+  Panel,
+  Separator,
+  type PanelImperativeHandle,
+} from "react-resizable-panels";
 import { cn } from "@/lib/utils";
 import { PadToolbar } from "@/pad/PadToolbar";
 import { PadEditor } from "@/pad/PadEditor";
 import { PadFilesPanel } from "@/pad/PadFilesPanel";
+import { PadConsolePanel } from "@/pad/PadConsolePanel";
 import { usePadPersistence } from "@/pad/usePadPersistence";
 import { useAutosave, usePadSave } from "@/pad/usePadSave";
 import { usePadShortcuts } from "@/pad/usePadShortcuts";
@@ -25,6 +28,9 @@ const ResizeBar = ({ axis }: { axis: "x" | "y" }) => (
   />
 );
 
+const CONSOLE_DEFAULT_SIZE = "36%";
+const CONSOLE_COLLAPSED_SIZE = "6%";
+
 /** Three-pane layout: file tree, code editor, and live preview + console. */
 export const PadWorkspace = ({ padId }: { padId: string }) => {
   usePadPersistence(padId);
@@ -32,6 +38,15 @@ export const PadWorkspace = ({ padId }: { padId: string }) => {
   const [autosave, setAutosave] = useState(false);
   useAutosave(autosave, save);
   usePadShortcuts(save);
+
+  const consolePanelRef = useRef<PanelImperativeHandle>(null);
+  const [consoleCollapsed, setConsoleCollapsed] = useState(false);
+  const toggleConsole = () => {
+    const panel = consolePanelRef.current;
+    if (!panel) return;
+    if (panel.isCollapsed()) panel.expand();
+    else panel.collapse();
+  };
 
   return (
     <div className="flex h-full flex-col bg-background">
@@ -67,6 +82,7 @@ export const PadWorkspace = ({ padId }: { padId: string }) => {
               <SandpackPreview
                 showNavigator
                 showRefreshButton
+                showRestartButton={false}
                 showOpenInCodeSandbox={false}
                 style={fill}
               />
@@ -75,12 +91,19 @@ export const PadWorkspace = ({ padId }: { padId: string }) => {
             <Panel
               id="console"
               className="min-h-0"
-              defaultSize="36%"
-              minSize="15%"
+              panelRef={consolePanelRef}
+              defaultSize={CONSOLE_DEFAULT_SIZE}
+              minSize={CONSOLE_COLLAPSED_SIZE}
               collapsible
-              collapsedSize="0%"
+              collapsedSize={CONSOLE_COLLAPSED_SIZE}
+              onResize={(size) =>
+                setConsoleCollapsed(size.asPercentage <= 7)
+              }
             >
-              <SandpackConsole style={fill} />
+              <PadConsolePanel
+                isCollapsed={consoleCollapsed}
+                onToggleCollapse={toggleConsole}
+              />
             </Panel>
           </Group>
         </Panel>

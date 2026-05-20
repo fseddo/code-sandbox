@@ -36,7 +36,11 @@ export const usePadSave = () => {
     snapshotOf(sandpack.files),
   );
 
+  // runSandpack cold-restarts the bundler — guard the StrictMode remount so the user doesn't pay a multi-second restart twice on every fresh load.
+  const startedRef = useRef(false);
   useEffect(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
     sandpackRef.current.runSandpack();
   }, []);
 

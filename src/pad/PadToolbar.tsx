@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Code2, Link2, Plus, RotateCcw } from "lucide-react";
+import { LuCode, LuLink2, LuPlus, LuRotateCcw } from "react-icons/lu";
 import { toast } from "sonner";
 import { clearPad } from "@/pad/pad";
 import { cn } from "@/lib/utils";
@@ -36,10 +36,10 @@ export const PadToolbar = ({
   };
 
   return (
-    <header className="flex h-12 shrink-0 items-center gap-3 border-b px-3">
+    <header className="flex h-12 shrink-0 items-center gap-3 border-b bg-card px-3">
       <Link href="/" className="flex items-center gap-2 font-semibold">
-        <Code2 className="size-4 text-primary" />
-        <span>codepad</span>
+        <LuCode className="size-4 text-primary" />
+        <span>noodle</span>
       </Link>
       <Separator orientation="vertical" className="h-5!" />
       <Badge variant="secondary" className="font-mono font-normal">
@@ -49,7 +49,7 @@ export const PadToolbar = ({
         <span
           className={cn(
             "size-1.5 rounded-full",
-            isDirty ? "bg-amber-500" : "bg-emerald-500",
+            isDirty ? "bg-warn" : "bg-ok",
           )}
         />
         {isDirty ? "Unsaved" : "Saved"}
@@ -57,14 +57,14 @@ export const PadToolbar = ({
 
       <div className="ml-auto flex items-center gap-2">
         <Button variant="outline" size="sm" onClick={copyLink}>
-          <Link2 className="size-4" />
+          <LuLink2 className="size-4" />
           Copy link
         </Button>
 
         <ConfirmDialog
           trigger={
             <Button variant="outline" size="sm">
-              <RotateCcw className="size-4" />
+              <LuRotateCcw className="size-4" />
               Reset
             </Button>
           }
@@ -75,7 +75,7 @@ export const PadToolbar = ({
         />
 
         <Button variant="outline" size="sm" onClick={() => router.push("/pad")}>
-          <Plus className="size-4" />
+          <LuPlus className="size-4" />
           New pad
         </Button>
       </div>

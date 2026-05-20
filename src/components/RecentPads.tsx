@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
-import { ArrowRight } from "lucide-react";
+import { LuArrowRight } from "react-icons/lu";
 import { listPads, type PadSummary } from "@/pad/pad";
 import { Card } from "@/components/ui/card";
 
@@ -58,7 +58,7 @@ export const RecentPads = () => {
             <span className="font-mono">{pad.id}</span>
             <span className="flex items-center gap-2 text-xs text-muted-foreground">
               {relativeTime(pad.updatedAt)}
-              <ArrowRight className="size-3.5" />
+              <LuArrowRight className="size-3.5" />
             </span>
           </Link>
         ))}

@@ -89,6 +89,18 @@ Open questions:
 Want me to apply the plan, edit it first, or stop here?
 ```
 
+### 7. Draft a commit message (after the plan has landed)
+
+This step runs only if the user picked "proceed" in step 5 *and* you've finished applying the plan in the follow-up turn(s). It does not run if they picked "stop," "edit" without a subsequent apply, or interrupted the apply mid-way.
+
+When the apply is complete (typecheck/build clean, all chosen plan items done):
+
+- Look at the diff (`git diff` + `git diff --staged` + the untracked file list) — that's the **actual** scope of the commit, which may be narrower than the plan if the user dropped items mid-apply.
+- Draft a commit message in the project's existing style. To check style, glance at `git log --oneline -5` and read 1–2 recent commit bodies if needed.
+- **Length: 2–3 sentences, each ≤100 chars / one printed line.** If a sentence wraps past that, cut it — short clauses, simple verbs, no nested colons. Even when the pending work is large, the message stays tight: describe the arc, not the inventory. The diff is the inventory.
+- Surface the draft to the user as text, not by running `git commit`. They edit or accept; you commit only on their explicit go-ahead.
+- Do not commit on your own. The skill description still ends with "It does not run `git commit`" — the message is a *proposal* the user threads back to a manual or follow-up commit.
+
 ## Edge cases
 
 - **Working tree clean** (`git status --short` is empty). Nothing to review — tell the user and stop. Don't spawn either agent.
