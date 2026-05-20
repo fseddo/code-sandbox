@@ -1,13 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import {
-  SandpackCodeEditor,
   SandpackConsole,
   SandpackPreview,
 } from "@codesandbox/sandpack-react";
 import { Group, Panel, Separator } from "react-resizable-panels";
 import { PadToolbar } from "@/components/pad-toolbar";
+import { PadEditor } from "@/components/pad-editor";
 import { PadFilesPanel } from "@/components/pad-files-panel";
+import { usePadPersistence } from "@/components/use-pad-persistence";
+import { useAutosave, usePadSave } from "@/components/use-pad-save";
 import { usePadShortcuts } from "@/components/use-pad-shortcuts";
 
 const fill = { height: "100%" } as const;
@@ -21,11 +24,16 @@ function ResizeBar({ axis }: { axis: "x" | "y" }) {
 
 /** Three-pane layout: file tree, code editor, and live preview + console. */
 export function PadWorkspace({ padId }: { padId: string }) {
-  usePadShortcuts();
+  // localStorage autosave is fire-and-forget — no UI consumer of its state.
+  usePadPersistence(padId);
+  const { isDirty, save } = usePadSave();
+  const [autosave, setAutosave] = useState(false);
+  useAutosave(autosave, save);
+  usePadShortcuts(save);
 
   return (
     <div className="flex h-full flex-col bg-background">
-      <PadToolbar padId={padId} />
+      <PadToolbar padId={padId} isDirty={isDirty} />
       <Group orientation="horizontal" className="flex-1">
         <Panel
           id="files"
@@ -39,13 +47,10 @@ export function PadWorkspace({ padId }: { padId: string }) {
         </Panel>
         <ResizeBar axis="x" />
         <Panel id="editor" className="min-w-0" defaultSize="44%" minSize="22%">
-          <SandpackCodeEditor
-            showTabs
-            showLineNumbers
-            showInlineErrors
-            closableTabs
-            showRunButton={false}
-            style={fill}
+          <PadEditor
+            save={save}
+            autosave={autosave}
+            onAutosaveChange={setAutosave}
           />
         </Panel>
         <ResizeBar axis="x" />

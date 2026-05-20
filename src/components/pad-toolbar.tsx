@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Code2, Link2, Plus, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
-import { usePadPersistence } from "@/components/use-pad-persistence";
 import { clearPad } from "@/lib/pad";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,10 +20,15 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-/** Top bar of a pad: branding, autosave status, and pad actions. */
-export function PadToolbar({ padId }: { padId: string }) {
+/** Top bar of a pad: branding, save state, and pad actions. */
+export function PadToolbar({
+  padId,
+  isDirty,
+}: {
+  padId: string;
+  isDirty: boolean;
+}) {
   const router = useRouter();
-  const saveState = usePadPersistence(padId);
 
   async function copyLink() {
     try {
@@ -53,10 +57,10 @@ export function PadToolbar({ padId }: { padId: string }) {
       <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <span
           className={`size-1.5 rounded-full ${
-            saveState === "saving" ? "bg-amber-500" : "bg-emerald-500"
+            isDirty ? "bg-amber-500" : "bg-emerald-500"
           }`}
         />
-        {saveState === "saving" ? "Saving…" : "Saved"}
+        {isDirty ? "Unsaved" : "Saved"}
       </span>
 
       <div className="ml-auto flex items-center gap-2">
@@ -87,7 +91,7 @@ export function PadToolbar({ padId }: { padId: string }) {
           </AlertDialogContent>
         </AlertDialog>
 
-        <Button size="sm" onClick={() => router.push("/pad")}>
+        <Button variant="outline" size="sm" onClick={() => router.push("/pad")}>
           <Plus className="size-4" />
           New pad
         </Button>

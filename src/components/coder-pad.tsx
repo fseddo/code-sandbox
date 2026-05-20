@@ -23,13 +23,12 @@ export default function CoderPad({ padId }: { padId: string }) {
       theme="dark"
       files={files}
       options={{
-        autorun: true,
-        autoReload: true,
-        recompileMode: "delayed",
-        // Rebuild only after a real pause in typing. The Vite/Nodebox
-        // recompile is heavy, so a short delay makes the editor feel laggy.
-        // ⌘S still forces an immediate reload when you want it sooner.
-        recompileDelay: 1000,
+        // Manual save model: typing never pushes to the bundler. ⌘S or the
+        // Save button calls runSandpack to apply current files. File create
+        // and delete still push immediately (their own default), mirroring
+        // local dev where saving a new file is what makes Vite see it.
+        autorun: false,
+        autoReload: false,
       }}
       className="h-full!"
       style={{ height: "100%" }}

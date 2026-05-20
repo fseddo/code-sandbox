@@ -1,18 +1,14 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useSandpackNavigation } from "@codesandbox/sandpack-react";
 
 /**
- * Cmd/Ctrl+S reloads the preview bundle instead of opening the browser's
- * native save dialog. Must be called inside a <SandpackProvider>.
+ * ⌘/Ctrl+S triggers the pad's save action (push code to the preview) instead
+ * of opening the browser's native save dialog.
  */
-export function usePadShortcuts(): void {
-  const { refresh } = useSandpackNavigation();
-
-  // Keep the latest refresh fn in a ref so the listener attaches only once.
-  const refreshRef = useRef(refresh);
-  refreshRef.current = refresh;
+export function usePadShortcuts(save: () => void): void {
+  const saveRef = useRef(save);
+  saveRef.current = save;
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -22,9 +18,8 @@ export function usePadShortcuts(): void {
         !event.altKey &&
         event.key.toLowerCase() === "s";
       if (!isSave) return;
-      // Capture phase + preventDefault beats both the browser and the editor.
       event.preventDefault();
-      refreshRef.current();
+      saveRef.current();
     }
 
     window.addEventListener("keydown", onKeyDown, { capture: true });
