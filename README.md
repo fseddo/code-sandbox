@@ -1,4 +1,6 @@
-# codepad
+# Noodle
+
+Noodle is a coding playground with two modes: solve leetcode-style algorithm problems, or take on codepad-style build prompts like "build a React app that does X." Bring your own problems, or let agents source them — scraped from the web, or generated from a one-line summary.
 
 A live code playground in the browser — a CoderPad + LeetCode hybrid for personal use. Write React + TypeScript in the editor, watch [Vite](https://vite.dev) build it inside a [Sandpack](https://sandpack.codesandbox.io/) container, and see the live preview alongside the console.
 
