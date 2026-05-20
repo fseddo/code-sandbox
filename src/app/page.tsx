@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { ArrowRight, Code2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { RecentPads } from "@/components/recent-pads";
+import { RecentPads } from "@/components/RecentPads";
 
-export default function Home() {
+const Home = () => {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col items-center justify-center gap-10 px-6 py-20">
       <div className="flex flex-col items-center gap-4 text-center">
@@ -28,4 +28,6 @@ export default function Home() {
       <RecentPads />
     </main>
   );
-}
+};
+
+export default Home;

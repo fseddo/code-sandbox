@@ -6,31 +6,20 @@ Organized so an agent (or contributor) can pull in only the docs relevant to the
 
 ```
 docs/
-  frontend/
-    architecture/   # cross-cutting frontend principles (rarely change)
-                    # — read these once when starting frontend work
-    features/       # per-area state of the app — one doc per feature
-                    # — read the relevant one when working in that area
-  backend/
-    architecture.md
-    features/       # one doc per backend app
-  improvements/     # remaining work, organized by area
-                    # — punch lists, not explanations
+  architecture/   # cross-cutting principles (rarely change)
+                  # — read once when starting work in a new area
+  features/       # per-area state of the app — one doc per feature
+                  # — read the relevant one when working in that area
+  improvements/   # remaining work, organized by area
+                  # — punch lists, not explanations
 ```
+
+Currently the only populated section is `features/` — see [features/pad.md](features/pad.md). `architecture/` and `improvements/` fill in as patterns and follow-ups emerge; resist writing aspirational docs for code that doesn't exist yet.
 
 ## Reading order, by task
 
-- **Touching the collection / listing page** → [`frontend/features/collections.md`](frontend/features/collections.md).
-- **Touching the PDP** → [`frontend/features/products.md`](frontend/features/products.md).
-- **Touching the navbar / search / mobile menu** → [`frontend/features/navbar.md`](frontend/features/navbar.md).
-- **Touching the cart** → [`frontend/features/cart.md`](frontend/features/cart.md).
-- **Touching the landing page (`/` route)** → [`frontend/features/landing.md`](frontend/features/landing.md).
-- **Touching checkout** → [`frontend/features/checkout.md`](frontend/features/checkout.md).
-- **Touching the address picker / geo / Google Places** → [`frontend/features/places.md`](frontend/features/places.md).
-- **Touching the API layer / queries / mutations** → [`frontend/architecture/data-fetching.md`](frontend/architecture/data-fetching.md).
-- **Building or editing a form with custom validation** → [`frontend/architecture/forms.md`](frontend/architecture/forms.md).
-- **Adding responsive behavior** → [`frontend/architecture/dynamic-sizing.md`](frontend/architecture/dynamic-sizing.md), then the relevant `features/<area>.md` for area-specific token + breakpoint specifics.
-- **Adding a backend feature / model / endpoint** → [`backend/architecture.md`](backend/architecture.md) + the relevant [`backend/features/<area>.md`](backend/features/).
+- **Touching the CoderPad pane** (`src/pad/`) → [features/pad.md](features/pad.md).
+- **Adding a new feature area** → write a new `features/<area>.md` as a side effect; link it from the table in [`CLAUDE.md`](../CLAUDE.md).
 
 ## Principles for keeping docs useful
 
@@ -41,15 +30,19 @@ These docs persist design decisions across sessions — they're as much for the 
 
 ### What goes where
 
-- **`features/<area>.md`** — _current_ state of one feature: components, tokens, breakpoints, state shape, data flow. Updated when the feature changes. Self-contained — a contributor reading just this doc should be able to work in the area.
-- **`architecture/<topic>.md`** — _cross-cutting_ principles that aren't owned by one feature: how to do responsive sizing, how to do data fetching, how to use view transitions. Stable; rarely needs editing. Examples reference features but don't duplicate their detail.
+- **`features/<area>.md`** — _current_ state of one feature: components, data flow, state shape, the why behind non-obvious choices. Updated when the feature changes. Self-contained — a contributor reading just this doc should be able to work in the area.
+- **`architecture/<topic>.md`** — _cross-cutting_ principles that aren't owned by one feature (e.g. how custom components extend shadcn primitives, how server-side judging is wired). Stable; rarely needs editing. Examples reference features but don't duplicate their detail.
 - **`improvements/<topic>.md`** — _punch lists_ of what's left to do. 1–3 lines per item: location, fix, severity. **No prose explaining how things work** (that's features/architecture). When an item lands, delete the entry — git has the history; the new state lives in features/.
+
+### CLAUDE.md vs docs
+
+[`CLAUDE.md`](../CLAUDE.md) holds the **rule** (≤ 5 lines per topic). The architecture doc holds the **rationale + worked examples**. CLAUDE.md links out; architecture docs don't restate the rule. Don't duplicate the body of a convention across both.
 
 ### Triage rule for audit / improvement docs
 
 Three categories of content typically live in audit docs. They get split:
 
-- **Resolved** ✅ → delete. Git captures it.
+- **Resolved** → delete. Git captures it.
 - **Pattern observation** ("this is the canonical shape, let's preserve it") → promote into the relevant `architecture/` or `features/` doc.
 - **Pending fix** or **future CLAUDE rule candidate** → stay in `improvements/`, as a thin one-liner.
 

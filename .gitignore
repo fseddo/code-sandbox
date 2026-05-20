@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local-only Claude rules
+CLAUDE.local.md
+
+# transient commit-review output (deleted after each run; ignored in case of crash)
+/commit-audit.md

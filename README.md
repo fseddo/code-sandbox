@@ -1,36 +1,27 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# codepad
 
-## Getting Started
+A live code playground in the browser — a CoderPad + LeetCode hybrid for personal use. Write React + TypeScript in the editor, watch [Vite](https://vite.dev) build it inside a [Sandpack](https://sandpack.codesandbox.io/) container, and see the live preview alongside the console.
 
-First, run the development server:
+Each pad has its own URL (`/pad/<id>`) and autosaves to localStorage in this browser. Persistence and a server-side LeetCode-style judge are planned next.
+
+## Quick start
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) — `New pad` mints a fresh id and drops you into the workspace.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- [Next.js 16](https://nextjs.org) App Router, React 19
+- [Sandpack](https://sandpack.codesandbox.io/) for in-browser Vite bundling
+- [shadcn/ui](https://ui.shadcn.com) (Base UI variant) on Tailwind v4
+- [react-resizable-panels](https://github.com/bvaughn/react-resizable-panels) v4 for the split panes
 
-## Learn More
+## For agents and contributors
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Repo orientation, conventions, and routing to feature docs → [CLAUDE.md](CLAUDE.md)
+- Next.js 16 specifics → [AGENTS.md](AGENTS.md)
+- Doc layout + how docs grow with the codebase → [docs/README.md](docs/README.md)

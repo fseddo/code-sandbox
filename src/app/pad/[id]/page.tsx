@@ -1,14 +1,16 @@
-import { CoderPadLoader } from "./pad-loader";
+import { CoderPadLoader } from "./PadLoader";
 
-export default async function PadPage({
+const PadPage = async ({
   params,
 }: {
   params: Promise<{ id: string }>;
-}) {
+}) => {
   const { id } = await params;
   return (
     <main className="h-screen w-screen overflow-hidden">
       <CoderPadLoader padId={id} />
     </main>
   );
-}
+};
+
+export default PadPage;
