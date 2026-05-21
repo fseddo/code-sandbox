@@ -45,3 +45,6 @@ CLAUDE.local.md
 
 # transient commit-review output (deleted after each run; ignored in case of crash)
 /commit-audit.md
+
+# stray npm lockfile — this project uses pnpm
+/package-lock.json

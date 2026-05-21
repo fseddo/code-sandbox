@@ -20,10 +20,15 @@ const Home = () => {
         </p>
       </div>
 
-      <Button size="lg" render={<Link href="/pad" />}>
-        New pad
-        <LuArrowRight className="size-4" />
-      </Button>
+      <div className="flex items-center gap-3">
+        <Button size="lg" render={<Link href="/pad" />}>
+          New pad
+          <LuArrowRight className="size-4" />
+        </Button>
+        <Button size="lg" variant="outline" render={<Link href="/judge" />}>
+          Problems
+        </Button>
+      </div>
 
       <RecentPads />
     </main>

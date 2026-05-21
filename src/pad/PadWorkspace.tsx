@@ -2,13 +2,8 @@
 
 import { useRef, useState } from "react";
 import { SandpackPreview } from "@codesandbox/sandpack-react";
-import {
-  Group,
-  Panel,
-  Separator,
-  type PanelImperativeHandle,
-} from "react-resizable-panels";
-import { cn } from "@/lib/utils";
+import { Group, Panel, type PanelImperativeHandle } from "react-resizable-panels";
+import { ResizeBar } from "@/components/ResizeBar";
 import { PadToolbar } from "@/pad/PadToolbar";
 import { PadEditor } from "@/pad/PadEditor";
 import { PadFilesPanel } from "@/pad/PadFilesPanel";
@@ -18,15 +13,6 @@ import { useAutosave, usePadSave } from "@/pad/usePadSave";
 import { usePadShortcuts } from "@/pad/usePadShortcuts";
 
 const fill = { height: "100%" } as const;
-
-const ResizeBar = ({ axis }: { axis: "x" | "y" }) => (
-  <Separator
-    className={cn(
-      "bg-border transition-colors hover:bg-primary",
-      axis === "x" ? "w-px" : "h-px",
-    )}
-  />
-);
 
 const CONSOLE_DEFAULT_SIZE = "36%";
 const CONSOLE_COLLAPSED_SIZE = "6%";

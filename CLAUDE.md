@@ -2,7 +2,7 @@
 
 # Repo orientation
 
-noodle — a CoderPad + LeetCode hybrid. Single Next.js 16 (App Router) app, React 19, no separate backend yet. The CoderPad pane is built; the LeetCode side (problem bank, server-side judge via Next.js API routes) is the next phase.
+noodle — a CoderPad + LeetCode hybrid. Single Next.js 16 (App Router) app, React 19, no separate backend yet. The CoderPad pane is built; a first cut of the LeetCode judge (typed problem bank + server-side judge via a worker thread) is in [src/judge/](src/judge/) — see [docs/features/judge.md](docs/features/judge.md).
 
 ## Stack notes
 
@@ -97,9 +97,10 @@ A single-line JSDoc above a file's main export, helper, or hook is fine and ofte
 
 Auto-loaded CLAUDE files are not enough for area-specific work — read the relevant feature doc first.
 
-| Touching                                 | Read first                                   |
-| ---------------------------------------- | -------------------------------------------- |
-| [src/pad/](src/pad/) — the CoderPad pane | [docs/features/pad.md](docs/features/pad.md) |
+| Touching                                      | Read first                                       |
+| --------------------------------------------- | ------------------------------------------------ |
+| [src/pad/](src/pad/) — the CoderPad pane      | [docs/features/pad.md](docs/features/pad.md)     |
+| [src/judge/](src/judge/) — the LeetCode judge | [docs/features/judge.md](docs/features/judge.md) |
 
 Touching an area not listed here? That's a doc gap — flag it before writing.
 

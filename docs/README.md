@@ -19,6 +19,7 @@ Currently the only populated section is `features/` — see [features/pad.md](fe
 ## Reading order, by task
 
 - **Touching the CoderPad pane** (`src/pad/`) → [features/pad.md](features/pad.md).
+- **Touching the LeetCode judge** (`src/judge/`) → [features/judge.md](features/judge.md).
 - **Adding a new feature area** → write a new `features/<area>.md` as a side effect; link it from the table in [`CLAUDE.md`](../CLAUDE.md).
 
 ## Principles for keeping docs useful
