@@ -1,12 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { LuArrowLeft } from "react-icons/lu";
 import { Group, Panel } from "react-resizable-panels";
-import type { ClientProblem } from "./problem";
+import type { ClientProblem, RunMode } from "./problem";
 import { ProblemPanel } from "./ProblemPanel";
 import { SolutionEditor } from "./SolutionEditor";
-import { ResultsPanel } from "./ResultsPanel";
+import { ResultsPanel, type ResultsTab } from "./ResultsPanel";
 import { useJudge } from "./useJudge";
 import { ResizeBar } from "@/components/ResizeBar";
 
@@ -26,6 +27,12 @@ export const JudgeWorkspace = ({ problem }: { problem: ClientProblem }) => {
     runningMode,
     run,
   } = useJudge(problem);
+
+  const [resultsTab, setResultsTab] = useState<ResultsTab>("testcase");
+  const runAndShowResults = (mode: RunMode) => {
+    setResultsTab("result");
+    run(mode);
+  };
 
   return (
     <div className="flex h-full flex-col bg-background">
@@ -57,14 +64,20 @@ export const JudgeWorkspace = ({ problem }: { problem: ClientProblem }) => {
                 isDirty={isDirty}
                 settings={settings}
                 onSettingChange={setSetting}
-                onRun={() => run("run")}
-                onSubmit={() => run("submit")}
+                onRun={() => runAndShowResults("run")}
+                onSubmit={() => runAndShowResults("submit")}
                 runningMode={runningMode}
               />
             </Panel>
             <ResizeBar axis="y" />
             <Panel id="results" className="min-h-0" defaultSize="38%" minSize="15%">
-              <ResultsPanel outcome={outcome} />
+              <ResultsPanel
+                problem={problem}
+                outcome={outcome}
+                runningMode={runningMode}
+                tab={resultsTab}
+                onTabChange={setResultsTab}
+              />
             </Panel>
           </Group>
         </Panel>

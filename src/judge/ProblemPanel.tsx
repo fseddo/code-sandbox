@@ -3,15 +3,8 @@ import type { ClientProblem, SupportedLanguage } from "./problem";
 import { DifficultyBadge } from "./DifficultyBadge";
 import { Prose } from "./Prose";
 import { SolutionsTab } from "./SolutionsTab";
+import { stringify } from "./format";
 import { cn } from "@/lib/utils";
-
-const stringify = (value: unknown) => {
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return String(value);
-  }
-};
 
 const TABS = ["description", "solutions"] as const;
 type ProblemTab = (typeof TABS)[number];

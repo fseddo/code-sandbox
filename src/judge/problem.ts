@@ -55,6 +55,22 @@ export const defineProblem = <Args extends unknown[], Result>(
 ): Problem<Args, Result> => problem;
 
 /**
+ * Best-effort parameter names pulled from the JS starter signature, so the Testcase/Input
+ * views can label args (`nums =`) like LeetCode. Falls back to positional `arg N` labels when
+ * the signature can't be parsed cleanly (e.g. destructured params), guarded on the arity match.
+ */
+export const deriveParamNames = (source: string, functionName: string, arity: number): string[] => {
+  const fallback = Array.from({ length: arity }, (_, index) => `arg ${index + 1}`);
+  const match = source.match(new RegExp(`${functionName}\\s*\\(([^)]*)\\)`));
+  if (!match) return fallback;
+  const names = match[1]
+    .split(",")
+    .map((part) => part.split(":")[0].trim())
+    .filter(Boolean);
+  return names.length === arity ? names : fallback;
+};
+
+/**
  * The wire shape the runner reports back per test case. For hidden cases the runner masks
  * `expected`/`actual`/`logs` (they'd leak the probing inputs) — only pass/fail, error, and timing survive.
  */

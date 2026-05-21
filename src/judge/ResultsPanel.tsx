@@ -1,121 +1,53 @@
-import { LuCheck, LuX } from "react-icons/lu";
-import type { SubmissionOutcome, TestResult } from "./problem";
+import type { ClientProblem, RunMode, SubmissionOutcome } from "./problem";
+import { TestcaseTab } from "./TestcaseTab";
+import { TestResult } from "./TestResult";
 import { cn } from "@/lib/utils";
 
-const stringify = (value: unknown) => {
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return String(value);
-  }
+/** Which half of the bottom dock is showing. JudgeWorkspace flips it to "result" on Run/Submit. */
+export type ResultsTab = "testcase" | "result";
+
+const TAB_LABEL: Record<ResultsTab, string> = {
+  testcase: "Testcase",
+  result: "Test Result",
 };
 
-const Banner = ({ tone, children }: { tone: "danger" | "warn"; children: React.ReactNode }) => (
-  <div
-    className={cn(
-      "rounded-md border p-3 text-sm",
-      tone === "danger" ? "border-danger/40 bg-danger/8 text-danger" : "border-warn/40 bg-warn/8 text-warn",
-    )}
-  >
-    {children}
+type ResultsPanelProps = {
+  problem: ClientProblem;
+  outcome: SubmissionOutcome | null;
+  runningMode: RunMode | null;
+  tab: ResultsTab;
+  onTabChange: (tab: ResultsTab) => void;
+};
+
+/** Bottom dock: a Testcase / Test Result tab pair, mirroring LeetCode's run panel. */
+export const ResultsPanel = ({ problem, outcome, runningMode, tab, onTabChange }: ResultsPanelProps) => (
+  <div className="flex h-full flex-col bg-card">
+    <div role="tablist" className="flex shrink-0 items-stretch gap-1 border-b border-sidebar-border px-3 pt-2">
+      {(Object.keys(TAB_LABEL) as ResultsTab[]).map((id) => {
+        const active = tab === id;
+        return (
+          <button
+            key={id}
+            role="tab"
+            aria-selected={active}
+            onClick={() => onTabChange(id)}
+            className={cn(
+              "relative px-3 pb-2 text-sm font-medium transition-colors",
+              active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {TAB_LABEL[id]}
+            {active && <span aria-hidden className="absolute right-0 bottom-0 left-0 h-0.5 bg-primary" />}
+          </button>
+        );
+      })}
+    </div>
+    <div className="min-h-0 flex-1 overflow-auto p-5">
+      {tab === "testcase" ? (
+        <TestcaseTab problem={problem} />
+      ) : (
+        <TestResult outcome={outcome} runningMode={runningMode} problem={problem} />
+      )}
+    </div>
   </div>
 );
-
-const ResultRow = ({ result }: { result: TestResult }) => (
-  <li className="flex flex-col gap-1.5 rounded-md border border-border bg-background p-3">
-    <div className="flex items-center gap-2 text-sm">
-      <span
-        className={cn(
-          "flex size-4 items-center justify-center rounded-full",
-          result.passed ? "bg-ok/15 text-ok" : "bg-danger/15 text-danger",
-        )}
-      >
-        {result.passed ? <LuCheck className="size-3" /> : <LuX className="size-3" />}
-      </span>
-      <span className="font-medium">{result.name}</span>
-      {result.hidden && (
-        <span className="rounded bg-muted px-1.5 py-0.5 text-[0.6875rem] uppercase tracking-wide text-muted-foreground">
-          hidden
-        </span>
-      )}
-      <span className="ml-auto text-xs text-muted-foreground">{result.ms.toFixed(3)}ms</span>
-    </div>
-
-    {!result.passed && (
-      <div className="flex flex-col gap-0.5 pl-6 font-mono text-xs">
-        {result.error ? (
-          <span className="text-danger">{result.error}</span>
-        ) : result.hidden ? (
-          // Hidden inputs stay masked — revealing expected/got would defeat the robustness check.
-          <span className="text-danger">Wrong answer on a hidden test.</span>
-        ) : (
-          <>
-            <span>
-              <span className="text-muted-foreground">expected </span>
-              {stringify(result.expected)}
-            </span>
-            <span>
-              <span className="text-muted-foreground">got </span>
-              {stringify(result.actual)}
-            </span>
-          </>
-        )}
-      </div>
-    )}
-
-    {result.logs.length > 0 && (
-      <pre className="ml-6 overflow-auto rounded bg-muted/50 p-2 font-mono text-xs text-muted-foreground">
-        {result.logs.join("\n")}
-      </pre>
-    )}
-  </li>
-);
-
-export const ResultsPanel = ({ outcome }: { outcome: SubmissionOutcome | null }) => {
-  if (!outcome) {
-    return (
-      <div className="flex h-full items-center justify-center bg-card p-5 text-sm text-muted-foreground">
-        Run your solution to see results.
-      </div>
-    );
-  }
-
-  if (outcome.status === "compile-error" || outcome.status === "crashed") {
-    return (
-      <div className="h-full overflow-auto bg-card p-5">
-        <Banner tone="danger">{outcome.message}</Banner>
-      </div>
-    );
-  }
-
-  if (outcome.status === "timeout") {
-    return (
-      <div className="h-full overflow-auto bg-card p-5">
-        <Banner tone="warn">Timed out after {outcome.ms}ms — check for an infinite loop.</Banner>
-      </div>
-    );
-  }
-
-  const passed = outcome.results.filter((result) => result.passed).length;
-  const total = outcome.results.length;
-  const allPassed = passed === total;
-  const hasHidden = outcome.results.some((result) => result.hidden);
-
-  return (
-    <div className="flex h-full flex-col gap-3 overflow-auto bg-card p-5">
-      <div className="flex flex-col gap-0.5">
-        <div className={cn("text-sm font-medium", allPassed ? "text-ok" : "text-danger")}>
-          {passed} / {total} cases passed
-        </div>
-        {hasHidden && (
-          <span className="text-xs text-muted-foreground">Includes hidden tests.</span>
-        )}
-      </div>
-      <ul className="flex flex-col gap-2">
-        {outcome.results.map((result, index) => (
-          <ResultRow key={index} result={result} />
-        ))}
-      </ul>
-    </div>
-  );
-};
