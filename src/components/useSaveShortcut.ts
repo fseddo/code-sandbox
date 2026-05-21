@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 
 /** ⌘/Ctrl+S triggers `save()` instead of the browser's native save dialog. */
-export const usePadShortcuts = (save: () => void): void => {
+export const useSaveShortcut = (save: () => void): void => {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const isSave =
@@ -17,7 +17,6 @@ export const usePadShortcuts = (save: () => void): void => {
     };
 
     window.addEventListener("keydown", onKeyDown, { capture: true });
-    return () =>
-      window.removeEventListener("keydown", onKeyDown, { capture: true });
+    return () => window.removeEventListener("keydown", onKeyDown, { capture: true });
   }, [save]);
 };

@@ -10,7 +10,7 @@ import { PadFilesPanel } from "@/pad/PadFilesPanel";
 import { PadConsolePanel } from "@/pad/PadConsolePanel";
 import { usePadPersistence } from "@/pad/usePadPersistence";
 import { useAutosave, usePadSave } from "@/pad/usePadSave";
-import { usePadShortcuts } from "@/pad/usePadShortcuts";
+import { useSaveShortcut } from "@/components/useSaveShortcut";
 
 const fill = { height: "100%" } as const;
 
@@ -23,7 +23,7 @@ export const PadWorkspace = ({ padId }: { padId: string }) => {
   const { isDirty, save, addFile, deleteFile } = usePadSave();
   const [autosave, setAutosave] = useState(false);
   useAutosave(autosave, save);
-  usePadShortcuts(save);
+  useSaveShortcut(save);
 
   const consolePanelRef = useRef<PanelImperativeHandle>(null);
   const [consoleCollapsed, setConsoleCollapsed] = useState(false);

@@ -67,17 +67,40 @@ Wrapping in one script means both `function twoSum(){}` (hoisted) and `const two
 
 ## Editor — shared `CodeEditor`
 
-[`CodeEditor.tsx`](../../src/components/CodeEditor.tsx) is a standalone CodeMirror 6 wrapper (`@uiw/react-codemirror` + `@codemirror/lang-javascript`) with `value` / `onChange` / `language` / `isReadOnly` props. It's deliberately **not** tied to Sandpack — the judge has no bundler, just one function to edit and ship to the server. It uses `@uiw`'s built-in `dark` theme for token colors plus a thin `EditorView.theme` extension for sizing/font (Geist Mono).
+[`CodeEditor.tsx`](../../src/components/CodeEditor.tsx) is a standalone CodeMirror 6 wrapper (`@uiw/react-codemirror` + `@codemirror/lang-javascript`) with `value` / `onChange` / `language` / `isReadOnly` props. It's deliberately **not** tied to Sandpack — the judge has no bundler, just one function to edit and ship to the server. It uses `@uiw`'s built-in `dark` theme for token colors plus a thin `EditorView.theme` extension for sizing/font (Geist Mono). A `Prec.highest` `keymap` binds **Tab → `acceptCompletion`** (CodeMirror's default only accepts on Enter); `acceptCompletion` returns `false` when no completion popup is open, so Tab falls through to its normal behavior.
 
 The pad keeps `SandpackCodeEditor` (which is CodeMirror pre-wired into Sandpack's active-file/HMR model — that integration is its value). Unifying the pad onto this `CodeEditor` via Sandpack's `useActiveCode()` hook is a deliberate future step, not done here.
 
 ## State
 
-[`useJudge(problem)`](../../src/judge/useJudge.ts) owns everything: `language`, **one source buffer per language** (`Record<SupportedLanguage, string>` seeded from `starterCode`, so switching language swaps buffers without losing work and without a `useEffect`), the latest `outcome`, and `isRunning`. `run()` POSTs to `/api/judge` and stores the `SubmissionOutcome`. The visible `source` is derived (`sources[language]`) at render — no synced state.
+[`useJudge(problem)`](../../src/judge/useJudge.ts) owns everything: `language`, **one source buffer per language** (`Record<SupportedLanguage, string>` seeded from `starterCode`, so switching language swaps buffers without losing work and without a `useEffect`), the editor `settings` (via [`useJudgeSettings`](../../src/judge/useJudgeSettings.ts)), the latest `outcome`, and `isRunning`. `run()` POSTs to `/api/judge` and stores the `SubmissionOutcome`. The visible `source` is derived (`sources[language]`) at render — no synced state. `resetSolution()` restores the current language's buffer to `starterCode[language]`.
+
+## Persistence — the save model
+
+[`solution.ts`](../../src/judge/solution.ts) is the localStorage layer, parallel to the pad's [`pad.ts`](../../src/pad/pad.ts): solutions are keyed `noodle:solution:<problemId>` and stored as `{ sources, updatedAt }`. Pure functions, client-only (no-op when `window` is undefined). `loadSolution(id)` returns the saved per-language buffers (a `Partial<Record<SupportedLanguage, string>>`); `saveSolution(id, sources)` writes them.
+
+Saving is **manual**, mirroring the pad's [`usePadSave`](../../src/pad/usePadSave.ts) — but where the pad's save applies edits to the live Sandpack preview, the judge's save persists to localStorage. There's no "apply to preview" concept here because **Run** is the apply step. The mechanics:
+
+- **`save()`** writes the whole `sources` record via `saveSolution` and sets `savedSnapshot = sources`. It reads the live buffers off a `sourcesRef` (synced in a `useLayoutEffect`, per React 19's no-ref-writes-during-render rule) so its identity stays stable across keystrokes.
+- **`savedSnapshot`** (a second `Sources` state) is "what's on disk." **`isDirty`** is derived at render via `useMemo` — any language whose buffer differs from the snapshot. The toolbar's Saved/Unsaved dot reads it.
+- **`⌘S` / `Ctrl+S`** → the shared [`useSaveShortcut`](../../src/components/useSaveShortcut.ts) (same hook the pad uses; lifted out of `pad/` when the judge became the second caller).
+- **Autosave** → [`useJudgeAutosave`](../../src/judge/useJudge.ts), a 600ms-debounced save on content change that skips language switches and the unchanged-toggle case (tracks last-seen `{ language, code }`, the analog of the pad's `{ path, code }`). Driven by the `autosave` editor setting (see [Editor settings](#editor-settings)); the Save button is `disabled` while it's on, so the model stays unambiguous.
+
+## Editor settings
+
+[`settings.ts`](../../src/judge/settings.ts) is a **single-source registry**: `JUDGE_SETTINGS` maps each toggle key to its `{ label, description, default }`. Everything else is derived from it — the `JudgeSettingKey` union (`keyof typeof JUDGE_SETTINGS`), the `JudgeSettings` value type (`Record<JudgeSettingKey, boolean>`), the defaults, and the menu rows. Adding a setting = one entry here; the state, persistence, and dropdown all pick it up with no other edits.
+
+- [`useJudgeSettings`](../../src/judge/useJudgeSettings.ts) holds the settings state (lazy-init from localStorage via `loadSettings`, merged over defaults so a newly-added key gets its default) and writes back on change. Persisted **globally** under `noodle:judge-settings`, not per-problem — these are editor preferences. Lazy-init is hydration-safe for the same reason the buffers are: no setting reaches the SSR DOM (the menu is portalled and closed by default; autocomplete only affects the client-mounted CodeMirror).
+- [`SolutionSettingsMenu`](../../src/judge/SolutionSettingsMenu.tsx) renders a gear-icon [dropdown](../../src/components/ui/dropdown-menu.tsx) (shadcn Base UI `Menu`) with one `CheckboxItem` per registry entry. Base UI checkbox items default `closeOnClick: false`, so toggling one doesn't dismiss the menu.
+- **`autocomplete`** flows to the shared [`CodeEditor`](../../src/components/CodeEditor.tsx) via its `isAutocompleteEnabled` prop (default `true`), which sets CodeMirror's `basicSetup.autocompletion`. **`autosave`** drives `useJudgeAutosave` as above.
+
+### Restore: a `useState` initializer, not a mount effect
+
+Buffers seed from `{ ...starterCode, ...(loadSolution(id) ?? {}) }` in a `useState` lazy initializer (both `sources` and `savedSnapshot`). The merge means a never-edited language keeps its starter and a problem that later adds a language doesn't break. Reading localStorage in the initializer is safe even though `/judge/[id]` **server-renders** (`JudgeWorkspace` is a client component but not `ssr:false`, see [Why no PadLoader-style `ssr:false`](#why-no-padloader-style-ssrfalse)): CodeMirror renders a placeholder on the server with no buffer text in the SSR HTML, so a client initializer reading saved code can't produce a hydration mismatch. This sidesteps the "set state in a mount effect" cascade the lint rule flags.
 
 ## UI notes
 
 - [`DifficultyBadge`](../../src/judge/DifficultyBadge.tsx) maps `easy`/`medium`/`hard` to the Midnight `--ok` / `--warn` / `--danger` tints (see [pad.md palette](pad.md#palette)).
 - [`ProblemPanel`](../../src/judge/ProblemPanel.tsx) renders the prompt with a minimal inline-code pass (splits on backticks → `<code>`) and splits paragraphs on blank lines. Full markdown (`react-markdown`) is a deliberate non-dependency for now.
-- [`SolutionEditor`](../../src/judge/SolutionEditor.tsx) has a JS/TS segmented toggle and a green `success` Run button (same "go" affordance as the pad's Save).
+- [`SolutionEditor`](../../src/judge/SolutionEditor.tsx) toolbar: a JS/TS segmented toggle and a Saved/Unsaved dot on the left (`bg-ok` / `bg-warn`, mirroring [PadToolbar](../../src/pad/PadToolbar.tsx)); on the right a gear-icon settings menu ([`SolutionSettingsMenu`](../../src/judge/SolutionSettingsMenu.tsx), see [Editor settings](#editor-settings)), a `ghost` Reset button wrapped in a [`ConfirmDialog`](../../src/components/ConfirmDialog.tsx) (uncontrolled `trigger` mode, since it's tied to this one button) that restores the current language's starter code, an `outline` Save button (`disabled` while autosave is on), and the green `success` Run button. Run keeps the green "go" affordance; Save is `outline` so two greens don't compete.
 - [`ResultsPanel`](../../src/judge/ResultsPanel.tsx) switches on the `SubmissionOutcome` union: a pass/fail count + per-case rows (expected/got/error/logs/ms) for `ok`, or a tinted banner for `compile-error` / `timeout` / `crashed`.

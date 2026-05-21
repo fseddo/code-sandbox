@@ -12,7 +12,20 @@ import { ResizeBar } from "@/components/ResizeBar";
 
 /** Two-column judge layout: problem on the left, editor over results on the right. */
 export const JudgeWorkspace = ({ problem }: { problem: Problem }) => {
-  const { language, setLanguage, source, setSource, outcome, isRunning, run } = useJudge(problem);
+  const {
+    language,
+    setLanguage,
+    source,
+    setSource,
+    resetSolution,
+    save,
+    isDirty,
+    settings,
+    setSetting,
+    outcome,
+    isRunning,
+    run,
+  } = useJudge(problem);
 
   return (
     <div className="flex h-full flex-col bg-background">
@@ -39,6 +52,11 @@ export const JudgeWorkspace = ({ problem }: { problem: Problem }) => {
                 onLanguageChange={setLanguage}
                 source={source}
                 onSourceChange={setSource}
+                onReset={resetSolution}
+                onSave={save}
+                isDirty={isDirty}
+                settings={settings}
+                onSettingChange={setSetting}
                 onRun={run}
                 isRunning={isRunning}
               />

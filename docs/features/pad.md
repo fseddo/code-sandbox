@@ -39,7 +39,7 @@ options={{
 
 Saving is a manual, code-editor-like action. Two paths trigger it:
 
-- **`⌘S` / `Ctrl+S`** — captured by [usePadShortcuts.ts](../../src/pad/usePadShortcuts.ts). `capture: true` on the listener intercepts before the browser's native save dialog; modifier filter rejects `⇧⌘S`, `⌥⌘S`, etc.
+- **`⌘S` / `Ctrl+S`** — captured by the shared [useSaveShortcut.ts](../../src/components/useSaveShortcut.ts) (lifted out of the pad when the judge became a second caller). `capture: true` on the listener intercepts before the browser's native save dialog; modifier filter rejects `⇧⌘S`, `⌥⌘S`, etc.
 - **Save button** in the editor toolbar — same `save()` callback.
 
 [usePadSave.ts](../../src/pad/usePadSave.ts) is the source of truth, and it's deliberately **event-driven, not observation-driven**:
