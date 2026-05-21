@@ -60,29 +60,34 @@ const run = () => {
 
   const results = tests.map((test, index) => {
     const args = structuredClone(test.args);
+    const name = test.name ?? `case ${index + 1}`;
+    const hidden = Boolean(test.hidden);
     logs.length = 0;
     const startedAt = performance.now();
     try {
       const actual = fn(...args);
       const ms = performance.now() - startedAt;
+      // Hidden cases report only pass/fail + timing — expected/actual/logs would leak the probing inputs.
       return {
-        name: test.name ?? `case ${index + 1}`,
+        name,
         passed: deepEqual(actual, test.expected),
-        expected: test.expected,
-        actual,
-        logs: [...logs],
+        expected: hidden ? null : test.expected,
+        actual: hidden ? null : actual,
+        logs: hidden ? [] : [...logs],
         error: null,
         ms,
+        hidden,
       };
     } catch (error) {
       return {
-        name: test.name ?? `case ${index + 1}`,
+        name,
         passed: false,
-        expected: test.expected,
-        actual: undefined,
-        logs: [...logs],
+        expected: hidden ? null : test.expected,
+        actual: null,
+        logs: hidden ? [] : [...logs],
         error: error instanceof Error ? error.message : String(error),
         ms: performance.now() - startedAt,
+        hidden,
       };
     }
   });

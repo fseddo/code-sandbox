@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { Problem, SubmissionOutcome, SupportedLanguage } from "./problem";
+import type { ClientProblem, RunMode, SubmissionOutcome, SupportedLanguage } from "./problem";
 import { loadSolution, saveSolution } from "./solution";
 import { useJudgeSettings } from "./useJudgeSettings";
 import { useSaveShortcut } from "@/components/useSaveShortcut";
@@ -16,7 +16,7 @@ const AUTOSAVE_DEBOUNCE_MS = 600;
  * Save persists the buffers to localStorage; Run is the "apply" step, so there's
  * no preview to keep in sync — saving only governs surviving a reload.
  */
-export const useJudge = (problem: Problem) => {
+export const useJudge = (problem: ClientProblem) => {
   // Lazy initializer, not a mount effect: this page server-renders, but CodeMirror
   // renders a placeholder on the server (no buffer text in the SSR HTML), so reading
   // localStorage here can't cause a hydration mismatch. saved is merged over
@@ -28,7 +28,8 @@ export const useJudge = (problem: Problem) => {
   const [sources, setSources] = useState<Sources>(seed);
   const [savedSnapshot, setSavedSnapshot] = useState<Sources>(seed);
   const [outcome, setOutcome] = useState<SubmissionOutcome | null>(null);
-  const [isRunning, setIsRunning] = useState(false);
+  // Which mode is in flight (null = idle). Lets the toolbar label Run vs Submit independently while sharing one request path.
+  const [runningMode, setRunningMode] = useState<RunMode | null>(null);
 
   // React 19 forbids ref writes during render — sync in a layout effect so the
   // stable save() reads the latest buffers without re-creating on every keystroke.
@@ -59,19 +60,19 @@ export const useJudge = (problem: Problem) => {
     [sources, savedSnapshot],
   );
 
-  const run = async () => {
-    setIsRunning(true);
+  const run = async (mode: RunMode) => {
+    setRunningMode(mode);
     try {
       const response = await fetch("/api/judge", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ problemId: problem.id, language, source: sources[language] }),
+        body: JSON.stringify({ problemId: problem.id, language, source: sources[language], mode }),
       });
       setOutcome((await response.json()) as SubmissionOutcome);
     } catch (error) {
       setOutcome({ status: "crashed", message: error instanceof Error ? error.message : "Request failed." });
     } finally {
-      setIsRunning(false);
+      setRunningMode(null);
     }
   };
 
@@ -86,7 +87,7 @@ export const useJudge = (problem: Problem) => {
     settings,
     setSetting,
     outcome,
-    isRunning,
+    runningMode,
     run,
   };
 };

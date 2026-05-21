@@ -1,7 +1,7 @@
 "use client";
 
-import { LuPlay, LuRotateCcw, LuSave } from "react-icons/lu";
-import type { SupportedLanguage } from "./problem";
+import { LuPlay, LuRotateCcw, LuSave, LuSend } from "react-icons/lu";
+import type { RunMode, SupportedLanguage } from "./problem";
 import type { JudgeSettingKey, JudgeSettings } from "./settings";
 import { SolutionSettingsMenu } from "./SolutionSettingsMenu";
 import { CodeEditor } from "@/components/CodeEditor";
@@ -20,7 +20,8 @@ type SolutionEditorProps = {
   settings: JudgeSettings;
   onSettingChange: (key: JudgeSettingKey, value: boolean) => void;
   onRun: () => void;
-  isRunning: boolean;
+  onSubmit: () => void;
+  runningMode: RunMode | null;
 };
 
 const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
@@ -39,7 +40,8 @@ export const SolutionEditor = ({
   settings,
   onSettingChange,
   onRun,
-  isRunning,
+  onSubmit,
+  runningMode,
 }: SolutionEditorProps) => (
   <div className="flex h-full flex-col bg-card">
     <div className="flex items-center justify-between gap-2 border-b border-sidebar-border px-3 py-2">
@@ -91,9 +93,13 @@ export const SolutionEditor = ({
           <LuSave className="size-3.5" />
           Save
         </Button>
-        <Button size="sm" variant="success" onClick={onRun} disabled={isRunning}>
+        <Button size="sm" variant="outline" onClick={onRun} disabled={runningMode !== null} title="Run the example tests">
           <LuPlay className="size-3.5" />
-          {isRunning ? "Running…" : "Run"}
+          {runningMode === "run" ? "Running…" : "Run"}
+        </Button>
+        <Button size="sm" variant="success" onClick={onSubmit} disabled={runningMode !== null} title="Run all tests, including hidden ones">
+          <LuSend className="size-3.5" />
+          {runningMode === "submit" ? "Submitting…" : "Submit"}
         </Button>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import path from "node:path";
 import { Worker } from "node:worker_threads";
-import type { Problem, SubmissionOutcome, SupportedLanguage } from "../problem";
+import type { Problem, RunMode, SubmissionOutcome, SupportedLanguage } from "../problem";
 
 const WALL_CLOCK_LIMIT_MS = 2000;
 
@@ -12,16 +12,25 @@ export type Submission = {
   problem: Problem;
   language: SupportedLanguage;
   source: string;
+  mode: RunMode;
 };
+
+/** The exposed examples, plus the hidden set when submitting. Each case is tagged so the worker can mask hidden output. */
+const testsForMode = ({ tests, hiddenTests }: Problem, mode: RunMode) => [
+  ...tests.map((test, index) => ({ name: test.name ?? `case ${index + 1}`, args: test.args, expected: test.expected, hidden: false })),
+  ...(mode === "submit"
+    ? (hiddenTests ?? []).map((test, index) => ({ name: `hidden case ${index + 1}`, args: test.args, expected: test.expected, hidden: true }))
+    : []),
+];
 
 /**
  * Run a submission in a terminable worker thread, racing it against a wall-clock limit.
  * `worker.terminate()` is what catches infinite loops — sync or async — that a bare vm timeout can't.
  */
-export const runSubmission = ({ problem, language, source }: Submission): Promise<SubmissionOutcome> =>
+export const runSubmission = ({ problem, language, source, mode }: Submission): Promise<SubmissionOutcome> =>
   new Promise((resolve) => {
     const worker = new Worker(workerPath, {
-      workerData: { source, language, functionName: problem.functionName, tests: problem.tests },
+      workerData: { source, language, functionName: problem.functionName, tests: testsForMode(problem, mode) },
     });
 
     let settled = false;

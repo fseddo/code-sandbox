@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { LuArrowLeft } from "react-icons/lu";
 import { Group, Panel } from "react-resizable-panels";
-import type { Problem } from "./problem";
+import type { ClientProblem } from "./problem";
 import { ProblemPanel } from "./ProblemPanel";
 import { SolutionEditor } from "./SolutionEditor";
 import { ResultsPanel } from "./ResultsPanel";
@@ -11,7 +11,7 @@ import { useJudge } from "./useJudge";
 import { ResizeBar } from "@/components/ResizeBar";
 
 /** Two-column judge layout: problem on the left, editor over results on the right. */
-export const JudgeWorkspace = ({ problem }: { problem: Problem }) => {
+export const JudgeWorkspace = ({ problem }: { problem: ClientProblem }) => {
   const {
     language,
     setLanguage,
@@ -23,7 +23,7 @@ export const JudgeWorkspace = ({ problem }: { problem: Problem }) => {
     settings,
     setSetting,
     outcome,
-    isRunning,
+    runningMode,
     run,
   } = useJudge(problem);
 
@@ -41,7 +41,7 @@ export const JudgeWorkspace = ({ problem }: { problem: Problem }) => {
 
       <Group orientation="horizontal" className="flex-1">
         <Panel id="problem" className="min-w-0" defaultSize="40%" minSize="22%">
-          <ProblemPanel problem={problem} />
+          <ProblemPanel problem={problem} language={language} />
         </Panel>
         <ResizeBar axis="x" />
         <Panel id="solution" className="min-w-0" defaultSize="60%" minSize="30%">
@@ -57,8 +57,9 @@ export const JudgeWorkspace = ({ problem }: { problem: Problem }) => {
                 isDirty={isDirty}
                 settings={settings}
                 onSettingChange={setSetting}
-                onRun={run}
-                isRunning={isRunning}
+                onRun={() => run("run")}
+                onSubmit={() => run("submit")}
+                runningMode={runningMode}
               />
             </Panel>
             <ResizeBar axis="y" />

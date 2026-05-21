@@ -33,13 +33,21 @@ const ResultRow = ({ result }: { result: TestResult }) => (
         {result.passed ? <LuCheck className="size-3" /> : <LuX className="size-3" />}
       </span>
       <span className="font-medium">{result.name}</span>
-      <span className="ml-auto text-xs text-muted-foreground">{result.ms.toFixed(1)}ms</span>
+      {result.hidden && (
+        <span className="rounded bg-muted px-1.5 py-0.5 text-[0.6875rem] uppercase tracking-wide text-muted-foreground">
+          hidden
+        </span>
+      )}
+      <span className="ml-auto text-xs text-muted-foreground">{result.ms.toFixed(3)}ms</span>
     </div>
 
     {!result.passed && (
       <div className="flex flex-col gap-0.5 pl-6 font-mono text-xs">
         {result.error ? (
           <span className="text-danger">{result.error}</span>
+        ) : result.hidden ? (
+          // Hidden inputs stay masked — revealing expected/got would defeat the robustness check.
+          <span className="text-danger">Wrong answer on a hidden test.</span>
         ) : (
           <>
             <span>
@@ -89,12 +97,19 @@ export const ResultsPanel = ({ outcome }: { outcome: SubmissionOutcome | null })
   }
 
   const passed = outcome.results.filter((result) => result.passed).length;
-  const allPassed = passed === outcome.results.length;
+  const total = outcome.results.length;
+  const allPassed = passed === total;
+  const hasHidden = outcome.results.some((result) => result.hidden);
 
   return (
     <div className="flex h-full flex-col gap-3 overflow-auto bg-card p-5">
-      <div className={cn("text-sm font-medium", allPassed ? "text-ok" : "text-danger")}>
-        {passed} / {outcome.results.length} cases passed
+      <div className="flex flex-col gap-0.5">
+        <div className={cn("text-sm font-medium", allPassed ? "text-ok" : "text-danger")}>
+          {passed} / {total} cases passed
+        </div>
+        {hasHidden && (
+          <span className="text-xs text-muted-foreground">Includes hidden tests.</span>
+        )}
       </div>
       <ul className="flex flex-col gap-2">
         {outcome.results.map((result, index) => (

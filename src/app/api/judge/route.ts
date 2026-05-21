@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import type { SupportedLanguage } from "@/judge/problem";
+import type { RunMode, SupportedLanguage } from "@/judge/problem";
 import { getProblem } from "@/judge/problems";
 import { runSubmission } from "@/judge/runner/runSubmission";
 
@@ -8,10 +8,10 @@ export const runtime = "nodejs";
 
 const LANGUAGES: SupportedLanguage[] = ["javascript", "typescript"];
 
-type JudgeBody = { problemId?: unknown; language?: unknown; source?: unknown };
+type JudgeBody = { problemId?: unknown; language?: unknown; source?: unknown; mode?: unknown };
 
 export const POST = async (request: NextRequest) => {
-  const { problemId, language, source }: JudgeBody = await request.json().catch(() => ({}));
+  const { problemId, language, source, mode }: JudgeBody = await request.json().catch(() => ({}));
 
   if (typeof problemId !== "string" || typeof source !== "string" || typeof language !== "string") {
     return Response.json({ error: "Expected { problemId, language, source }." }, { status: 400 });
@@ -24,6 +24,8 @@ export const POST = async (request: NextRequest) => {
     return Response.json({ error: `Unknown problem: ${problemId}.` }, { status: 404 });
   }
 
-  const outcome = await runSubmission({ problem, language: language as SupportedLanguage, source });
+  // Default to the exposed-only run; only an explicit "submit" pulls in the hidden set.
+  const runMode: RunMode = mode === "submit" ? "submit" : "run";
+  const outcome = await runSubmission({ problem, language: language as SupportedLanguage, source, mode: runMode });
   return Response.json(outcome);
 };

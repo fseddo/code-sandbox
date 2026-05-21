@@ -28,4 +28,42 @@ export const fizzBuzz = defineProblem<[number], string[]>({
       expected: ["1", "2", "Fizz", "4", "Buzz", "Fizz", "7", "8", "Fizz", "Buzz", "11", "Fizz", "13", "14", "FizzBuzz"],
     },
   ],
+  hiddenTests: [
+    { args: [1], expected: ["1"] },
+    { args: [2], expected: ["1", "2"] },
+    {
+      args: [16],
+      expected: ["1", "2", "Fizz", "4", "Buzz", "Fizz", "7", "8", "Fizz", "Buzz", "11", "Fizz", "13", "14", "FizzBuzz", "16"],
+    },
+  ],
+  solutions: [
+    {
+      name: "Modulo check",
+      explanation: `Loop \`i\` from 1 to \`n\`. Test divisibility by 15 first — it's the "both" case, so checking 3 or 5 before it would short-circuit and never reach "FizzBuzz". Otherwise push \`"Fizz"\`, \`"Buzz"\`, or the number as a string.
+
+\`O(n)\` time.`,
+      code: {
+        javascript: `function fizzBuzz(n) {
+  const answer = [];
+  for (let i = 1; i <= n; i++) {
+    if (i % 15 === 0) answer.push("FizzBuzz");
+    else if (i % 3 === 0) answer.push("Fizz");
+    else if (i % 5 === 0) answer.push("Buzz");
+    else answer.push(String(i));
+  }
+  return answer;
+}`,
+        typescript: `function fizzBuzz(n: number): string[] {
+  const answer: string[] = [];
+  for (let i = 1; i <= n; i++) {
+    if (i % 15 === 0) answer.push("FizzBuzz");
+    else if (i % 3 === 0) answer.push("Fizz");
+    else if (i % 5 === 0) answer.push("Buzz");
+    else answer.push(String(i));
+  }
+  return answer;
+}`,
+      },
+    },
+  ],
 });

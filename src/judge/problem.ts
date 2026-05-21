@@ -3,6 +3,9 @@ export type SupportedLanguage = "javascript" | "typescript";
 
 export type Difficulty = "easy" | "medium" | "hard";
 
+/** Which test set a submission runs against: Run hits the exposed examples, Submit adds the hidden set. */
+export type RunMode = "run" | "submit";
+
 /** One test case, generic over the solution's argument tuple and its return type. */
 export type TestCase<Args extends unknown[], Result> = {
   name?: string;
@@ -10,9 +13,19 @@ export type TestCase<Args extends unknown[], Result> = {
   expected: Result;
 };
 
+/** One published approach in the Solutions tab: a named write-up plus per-language code. */
+export type ProblemSolution = {
+  name: string;
+  explanation: string;
+  code: Partial<Record<SupportedLanguage, string>>;
+};
+
 /**
  * A problem, generic over the solution signature `(...args: Args) => Result`.
  * The signature drives the test-case types: `args` and `expected` are checked against it.
+ *
+ * `hiddenTests` are server-only — they never cross into `ClientProblem`, so the inputs that
+ * probe robustness aren't shipped to the browser. Submit runs them; Run does not.
  */
 export type Problem<Args extends unknown[] = unknown[], Result = unknown> = {
   id: string;
@@ -23,7 +36,15 @@ export type Problem<Args extends unknown[] = unknown[], Result = unknown> = {
   functionName: string;
   starterCode: Record<SupportedLanguage, string>;
   tests: TestCase<Args, Result>[];
+  hiddenTests?: TestCase<Args, Result>[];
+  solutions?: ProblemSolution[];
 };
+
+/** The client-safe projection: everything except the hidden tests. This is what server pages hand to client components. */
+export type ClientProblem<Args extends unknown[] = unknown[], Result = unknown> = Omit<
+  Problem<Args, Result>,
+  "hiddenTests"
+>;
 
 /**
  * Author a problem with the solution signature pinned, so test-case `args`/`expected`
@@ -33,7 +54,10 @@ export const defineProblem = <Args extends unknown[], Result>(
   problem: Problem<Args, Result>,
 ): Problem<Args, Result> => problem;
 
-/** The wire shape the runner reports back per test case. */
+/**
+ * The wire shape the runner reports back per test case. For hidden cases the runner masks
+ * `expected`/`actual`/`logs` (they'd leak the probing inputs) — only pass/fail, error, and timing survive.
+ */
 export type TestResult = {
   name: string;
   passed: boolean;
@@ -42,6 +66,7 @@ export type TestResult = {
   logs: string[];
   error: string | null;
   ms: number;
+  hidden: boolean;
 };
 
 export type SubmissionOutcome =
