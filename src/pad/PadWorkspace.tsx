@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 import { SandpackPreview } from "@codesandbox/sandpack-react";
 import { Group, Panel, type PanelImperativeHandle } from "react-resizable-panels";
 import { ResizeBar } from "@/components/ResizeBar";
@@ -17,8 +17,19 @@ const fill = { height: "100%" } as const;
 const CONSOLE_DEFAULT_SIZE = "36%";
 const CONSOLE_COLLAPSED_SIZE = "6%";
 
+/** State a custom toolbar needs; the hooks that produce it live inside PadWorkspace. */
+export type PadToolbarState = { padId: string; isDirty: boolean; save: () => void };
+
+type PadWorkspaceProps = {
+  padId: string;
+  /** Optional first column, rendered before the file tree (e.g. a build problem's prompt). */
+  leadingPanel?: ReactNode;
+  /** Override the top bar; defaults to the standard pad toolbar. A render prop so it can read `isDirty`/`save`. */
+  renderToolbar?: (state: PadToolbarState) => ReactNode;
+};
+
 /** Three-pane layout: file tree, code editor, and live preview + console. */
-export const PadWorkspace = ({ padId }: { padId: string }) => {
+export const PadWorkspace = ({ padId, leadingPanel, renderToolbar }: PadWorkspaceProps) => {
   usePadPersistence(padId);
   const { isDirty, save, addFile, deleteFile } = usePadSave();
   const [autosave, setAutosave] = useState(false);
@@ -34,10 +45,22 @@ export const PadWorkspace = ({ padId }: { padId: string }) => {
     else panel.collapse();
   };
 
+  const toolbar = renderToolbar
+    ? renderToolbar({ padId, isDirty, save })
+    : <PadToolbar padId={padId} isDirty={isDirty} />;
+
   return (
     <div className="flex h-full flex-col bg-background">
-      <PadToolbar padId={padId} isDirty={isDirty} />
+      {toolbar}
       <Group orientation="horizontal" className="flex-1">
+        {leadingPanel ? (
+          <>
+            <Panel id="prompt" className="min-w-0" defaultSize="26%" minSize="0%" collapsible collapsedSize="0%">
+              {leadingPanel}
+            </Panel>
+            <ResizeBar axis="x" />
+          </>
+        ) : null}
         <Panel
           id="files"
           className="min-w-0"

@@ -1,18 +1,33 @@
 "use client";
 
-import { useMemo } from "react";
+import { type ReactNode, useMemo } from "react";
 import { SandpackProvider, type SandpackFiles } from "@codesandbox/sandpack-react";
 import { loadPad } from "@/pad/pad";
 import { typescriptFrontend } from "@/pad/padProfiles/typescriptFrontend";
-import { PadWorkspace } from "@/pad/PadWorkspace";
+import type { PadProfile } from "@/pad/padProfiles/typescriptFrontend";
+import { PadWorkspace, type PadToolbarState } from "@/pad/PadWorkspace";
 
-const profile = typescriptFrontend;
+type CoderPadProps = {
+  padId: string;
+  /** Which kind of pad to boot (template + seed + base files). Defaults to the TS-frontend profile. */
+  profile?: PadProfile;
+  /** File opened on first load; falls back to Sandpack's default when its path isn't in the seed. */
+  activeFile?: string;
+  leadingPanel?: ReactNode;
+  renderToolbar?: (state: PadToolbarState) => ReactNode;
+};
 
 /** Sandpack bundler scoped to one pad. Client-only (Sandpack needs the DOM). */
-export const CoderPad = ({ padId }: { padId: string }) => {
+export const CoderPad = ({
+  padId,
+  profile = typescriptFrontend,
+  activeFile = "/src/App.tsx",
+  leadingPanel,
+  renderToolbar,
+}: CoderPadProps) => {
   const files = useMemo<SandpackFiles>(
     () => ({ ...(loadPad(padId) ?? profile.seedFiles), ...profile.baseFiles }),
-    [padId],
+    [padId, profile],
   );
 
   return (
@@ -22,14 +37,14 @@ export const CoderPad = ({ padId }: { padId: string }) => {
       theme="dark"
       files={files}
       options={{
-        activeFile: "/src/App.tsx",
+        activeFile,
         autorun: false,
         autoReload: false,
       }}
       className="h-full!"
       style={{ height: "100%" }}
     >
-      <PadWorkspace padId={padId} />
+      <PadWorkspace padId={padId} leadingPanel={leadingPanel} renderToolbar={renderToolbar} />
     </SandpackProvider>
   );
 };

@@ -23,6 +23,10 @@ export const POST = async (request: NextRequest) => {
   if (!problem) {
     return Response.json({ error: `Unknown problem: ${problemId}.` }, { status: 404 });
   }
+  // The worker judges pure functions; build problems aren't run here.
+  if (problem.kind !== "algo") {
+    return Response.json({ error: `Problem is not runnable: ${problemId}.` }, { status: 400 });
+  }
 
   // Default to the exposed-only run; only an explicit "submit" pulls in the hidden set.
   const runMode: RunMode = mode === "submit" ? "submit" : "run";

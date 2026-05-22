@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LuCode, LuLink2, LuPlus, LuRotateCcw } from "react-icons/lu";
 import { toast } from "sonner";
-import { clearPad } from "@/pad/pad";
+import { resetPad } from "@/pad/pad";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,11 +28,6 @@ export const PadToolbar = ({
     } catch {
       toast.error("Couldn't copy the link");
     }
-  };
-
-  const resetPad = () => {
-    clearPad(padId);
-    window.location.reload();
   };
 
   return (
@@ -71,7 +66,7 @@ export const PadToolbar = ({
           title="Reset this pad?"
           description="This restores the starter template and permanently discards the code saved in this pad."
           confirmLabel="Reset pad"
-          onConfirm={resetPad}
+          onConfirm={() => resetPad(padId)}
         />
 
         <Button variant="outline" size="sm" onClick={() => router.push("/pad")}>

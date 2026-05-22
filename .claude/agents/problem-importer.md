@@ -1,6 +1,6 @@
 ---
 name: problem-importer
-description: Converts a single catalog row from src/judge/problems/leetcodeProblemSet.json into a fully authored, verified problem module under src/judge/problems/ (prompt, examples, constraints, hidden tests, reference solution, tags, source). Self-verifies every case against the real worker before finishing and reports a confidence score. Use when importing one problem from the catalog.
+description: Converts a single problem — a catalog row from src/judge/problems/leetcodeProblemSet.json, a problem name/slug, or an off-catalog stub — into a fully authored, verified problem module under src/judge/problems/ (prompt, examples, constraints, hidden tests, reference solution, tags, source). Self-verifies every case against the real worker before finishing and reports a confidence score. Use when importing one problem.
 tools: Read, Write, Edit, Bash, Grep, Glob
 ---
 
@@ -18,13 +18,25 @@ data model and the conversion rubric. This file is the operating procedure.
 
 ## Your input
 
-A single catalog row, e.g. `{ "title": "Reverse Integer", "titleSlug": "reverse-integer",
-"difficulty": "MEDIUM", "topicTags": [{ "slug": "math" }], "questionFrontendId": "7",
-"acRate": 0.318… }`. If given only an id/slug, read the row from the catalog yourself.
+One problem, in any of three forms — all resolve to the same **stub** (`ProblemStub` in
+[problem.ts](../../src/judge/problem.ts)): the seed metadata you copy, with everything else authored.
 
-From the row you copy: `title`, `id` (= `titleSlug`), `difficulty` (lowercased), `tags` (the
-`topicTags` slugs), and `source` (`origin: "leetcode"`, `frontendId`, `acRate`). **Everything else
-you author.**
+1. **A catalog row** (a `ProblemSetQuestionNode`), e.g. `{ "title": "Reverse Integer", "titleSlug":
+   "reverse-integer", "difficulty": "MEDIUM", "topicTags": [{ "slug": "math" }],
+   "questionFrontendId": "7", "acRate": 0.318… }`.
+2. **A name or slug**, e.g. `"Merge Intervals"`. Resolve it yourself:
+   `node scripts/resolveProblem.mjs "Merge Intervals"`. It prints one of:
+   - `catalog-hit` → use the emitted `stub` directly;
+   - `partial` / `ambiguous` → pick the intended title and re-run with its exact slug;
+   - `off-catalog` → the problem isn't in the 100-row catalog (see form 3).
+3. **An off-catalog stub** (`off-catalog` from the resolver, or handed to you directly). The catalog
+   has no row, so `difficulty`, `tags`, and the canonical `id`/slug must be **sourced from the web**
+   (you confirm them) — and `source` is `{ origin: "authored" }` with **no** `frontendId`/`acRate`.
+
+From the resolved stub you copy: `title`, `id` (= slug), `difficulty` (lowercased), `tags`, and
+`source`. **Everything else you author.** Off-catalog tags may not yet exist in the `TopicTag` union
+in [problem.ts](../../src/judge/problem.ts) — add any missing slug to the union (it's hand-maintained
+and meant to grow); `tsc` will flag an invalid tag otherwise.
 
 ## Eligibility — stop early if the harness can't express it
 
@@ -59,7 +71,8 @@ hydrates only `"value"` and `"linked-list"` I/O. Before authoring, classify the 
 7. **`hiddenTests`** — meet the policy below.
 8. **`solutions`** (≥1) — name, explanation (with complexity), per-language `code`. The first
    solution's JS is the **oracle** the verifier runs, so it must be genuinely correct.
-9. **`source`** — `{ origin: "leetcode", frontendId, acRate, confidence }`.
+9. **`source`** — catalog: `{ origin: "leetcode", frontendId, acRate, confidence }`. Off-catalog:
+   `{ origin: "authored", confidence }` (no `frontendId`/`acRate`).
 10. **Register** in [index.ts](../../src/judge/problems/index.ts): import + one line in the
     `problems` map.
 

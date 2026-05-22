@@ -173,7 +173,9 @@ For each problem promoted from the catalog:
    building a difficulty/topic spread over going in id order.
 2. **Seed metadata from the catalog** — `id` = `titleSlug`, `title`, `difficulty` (lowercased),
    `tags` (from `topicTags` slugs), `source` (`frontendId`, `acRate`). These are the only fields
-   copied from the catalog.
+   copied from the catalog. (Off-catalog problems resolve the same seed via
+   [`resolveProblem.mjs`](../../scripts/resolveProblem.mjs) → an `origin: "authored"` stub whose
+   `difficulty`/`tags` come from the web — see [company-sourcing.md](company-sourcing.md#phase-1--name--metadata-resolution--done).)
 3. **Author the prompt** in our own words. Do **not** paste LeetCode's description — restate it.
    Markdown, backtick inline code (what [ProblemPanel](../../src/judge/ProblemPanel.tsx) renders).
 4. **Author `examples`** (2–4): each an `{ args, expected, explanation }`, type-checked against the

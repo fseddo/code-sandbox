@@ -105,6 +105,25 @@ The file content snippets in `padDefaults/` are each a single `export const fooT
 
 Merge in [CoderPad.tsx](../../src/pad/CoderPad.tsx): `{ ...(loadPad(padId) ?? profile.seedFiles), ...profile.baseFiles }`.
 
+## Reusable seams: `leadingPanel` + `renderToolbar`
+
+[`CoderPad`](../../src/pad/CoderPad.tsx) and [`PadWorkspace`](../../src/pad/PadWorkspace.tsx) are
+reused beyond the `/pad/[id]` route — the judge's build problems mount the same bundler shell (see
+[company-sourcing.md → Phase 2](company-sourcing.md#phase-2--build-problems-reuse-the-pad--done)).
+Two optional, **feature-agnostic** seams make that possible without forking the layout or leaking
+judge concepts into the pad layer:
+
+- **`CoderPad` takes an optional `profile`** (the existing `PadProfile`) and `activeFile`, defaulting
+  to `typescriptFrontend` / `/src/App.tsx`. A build problem composes a profile from its `template` +
+  `files`; the `/pad` route passes neither, so its behaviour is unchanged.
+- **`PadWorkspace` takes `leadingPanel?: ReactNode`** (an optional first column, rendered collapsible
+  before the file tree) **and `renderToolbar?: (state: PadToolbarState) => ReactNode`** — a render
+  prop so a custom top bar can read `isDirty`/`save`, which are produced by the hooks *inside*
+  `PadWorkspace`. The default reproduces `<PadToolbar>` exactly.
+
+`resetPad(id)` in [pad.ts](../../src/pad/pad.ts) (clear + reload → rehydrate from seed) is shared by
+`PadToolbar` and the judge's build toolbar.
+
 ## Files panel
 
 [PadFilesPanel.tsx](../../src/pad/PadFilesPanel.tsx) is a slim header (Files label + root-level `+ file`) over [PadFileTree.tsx](../../src/pad/PadFileTree.tsx). It does **not** call `sandpack.addFile` / `sandpack.deleteFile` directly — it receives `addFile` and `deleteFile` from [`usePadSave`](../../src/pad/usePadSave.ts) (via `PadWorkspace`) so the snapshot stays in sync as a side effect of the action, not after-the-fact via a files watcher.

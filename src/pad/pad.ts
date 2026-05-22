@@ -48,6 +48,12 @@ export const clearPad = (id: string): void => {
   }
 };
 
+/** Discards a pad's saved files and reloads, so it rehydrates from its starter seed. */
+export const resetPad = (id: string): void => {
+  clearPad(id);
+  window.location.reload();
+};
+
 export type PadSummary = {
   id: string;
   updatedAt: number;

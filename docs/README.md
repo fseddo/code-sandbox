@@ -14,7 +14,7 @@ docs/
                   # — punch lists, not explanations
 ```
 
-Currently the only populated section is `features/` — see [features/pad.md](features/pad.md). `architecture/` and `improvements/` fill in as patterns and follow-ups emerge; resist writing aspirational docs for code that doesn't exist yet.
+`features/` is the most-populated section (see [features/pad.md](features/pad.md)); `improvements/` has its first punch-list ([improvements/judge-harness-gaps.md](improvements/judge-harness-gaps.md)). `architecture/` fills in as cross-cutting patterns emerge; resist writing aspirational docs for code that doesn't exist yet.
 
 ## Reading order, by task
 

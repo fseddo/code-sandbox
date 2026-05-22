@@ -13,7 +13,13 @@ const loadProblem = (file) => {
   const src = fs.readFileSync(path.join(problemsDir, file), "utf8");
   const { code } = transform(src, { transforms: ["typescript", "imports"], disableESTransforms: true });
   const mod = { exports: {} };
-  const fakeRequire = (id) => (id.includes("problem") ? { defineProblem: (p) => p } : {});
+  const fakeRequire = (id) =>
+    id.includes("problem")
+      ? {
+          defineProblem: (p) => ({ kind: "algo", ...p }),
+          defineBuildProblem: (p) => ({ kind: "build", ...p }),
+        }
+      : {};
   new Function("module", "exports", "require", code)(mod, mod.exports, fakeRequire);
   return Object.values(mod.exports)[0];
 };
@@ -37,6 +43,7 @@ const files = fs.readdirSync(problemsDir).filter((f) => f.endsWith(".ts") && f !
 let allGood = true;
 for (const file of files) {
   const problem = loadProblem(file);
+  if (problem.kind === "build") { console.log(`SKIP ${problem.id}: build problem (human-evaluated, no automated tests)`); continue; }
   const solution = problem.solutions?.[0]?.code?.javascript;
   if (!solution) { console.log(`SKIP ${file}: no JS reference solution`); continue; }
   const outcome = await runOnWorker(problem, solution);

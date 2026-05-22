@@ -1,4 +1,4 @@
-import type { ClientProblem, Problem } from "../problem";
+import type { AnyProblem, ClientProblem, Problem } from "../problem";
 import { twoSum } from "./twoSum";
 import { addTwoNumbers } from "./addTwoNumbers";
 import { lengthOfLongestSubstring } from "./lengthOfLongestSubstring";
@@ -11,11 +11,16 @@ import { palindromeNumber } from "./palindromeNumber";
 import { isMatch } from "./isMatch";
 import { fizzBuzz } from "./fizzBuzz";
 import { isPalindrome } from "./isPalindrome";
+import { mergeIntervals } from "./mergeIntervals";
+import { groupAnagrams } from "./groupAnagrams";
+import { makeStringSubsequenceCyclic } from "./makeStringSubsequenceCyclic";
+import { buildStarRating } from "./buildStarRating";
+import { buildDebouncedAutocomplete } from "./buildDebouncedAutocomplete";
 
 /**
  * The problem bank, keyed by id. Authored modules keep their precise generics for
- * test-case safety; the registry erases them to the base `Problem` so it can hold
- * heterogeneous signatures. `satisfies` keeps the key/value relationship checked.
+ * test-case safety; the registry erases them to `AnyProblem` so it can hold
+ * heterogeneous signatures and both kinds. `satisfies` keeps the key/value relationship checked.
  */
 export const problems = {
   [twoSum.id]: twoSum,
@@ -30,15 +35,20 @@ export const problems = {
   [isMatch.id]: isMatch,
   [fizzBuzz.id]: fizzBuzz,
   [isPalindrome.id]: isPalindrome,
-} satisfies Record<string, Problem>;
+  [mergeIntervals.id]: mergeIntervals,
+  [groupAnagrams.id]: groupAnagrams,
+  [makeStringSubsequenceCyclic.id]: makeStringSubsequenceCyclic,
+  [buildStarRating.id]: buildStarRating,
+  [buildDebouncedAutocomplete.id]: buildDebouncedAutocomplete,
+} satisfies Record<string, AnyProblem>;
 
 export type ProblemId = keyof typeof problems;
 
-/** Full problem incl. hidden tests — server-only (the registry, the judge route). Never hand this to a client component. */
-export const getProblem = (id: string): Problem | undefined =>
-  (problems as Record<string, Problem>)[id];
+/** Full problem incl. server-only fields — narrow on `kind` at the call site. Never hand this to a client component. */
+export const getProblem = (id: string): AnyProblem | undefined =>
+  (problems as Record<string, AnyProblem>)[id];
 
-export const listProblems = (): Problem[] => Object.values(problems);
+export const listProblems = (): AnyProblem[] => Object.values(problems);
 
 /** Drop `keys` from `value`, keeping the result type *derived* (`Omit<T, K>`) rather than cast. */
 const omit = <T extends object, K extends keyof T>(value: T, keys: readonly K[]): Omit<T, K> => {
