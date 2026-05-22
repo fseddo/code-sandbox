@@ -1,6 +1,5 @@
 import { useState } from "react";
 import type { ClientProblem, SupportedLanguage } from "./problem";
-import { DifficultyBadge } from "./DifficultyBadge";
 import { Prose } from "./Prose";
 import { SolutionsTab } from "./SolutionsTab";
 import { stringify } from "./format";
@@ -67,21 +66,7 @@ export const ProblemPanel = ({
 
   return (
     <div className="flex h-full flex-col bg-card">
-      <header className="flex shrink-0 flex-col gap-3 border-b border-sidebar-border px-5 pt-5">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-lg font-semibold tracking-tight">{problem.title}</h1>
-          <div className="flex flex-wrap items-center gap-2">
-            <DifficultyBadge difficulty={problem.difficulty} />
-            {problem.tags.map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        </div>
+      <header className="flex shrink-0 border-b border-sidebar-border px-5 pt-3">
         <div role="tablist" className="flex items-stretch">
           {TABS.map((id) => {
             const active = tab === id;

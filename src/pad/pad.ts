@@ -6,6 +6,8 @@ const keyFor = (id: string) => `${PREFIX}${id}`;
 type StoredPad = {
   files: SandpackFiles;
   updatedAt: number;
+  /** A user-given display name. Absent until the pad is renamed; the UI falls back to the id. */
+  title?: string;
 };
 
 /** Generates a short, URL-safe pad id. Runs on both server and client. */
@@ -14,28 +16,59 @@ export const newPadId = (): string => {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 };
 
-/** Reads a pad's saved files from this browser, or null if none exist. */
-export const loadPad = (id: string): SandpackFiles | null => {
+/** Parses the full stored record for a pad, or null when nothing is saved / it's unreadable. */
+const readPad = (id: string): StoredPad | null => {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(keyFor(id));
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as StoredPad;
-    return parsed.files ?? null;
+    return raw ? (JSON.parse(raw) as StoredPad) : null;
   } catch {
     return null;
   }
 };
 
-/** Persists a pad's files to this browser. */
-export const savePad = (id: string, files: SandpackFiles): void => {
-  if (typeof window === "undefined") return;
+const writePad = (id: string, pad: StoredPad): void => {
   try {
-    const payload: StoredPad = { files, updatedAt: Date.now() };
-    window.localStorage.setItem(keyFor(id), JSON.stringify(payload));
+    window.localStorage.setItem(keyFor(id), JSON.stringify(pad));
   } catch {
     // localStorage may be full or unavailable — ignore for now.
   }
+};
+
+/** Reads a pad's saved files, or null if there are none (an empty file set seeds from the starter). */
+export const loadPad = (id: string): SandpackFiles | null => {
+  const pad = readPad(id);
+  if (!pad?.files || Object.keys(pad.files).length === 0) return null;
+  return pad.files;
+};
+
+/** The pad's display name, or null if it's never been renamed. */
+export const loadPadTitle = (id: string): string | null => readPad(id)?.title ?? null;
+
+/**
+ * Persists a pad's files. A `title` is written when given (build problems pass their fixed problem
+ * title on every save); omitting it preserves whatever's stored (a scratchpad's user-set name).
+ */
+export const savePad = (id: string, files: SandpackFiles, title?: string): void => {
+  if (typeof window === "undefined") return;
+  writePad(id, {
+    ...readPad(id),
+    files,
+    updatedAt: Date.now(),
+    ...(title !== undefined ? { title } : {}),
+  });
+};
+
+/** Sets (or clears, when blank) a pad's display name without touching its files. */
+export const renamePad = (id: string, title: string): void => {
+  if (typeof window === "undefined") return;
+  const current = readPad(id);
+  const trimmed = title.trim();
+  writePad(id, {
+    files: current?.files ?? {},
+    updatedAt: current?.updatedAt ?? Date.now(),
+    title: trimmed || undefined,
+  });
 };
 
 /** Removes a pad from this browser. */
@@ -57,6 +90,7 @@ export const resetPad = (id: string): void => {
 export type PadSummary = {
   id: string;
   updatedAt: number;
+  title?: string;
 };
 
 /** Lists every pad saved in this browser, most recently edited first. */
@@ -73,6 +107,7 @@ export const listPads = (): PadSummary[] => {
       pads.push({
         id: key.slice(PREFIX.length),
         updatedAt: parsed.updatedAt ?? 0,
+        title: parsed.title,
       });
     }
   } catch {

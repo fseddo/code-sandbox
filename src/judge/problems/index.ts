@@ -49,6 +49,9 @@ export type ProblemId = keyof typeof problems;
 export const getProblem = (id: string): AnyProblem | undefined =>
   (problems as Record<string, AnyProblem>)[id];
 
+/** The problem's stable 1-based catalog number (authored registry order) — shown as `#NN` in the UI. */
+export const problemNumber = (id: string): number => Object.keys(problems).indexOf(id) + 1;
+
 export const listProblems = (): AnyProblem[] => Object.values(problems);
 
 /**

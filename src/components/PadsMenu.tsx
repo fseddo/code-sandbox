@@ -49,7 +49,9 @@ export const PadsMenu = () => {
           ) : (
             pads.slice(0, MAX_RECENT).map((pad) => (
               <DropdownMenuItem key={pad.id} render={<Link href={`/pad/${pad.id}`} />}>
-                <span className="min-w-0 flex-1 truncate font-mono text-xs">{pad.id}</span>
+                <span className={cn("min-w-0 flex-1 truncate", !pad.title && "font-mono text-xs")}>
+                  {pad.title ?? pad.id}
+                </span>
                 <span className="shrink-0 text-xs text-muted-foreground">{relativeTime(pad.updatedAt)}</span>
               </DropdownMenuItem>
             ))

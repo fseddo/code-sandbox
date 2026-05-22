@@ -1,10 +1,13 @@
 "use client";
 
-import { LuSave } from "react-icons/lu";
-import { SandpackCodeEditor, useSandpack } from "@codesandbox/sandpack-react";
+import { useState } from "react";
+import { LuSave, LuSparkles } from "react-icons/lu";
+import { SandpackCodeEditor, useActiveCode, useSandpack } from "@codesandbox/sandpack-react";
+import { toast } from "sonner";
+import { formatCode, parserForPath } from "@/lib/prettier";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { EditorToolbar } from "@/components/EditorToolbar";
+import { SaveStatus } from "@/components/SaveStatus";
 
 const fill = { height: "100%" } as const;
 
@@ -12,82 +15,73 @@ const fill = { height: "100%" } as const;
 const pathSegments = (path: string): string[] =>
   path.split("/").filter(Boolean);
 
-const LANG_LABEL: Record<string, string> = {
-  tsx: "TSX",
-  ts: "TS",
-  jsx: "JSX",
-  js: "JS",
-  css: "CSS",
-  html: "HTML",
-  json: "JSON",
-  md: "MD",
-  svg: "SVG",
-};
-
-const langLabel = (path: string): string => {
-  const ext = path.split(".").pop()?.toLowerCase() ?? "";
-  return LANG_LABEL[ext] ?? (ext ? ext.toUpperCase() : "TXT");
-};
-
-/** Editor pane: Save + autosave toggle, breadcrumb, Sandpack editor (tabs off — file tree is the source of truth). */
+/** Editor pane: one toolbar (file breadcrumb + Save/Format/state) over the Sandpack editor (tabs off — the file tree is the source of truth). */
 export const PadEditor = ({
   save,
   autosave,
-  onAutosaveChange,
+  isDirty,
 }: {
   save: () => void;
   autosave: boolean;
-  onAutosaveChange: (next: boolean) => void;
+  isDirty: boolean;
 }) => {
   const { sandpack } = useSandpack();
+  const { code, updateCode } = useActiveCode();
   const segments = pathSegments(sandpack.activeFile);
+
+  const parser = parserForPath(sandpack.activeFile);
+  const [isFormatting, setIsFormatting] = useState(false);
+  const formatActiveFile = async () => {
+    if (!parser) return;
+    setIsFormatting(true);
+    try {
+      updateCode(await formatCode(code, parser));
+    } catch {
+      toast.error("Couldn't format — check for syntax errors.");
+    } finally {
+      setIsFormatting(false);
+    }
+  };
 
   return (
     <div className="flex h-full flex-col bg-background">
-      <div className="flex h-9 shrink-0 items-center gap-3 border-b px-3">
+      <EditorToolbar
+        leading={
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            {segments.map((seg, i) => {
+              const isLast = i === segments.length - 1;
+              return (
+                <span key={i} className="flex items-center gap-1.5">
+                  {i > 0 ? <span className="text-muted-foreground/60">/</span> : null}
+                  <span className={isLast ? "font-medium text-primary" : ""}>{seg}</span>
+                </span>
+              );
+            })}
+          </div>
+        }
+      >
+        <SaveStatus isDirty={isDirty} autosave={autosave} />
         <Button
-          variant="success"
+          variant="outline"
+          size="sm"
+          onClick={formatActiveFile}
+          disabled={!parser || isFormatting}
+          title={parser ? "Format this file with Prettier" : "No formatter for this file type"}
+        >
+          <LuSparkles className="size-3.5" />
+          {isFormatting ? "Formatting…" : "Format"}
+        </Button>
+        <Button
+          variant="success-outline"
           size="sm"
           onClick={save}
-          disabled={autosave}
+          disabled={autosave || !isDirty}
           title="Save (⌘S)"
         >
-          <LuSave className="size-4" />
+          <LuSave className="size-3.5" />
           Save
         </Button>
-        <div className="ml-auto flex items-center gap-2">
-          <Label htmlFor="autosave-switch" className="text-xs font-normal">
-            Autosave
-          </Label>
-          <Switch
-            id="autosave-switch"
-            checked={autosave}
-            onCheckedChange={onAutosaveChange}
-          />
-        </div>
-      </div>
-      <div className="flex h-7 shrink-0 items-center justify-between border-b px-3 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1.5">
-          {segments.map((seg, i) => {
-            const isLast = i === segments.length - 1;
-            return (
-              <span key={i} className="flex items-center gap-1.5">
-                {i > 0 ? <span className="text-muted-foreground/60">/</span> : null}
-                <span className={isLast ? "font-medium text-primary" : ""}>
-                  {seg}
-                </span>
-              </span>
-            );
-          })}
-        </div>
-        <div className="flex items-center gap-2 text-muted-foreground/80">
-          <span>UTF-8</span>
-          <span className="text-muted-foreground/40">·</span>
-          <span>LF</span>
-          <span className="text-muted-foreground/40">·</span>
-          <span>{langLabel(sandpack.activeFile)}</span>
-        </div>
-      </div>
+      </EditorToolbar>
       <div className="min-h-0 flex-1">
         <SandpackCodeEditor
           showTabs={false}

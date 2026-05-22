@@ -19,6 +19,8 @@ const buttonVariants = cva(
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         success:
           "bg-success text-success-foreground hover:bg-success/85 focus-visible:ring-success/40",
+        "success-outline":
+          "border-success/40 text-success bg-transparent hover:bg-success/10 hover:border-success/60 focus-visible:ring-success/40",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {

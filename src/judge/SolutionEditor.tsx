@@ -1,11 +1,11 @@
 "use client";
 
-import { LuPlay, LuRotateCcw, LuSave, LuSend } from "react-icons/lu";
-import type { RunMode, SupportedLanguage } from "./problem";
-import type { JudgeSettingKey, JudgeSettings } from "./settings";
-import { SolutionSettingsMenu } from "./SolutionSettingsMenu";
+import { LuHistory, LuSave, LuSparkles } from "react-icons/lu";
+import type { SupportedLanguage } from "./problem";
 import { CodeEditor } from "@/components/CodeEditor";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { EditorToolbar } from "@/components/EditorToolbar";
+import { SaveStatus } from "@/components/SaveStatus";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -14,14 +14,14 @@ type SolutionEditorProps = {
   onLanguageChange: (language: SupportedLanguage) => void;
   source: string;
   onSourceChange: (source: string) => void;
-  onReset: () => void;
+  onRestoreSubmission: () => void;
+  canRestore: boolean;
+  onFormat: () => void;
+  isFormatting: boolean;
   onSave: () => void;
   isDirty: boolean;
-  settings: JudgeSettings;
-  onSettingChange: (key: JudgeSettingKey, value: boolean) => void;
-  onRun: () => void;
-  onSubmit: () => void;
-  runningMode: RunMode | null;
+  autosave: boolean;
+  isAutocompleteEnabled: boolean;
 };
 
 const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
@@ -34,18 +34,18 @@ export const SolutionEditor = ({
   onLanguageChange,
   source,
   onSourceChange,
-  onReset,
+  onRestoreSubmission,
+  canRestore,
+  onFormat,
+  isFormatting,
   onSave,
   isDirty,
-  settings,
-  onSettingChange,
-  onRun,
-  onSubmit,
-  runningMode,
+  autosave,
+  isAutocompleteEnabled,
 }: SolutionEditorProps) => (
   <div className="flex h-full flex-col bg-card">
-    <div className="flex items-center justify-between gap-2 border-b border-sidebar-border px-3 py-2">
-      <div className="flex items-center gap-2">
+    <EditorToolbar
+      leading={
         <div className="flex items-center gap-1 rounded-md bg-background p-0.5">
           {(Object.keys(LANGUAGE_LABELS) as SupportedLanguage[]).map((lang) => (
             <button
@@ -64,51 +64,36 @@ export const SolutionEditor = ({
             </button>
           ))}
         </div>
-        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span className={cn("size-1.5 rounded-full", isDirty ? "bg-warn" : "bg-ok")} />
-          {isDirty ? "Unsaved" : "Saved"}
-        </span>
-      </div>
-      <div className="flex items-center gap-2">
-        <SolutionSettingsMenu settings={settings} onSettingChange={onSettingChange} />
-        <ConfirmDialog
-          trigger={
-            <Button size="sm" variant="ghost">
-              <LuRotateCcw className="size-3.5" />
-              Reset
-            </Button>
-          }
-          title="Reset to starter code?"
-          description={`This discards your saved ${LANGUAGE_LABELS[language]} solution for this problem and restores the starter code. This can't be undone.`}
-          confirmLabel="Reset"
-          onConfirm={onReset}
-        />
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={onSave}
-          disabled={settings.autosave}
-          title="Save (⌘S)"
-        >
-          <LuSave className="size-3.5" />
-          Save
-        </Button>
-        <Button size="sm" variant="outline" onClick={onRun} disabled={runningMode !== null} title="Run the example tests">
-          <LuPlay className="size-3.5" />
-          {runningMode === "run" ? "Running…" : "Run"}
-        </Button>
-        <Button size="sm" variant="success" onClick={onSubmit} disabled={runningMode !== null} title="Run all tests, including hidden ones">
-          <LuSend className="size-3.5" />
-          {runningMode === "submit" ? "Submitting…" : "Submit"}
-        </Button>
-      </div>
-    </div>
+      }
+    >
+      <SaveStatus isDirty={isDirty} autosave={autosave} />
+      <ConfirmDialog
+        trigger={
+          <Button size="sm" variant="outline" disabled={!canRestore} title="Load your last accepted submission">
+            <LuHistory className="size-3.5" />
+            Last submission
+          </Button>
+        }
+        title="Load your last submission?"
+        description="This replaces the current editor contents with the solution that last passed Submit. Unsaved edits in this buffer are discarded."
+        confirmLabel="Load submission"
+        onConfirm={onRestoreSubmission}
+      />
+      <Button size="sm" variant="outline" onClick={onFormat} disabled={isFormatting} title="Format with Prettier">
+        <LuSparkles className="size-3.5" />
+        {isFormatting ? "Formatting…" : "Format"}
+      </Button>
+      <Button size="sm" variant="success-outline" onClick={onSave} disabled={autosave || !isDirty} title="Save (⌘S)">
+        <LuSave className="size-3.5" />
+        Save
+      </Button>
+    </EditorToolbar>
     <div className="min-h-0 flex-1">
       <CodeEditor
         value={source}
         onChange={onSourceChange}
         language={language}
-        isAutocompleteEnabled={settings.autocomplete}
+        isAutocompleteEnabled={isAutocompleteEnabled}
       />
     </div>
   </div>

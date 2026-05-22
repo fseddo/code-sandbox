@@ -64,13 +64,15 @@ Mirrors local Vite: saving a new file is what makes Vite see it. Sandpack's `add
 
 ## Persistence
 
-[`pad.ts`](../../src/pad/pad.ts) is the localStorage layer — pads are keyed `noodle:pad:<id>` and stored as `{ files, updatedAt }`. Pure functions, no React; safe to call from the client only (no-ops when `window` is undefined).
+[`pad.ts`](../../src/pad/pad.ts) is the localStorage layer — pads are keyed `noodle:pad:<id>` and stored as `{ files, updatedAt, title? }`. Pure functions, no React; safe to call from the client only (no-ops when `window` is undefined). Reads/writes go through internal `readPad` / `writePad` so a write **merges** rather than clobbers (the title survives a file save, and a file save survives a rename).
 
 - [`newPadId()`](../../src/pad/pad.ts) — 12-char hex via `crypto.getRandomValues`. Used by [src/app/pad/page.tsx](../../src/app/pad/page.tsx) (`export const dynamic = "force-dynamic"` so a fresh id mints on every visit, never cached).
-- [`loadPad(id)`](../../src/pad/pad.ts) — read on mount in [CoderPad.tsx](../../src/pad/CoderPad.tsx), merged under the active profile's `baseFiles` so the Vite config override always wins.
-- [`savePad(id, files)`](../../src/pad/pad.ts) — debounced (600ms) by [usePadPersistence.ts](../../src/pad/usePadPersistence.ts), fire-and-forget. The hook returns `void`; the persistence layer has no UI surface. Distinct from the manual save model above: this is "the pad survives a reload"; that is "the preview reflects my edits."
+- [`loadPad(id)`](../../src/pad/pad.ts) — read on mount in [CoderPad.tsx](../../src/pad/CoderPad.tsx), merged under the active profile's `baseFiles` so the Vite config override always wins. Returns `null` for an **empty** file set too (not just a missing pad), so a rename-before-first-save doesn't strand the workspace with no files — it falls back to the seed.
+- [`savePad(id, files, title?)`](../../src/pad/pad.ts) — debounced (600ms) by [usePadPersistence.ts](../../src/pad/usePadPersistence.ts), fire-and-forget. Merges over the stored record; a `title` is written when given (build problems pass theirs) and otherwise preserved (a scratchpad's user-set name). Distinct from the manual save model above: this is "the pad survives a reload"; that is "the preview reflects my edits."
+- **Titles** — `loadPadTitle(id)` / `renamePad(id, title)`. The pad id (12-char hex) is the stable key; the title is an optional user-given display name. `renamePad` writes the trimmed title (blank clears it back to `undefined`) without touching files. Surfaced by the breadcrumb's [`EditablePadTitle`](../../src/pad/EditablePadTitle.tsx) (click to rename; Enter/blur commits, Escape cancels) and shown — with the id as fallback — in [RecentPads](../../src/components/RecentPads.tsx) and the header's [`PadsMenu`](../../src/components/PadsMenu.tsx).
+  - **Build problems** share pad storage (`padId` = problem id), so they appear in those lists too. [`BuildWorkspace`](../../src/judge/BuildWorkspace.tsx) passes `title={problem.title}` down through `CoderPad` → `PadWorkspace` → `usePadPersistence`, so the title rides the normal save (no mount effect) and the pad lists **by name, not slug**. That title is fixed: editability is **structural**, not a stored flag — build problems render the plain `BuildToolbar`, only scratchpads render `PadToolbar` → `EditablePadTitle`, and the [`/pad/[id]`](../../src/app/pad/[id]/page.tsx) route **redirects any problem id to `/problems/[id]`**, so a build pad can never reach the editable scratchpad UI. See [navigation.md](navigation.md).
 - [`clearPad(id)`](../../src/pad/pad.ts) — called by the Reset action in [PadToolbar.tsx](../../src/pad/PadToolbar.tsx); a hard reload rehydrates from the template.
-- [`listPads()`](../../src/pad/pad.ts) — drives the home-page [RecentPads](../../src/components/RecentPads.tsx) list. Subscribed via `useSyncExternalStore` against the `storage` event, so a pad created in another tab shows up on the home page without a refresh. Same-tab writes don't fire `storage`; the list there is good-enough-on-navigation.
+- [`listPads()`](../../src/pad/pad.ts) — drives the home-page [RecentPads](../../src/components/RecentPads.tsx) list and the header `PadsMenu` dropdown (carries `title`). Subscribed via `useSyncExternalStore` against the `storage` event ([`useRecentPads`](../../src/pad/useRecentPads.ts)), so a pad created in another tab shows up without a refresh. Same-tab writes don't fire `storage`; the list is good-enough-on-navigation.
 
 The two save concepts run in parallel:
 
@@ -121,6 +123,13 @@ judge concepts into the pad layer:
   prop so a custom top bar can read `isDirty`/`save`, which are produced by the hooks *inside*
   `PadWorkspace`. The default reproduces `<PadToolbar>` exactly.
 
+`PadToolbar` and the judge's headers share one breadcrumb shell, [`DetailHeader`](../../src/components/DetailHeader.tsx)
+(brand → crumb / title + a controls slot). `PadToolbar` passes the `Pads` crumb and an
+editable title; [`ProblemDetailHeader`](../../src/judge/ProblemDetailHeader.tsx) passes the `Problems` crumb and a
+plain title. The editor panes likewise share [`EditorToolbar`](../../src/components/EditorToolbar.tsx) (a `leading`
+context slot + a trailing action cluster) and the [`SaveStatus`](../../src/components/SaveStatus.tsx) dot — see the
+[unified design language](judge.md#unified-design-language-algo--build) in [judge.md](judge.md).
+
 `resetPad(id)` in [pad.ts](../../src/pad/pad.ts) (clear + reload → rehydrate from seed) is shared by
 `PadToolbar` and the judge's build toolbar.
 
@@ -154,7 +163,9 @@ Both dialogs are **controlled by `PadFilesPanel`** — the tree only signals int
 
 ## Editor
 
-[PadEditor.tsx](../../src/pad/PadEditor.tsx) — `SandpackCodeEditor` with `showTabs={false}` (the file tree is the source of truth for what's open) plus a slim toolbar (Save button + autosave Switch) and a breadcrumb of the active file's path. `pathSegments` splits on `/` and drops the leading empty segment so `/components/Button.tsx` reads as `components › Button.tsx`. The Save button uses the `success` Button variant — green is the conventional "commit / save" affordance.
+[PadEditor.tsx](../../src/pad/PadEditor.tsx) — `SandpackCodeEditor` with `showTabs={false}` (the file tree is the source of truth for what's open) under the shared [`EditorToolbar`](../../src/components/EditorToolbar.tsx): the active file's path breadcrumb in the `leading` slot, then the shared [`SaveStatus`](../../src/components/SaveStatus.tsx) dot, **Format**, and **Save** on the right. `pathSegments` splits on `/` and drops the leading empty segment so `/components/Button.tsx` reads as `components › Button.tsx`. Save uses the `success-outline` variant — see the [unified design language](judge.md#unified-design-language-algo--build) shared with the judge.
+
+**Format** runs Prettier on the **active file**: `parserForPath(activeFile)` picks the parser by extension and `formatCode` formats `useActiveCode().code`, written back via `updateCode` (which marks the pad dirty like any edit). The button is disabled when the extension has no parser. Both `parserForPath` and `formatCode` live in the shared [`src/lib/prettier.ts`](../../src/lib/prettier.ts) — the **one** Prettier front-end, also used by the judge's [`useJudge`](../../src/judge/useJudge.ts) (by language). Prettier + its plugins are lazy-imported per call so nothing ships in the main bundle; a parse error surfaces as a `sonner` toast.
 
 ## Palette
 

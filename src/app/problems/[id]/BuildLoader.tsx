@@ -16,6 +16,12 @@ const BuildWorkspace = dynamic(
   },
 );
 
-export const BuildLoader = ({ problem }: { problem: BuildProblem }) => (
-  <BuildWorkspace problem={problem} />
+type BuildLoaderProps = {
+  problem: BuildProblem;
+  number: number;
+  companies: readonly string[];
+};
+
+export const BuildLoader = ({ problem, number, companies }: BuildLoaderProps) => (
+  <BuildWorkspace problem={problem} number={number} companies={companies} />
 );

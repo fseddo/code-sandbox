@@ -1,23 +1,18 @@
 import type { BuildProblem } from "./problem";
-import { DifficultyBadge } from "./DifficultyBadge";
 import { Prose } from "./Prose";
 
-/** Left column of a build problem: the prompt, tags, and the (human-judged) evaluation rubric. */
-export const BuildProblemPanel = ({ problem }: { problem: BuildProblem }) => (
+type BuildProblemPanelProps = {
+  problem: BuildProblem;
+};
+
+/** Left column of a build problem: the prompt and the (human-judged) evaluation rubric. Identity lives in the title bar. */
+export const BuildProblemPanel = ({ problem }: BuildProblemPanelProps) => (
   <div className="flex h-full flex-col bg-card">
-    <header className="flex shrink-0 flex-col gap-2 border-b border-sidebar-border px-5 py-5">
-      <h1 className="text-lg font-semibold tracking-tight">{problem.title}</h1>
-      <div className="flex flex-wrap items-center gap-2">
-        <DifficultyBadge difficulty={problem.difficulty} />
-        {problem.tags.map((tag) => (
-          <span
-            key={tag}
-            className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground"
-          >
-            {tag}
-          </span>
-        ))}
-      </div>
+    <header className="flex shrink-0 border-b border-sidebar-border px-5 pt-3">
+      <span className="relative px-3 pb-2 text-sm font-medium text-foreground">
+        Description
+        <span aria-hidden className="absolute right-0 bottom-0 left-0 h-0.5 bg-primary" />
+      </span>
     </header>
 
     <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-auto p-5">

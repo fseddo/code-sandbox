@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import type { BuildProblem } from "./problem";
 import { BuildProblemPanel } from "./BuildProblemPanel";
 import { BuildToolbar } from "./BuildToolbar";
+import { ProblemTitleBar } from "./ProblemTitleBar";
 import { CoderPad } from "@/pad/CoderPad";
 import { typescriptFrontend } from "@/pad/padProfiles/typescriptFrontend";
 import type { PadProfile } from "@/pad/padProfiles/typescriptFrontend";
@@ -14,7 +15,13 @@ import type { PadProfile } from "@/pad/padProfiles/typescriptFrontend";
  * TS-frontend base layout — the v1 simplification of the "which template" question in
  * [company-sourcing.md](../../docs/features/company-sourcing.md).
  */
-export const BuildWorkspace = ({ problem }: { problem: BuildProblem }) => {
+type BuildWorkspaceProps = {
+  problem: BuildProblem;
+  number: number;
+  companies: readonly string[];
+};
+
+export const BuildWorkspace = ({ problem, number, companies }: BuildWorkspaceProps) => {
   const profile = useMemo<PadProfile>(
     () => ({
       template: problem.template,
@@ -27,8 +34,19 @@ export const BuildWorkspace = ({ problem }: { problem: BuildProblem }) => {
   return (
     <CoderPad
       padId={problem.id}
+      title={problem.title}
       profile={profile}
       leadingPanel={<BuildProblemPanel problem={problem} />}
+      headerBar={
+        <ProblemTitleBar
+          number={number}
+          title={problem.title}
+          kind={problem.kind}
+          difficulty={problem.difficulty}
+          tags={problem.tags}
+          companies={companies}
+        />
+      }
       renderToolbar={(state) => <BuildToolbar {...state} title={problem.title} />}
     />
   );

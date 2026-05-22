@@ -5,14 +5,18 @@ The LeetCode side: pick a problem, write a solution in JS or TS, and run it serv
 ## Render tree
 
 ```
-/problems/[id]             src/app/problems/[id]/page.tsx — server, getProblem + notFound
+/problems/[id]             src/app/problems/[id]/page.tsx — server; getProblem + notFound, resolves number + companies
   └─ <JudgeWorkspace>      src/judge/JudgeWorkspace.tsx — "use client"
+      ├─ <ProblemDetailHeader>     src/judge/ProblemDetailHeader.tsx — brand→Problems breadcrumb (quiet title), controls slot
+      ├─ <ProblemTitleBar>         src/judge/ProblemTitleBar.tsx — full-width identity banner (#NN, title, badges, tags, companies)
       └─ <Group horizontal>
-          ├─ <ProblemPanel>            src/judge/ProblemPanel.tsx
+          ├─ <ProblemPanel>            src/judge/ProblemPanel.tsx → Description/Solutions tabs (no identity header)
           └─ <Group vertical>
               ├─ <SolutionEditor>      src/judge/SolutionEditor.tsx → <CodeEditor>
               └─ <ResultsPanel>        src/judge/ResultsPanel.tsx
 ```
+
+Both detail kinds share two header components: [`ProblemDetailHeader`](../../src/judge/ProblemDetailHeader.tsx) (the slim top breadcrumb bar — brand → Problems → a deliberately low-emphasis title — plus a right-side controls slot) and [`ProblemTitleBar`](../../src/judge/ProblemTitleBar.tsx) (the full-width identity banner between the top bar and the panels — `#NN`, prominent title, kind/difficulty badges, topic tags, right-aligned company bubbles). The prominent title lives in the banner; the breadcrumb's title is a quiet echo so they don't compete. The catalog `number` and `companies` are resolved server-side in the page and passed into each workspace; `number` comes from [`problemNumber(id)`](../../src/judge/problems/index.ts) (registry order), matching the catalog's `#` column.
 
 Same [react-resizable-panels v4](../../src/components/ResizeBar.tsx) layout primitives as the pad (percentage-string sizes). `ResizeBar` is shared in [`src/components/ResizeBar.tsx`](../../src/components/ResizeBar.tsx) — extracted when the judge became the second caller; [PadWorkspace](../../src/pad/PadWorkspace.tsx) consumes the same shared component.
 
@@ -85,7 +89,11 @@ The pad keeps `SandpackCodeEditor` (which is CodeMirror pre-wired into Sandpack'
 
 ## State
 
-[`useJudge(problem)`](../../src/judge/useJudge.ts) owns everything: `language`, **one source buffer per language** (`Record<SupportedLanguage, string>` seeded from `starterCode`, so switching language swaps buffers without losing work and without a `useEffect`), the editor `settings` (via [`useJudgeSettings`](../../src/judge/useJudgeSettings.ts)), the latest `outcome`, and `isRunning`. `run()` POSTs to `/api/judge` and stores the `SubmissionOutcome`. The visible `source` is derived (`sources[language]`) at render — no synced state. `resetSolution()` restores the current language's buffer to `starterCode[language]`.
+[`useJudge(problem)`](../../src/judge/useJudge.ts) owns everything: `language`, **one source buffer per language** (`Record<SupportedLanguage, string>` seeded from `starterCode`, so switching language swaps buffers without losing work and without a `useEffect`), the editor `settings` (via [`useJudgeSettings`](../../src/judge/useJudgeSettings.ts)), the latest `outcome`, and `runningMode`. `run()` POSTs to `/api/judge` and stores the `SubmissionOutcome`. The visible `source` is derived (`sources[language]`) at render — no synced state. `resetSolution()` restores the current language's buffer to `starterCode[language]`.
+
+Three editor actions live here too:
+- **`restoreSubmission()`** loads the last passing submission back into its language's buffer. `submittedSolution` is seeded from the progress store (`getEntry(id)?.solution`) and refreshed whenever a Submit passes — it doubles as the enable flag for the "Last submission" button. (Build problems store no solution, so this is algo-only.)
+- **`format()`** Prettier-formats the current buffer in place. Prettier (`prettier/standalone` + the babel/typescript/estree plugins) is **lazy-imported inside `format()`** so it stays out of the main bundle; a parse error surfaces as a `sonner` toast rather than throwing. `isFormatting` disables the button mid-run.
 
 ## Persistence — the save model
 
@@ -103,7 +111,7 @@ Saving is **manual**, mirroring the pad's [`usePadSave`](../../src/pad/usePadSav
 [`settings.ts`](../../src/judge/settings.ts) is a **single-source registry**: `JUDGE_SETTINGS` maps each toggle key to its `{ label, description, default }`. Everything else is derived from it — the `JudgeSettingKey` union (`keyof typeof JUDGE_SETTINGS`), the `JudgeSettings` value type (`Record<JudgeSettingKey, boolean>`), the defaults, and the menu rows. Adding a setting = one entry here; the state, persistence, and dropdown all pick it up with no other edits.
 
 - [`useJudgeSettings`](../../src/judge/useJudgeSettings.ts) holds the settings state (lazy-init from localStorage via `loadSettings`, merged over defaults so a newly-added key gets its default) and writes back on change. Persisted **globally** under `noodle:judge-settings`, not per-problem — these are editor preferences. Lazy-init is hydration-safe for the same reason the buffers are: no setting reaches the SSR DOM (the menu is portalled and closed by default; autocomplete only affects the client-mounted CodeMirror).
-- [`SolutionSettingsMenu`](../../src/judge/SolutionSettingsMenu.tsx) renders a gear-icon [dropdown](../../src/components/ui/dropdown-menu.tsx) (shadcn Base UI `Menu`) with one `CheckboxItem` per registry entry. Base UI checkbox items default `closeOnClick: false`, so toggling one doesn't dismiss the menu.
+- [`SolutionSettingsMenu`](../../src/judge/SolutionSettingsMenu.tsx) renders a gear-icon [dropdown](../../src/components/ui/dropdown-menu.tsx) (shadcn Base UI `Menu`) with one `CheckboxItem` per registry entry. Base UI checkbox items default `closeOnClick: false`, so toggling one doesn't dismiss the menu. It's mounted in the **detail header** (`JudgeWorkspace` passes it as `ProblemDetailHeader`'s controls slot), not the editor toolbar — `JudgeWorkspace` still owns `settings`/`setSetting` and threads `settings.autocomplete` to the editor as `isAutocompleteEnabled`.
 - **`autocomplete`** flows to the shared [`CodeEditor`](../../src/components/CodeEditor.tsx) via its `isAutocompleteEnabled` prop (default `true`), which sets CodeMirror's `basicSetup.autocompletion`. **`autosave`** drives `useJudgeAutosave` as above.
 
 ### Restore: a `useState` initializer, not a mount effect
@@ -113,6 +121,18 @@ Buffers seed from `{ ...starterCode, ...(loadSolution(id) ?? {}) }` in a `useSta
 ## UI notes
 
 - [`DifficultyBadge`](../../src/judge/DifficultyBadge.tsx) maps `easy`/`medium`/`hard` to the Midnight `--ok` / `--warn` / `--danger` tints (see [pad.md palette](pad.md#palette)).
-- [`ProblemPanel`](../../src/judge/ProblemPanel.tsx) renders the prompt with a minimal inline-code pass (splits on backticks → `<code>`) and splits paragraphs on blank lines. Full markdown (`react-markdown`) is a deliberate non-dependency for now.
-- [`SolutionEditor`](../../src/judge/SolutionEditor.tsx) toolbar: a JS/TS segmented toggle and a Saved/Unsaved dot on the left (`bg-ok` / `bg-warn`, mirroring [PadToolbar](../../src/pad/PadToolbar.tsx)); on the right a gear-icon settings menu ([`SolutionSettingsMenu`](../../src/judge/SolutionSettingsMenu.tsx), see [Editor settings](#editor-settings)), a `ghost` Reset button wrapped in a [`ConfirmDialog`](../../src/components/ConfirmDialog.tsx) (uncontrolled `trigger` mode, since it's tied to this one button) that restores the current language's starter code, an `outline` Save button (`disabled` while autosave is on), and the green `success` Run button. Run keeps the green "go" affordance; Save is `outline` so two greens don't compete.
+- [`ProblemPanel`](../../src/judge/ProblemPanel.tsx) renders the prompt with a minimal inline-code pass (splits on backticks → `<code>`) and splits paragraphs on blank lines. Full markdown (`react-markdown`) is a deliberate non-dependency for now. Its header is just the Description/Solutions tab pair (identity moved up to `ProblemTitleBar`); [`BuildProblemPanel`](../../src/judge/BuildProblemPanel.tsx) mirrors it with a static "Description" label styled like the algo active tab, so both left panes read the same.
+- [`SolutionEditor`](../../src/judge/SolutionEditor.tsx) renders the shared [`EditorToolbar`](../../src/components/EditorToolbar.tsx): a JS/TS segmented toggle in the `leading` (context) slot; on the right, the shared [`SaveStatus`](../../src/components/SaveStatus.tsx) dot, then **Last submission** (`disabled` until there's a passing submission — wrapped in a [`ConfirmDialog`](../../src/components/ConfirmDialog.tsx) since it overwrites the buffer), **Format** (Prettier), and **Save** (`disabled` while autosave is on or the buffer is clean). Run/Submit/Reset live in the top bar — see the design-language note below.
+- [`ProblemDetailHeader`](../../src/judge/ProblemDetailHeader.tsx) and [`ProblemTitleBar`](../../src/judge/ProblemTitleBar.tsx) are shared with the build workspace; [`JudgeWorkspace`](../../src/judge/JudgeWorkspace.tsx) fills `ProblemDetailHeader`'s controls slot with Run / Submit / Reset / settings gear, and [`BuildToolbar`](../../src/judge/BuildToolbar.tsx) fills it with Mark-as-done / Reset / settings gear (build's Save + autosave toggle stay in the editor pane, shared with the standalone scratchpad). The build side threads `ProblemTitleBar` through `CoderPad` → `PadWorkspace`'s `headerBar` seam so it lands in the same place as algo's (between the top bar and the panels).
+- **Inherited-CSS leak on the build side.** Build's top bar + title bar render *inside* `SandpackProvider`, which sets its own base `font-family` / `font-size` / `line-height` / `letter-spacing` on its subtree. Any text without those pinned inherits Sandpack's values on build but the app's on algo — visible as a differently-sized brand/slash, or a company chip whose label renders a couple px wider/narrower (different font ⇒ different glyph widths) so the bubble doesn't match its algo twin. [`DetailHeader`](../../src/components/DetailHeader.tsx) pins `font-sans text-sm leading-none` and [`ProblemTitleBar`](../../src/judge/ProblemTitleBar.tsx) pins `font-sans tracking-normal` so the two render identically. **Pin `font-sans` + the size/leading/tracking explicitly on anything shared into the Sandpack subtree.** The company chip ([`CompanyAvatar`](../../src/judge/CompanyAvatar.tsx) + label) is the same `bg-muted` bubble as a topic tag, with the avatar shrunk via its `className` override to match the chip height.
+
+### Unified design language (algo + build)
+
+Both problem types share one button-emphasis hierarchy so the same kind of action looks the same on either screen:
+
+- **Solid green (`success`)** — the single primary "commit your answer" action per screen, with the `LuSend` icon: algo **Submit**, build **Mark as done**.
+- **Outline (`outline` / `success-outline`)** — every other real action: Run, Format, Reset, Last submission, Restart server, and the scratchpad's Copy link / New pad. **Save** uses the green-tinted `success-outline` so it reads as save-family without competing with the solid primary.
+- **Ghost (`ghost`)** — reserved for icon-only menu/affordance triggers only: the settings gear and the console collapse chevron.
+
+The editor pane (algo and build) is one [`EditorToolbar`](../../src/components/EditorToolbar.tsx) row: a `leading` context slot (the JS/TS toggle for algo, the file-path breadcrumb for build) and a trailing action cluster (`SaveStatus` → editor-specific actions → Format → Save). Icons are `size-3.5` and dividers use `border-sidebar-border` throughout.
 - [`ResultsPanel`](../../src/judge/ResultsPanel.tsx) switches on the `SubmissionOutcome` union: a pass/fail count + per-case rows (expected/got/error/logs/ms) for `ok`, or a tinted banner for `compile-error` / `timeout` / `crashed`.

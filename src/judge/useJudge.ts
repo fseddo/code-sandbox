@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import type { ClientProblem, RunMode, SubmissionOutcome, SupportedLanguage } from "./problem";
 import { loadSolution, saveSolution } from "./solution";
-import { markComplete, markInProgress } from "./progress";
+import { type CompletedSolution, getEntry, markComplete, markInProgress } from "./progress";
 import { useJudgeSettings } from "./useJudgeSettings";
+import { formatCode } from "@/lib/prettier";
 import { useSaveShortcut } from "@/components/useSaveShortcut";
 
 type Sources = Record<SupportedLanguage, string>;
@@ -28,6 +30,12 @@ export const useJudge = (problem: ClientProblem) => {
   const [language, setLanguage] = useState<SupportedLanguage>("typescript");
   const [sources, setSources] = useState<Sources>(seed);
   const [savedSnapshot, setSavedSnapshot] = useState<Sources>(seed);
+  // The buffer that last passed Submit (seeded from the progress store, refreshed on each pass) — drives
+  // the "Last submission" restore button. Same lazy-localStorage-read rationale as `seed`.
+  const [submittedSolution, setSubmittedSolution] = useState<CompletedSolution | null>(
+    () => getEntry(problem.id)?.solution ?? null,
+  );
+  const [isFormatting, setIsFormatting] = useState(false);
   const [outcome, setOutcome] = useState<SubmissionOutcome | null>(null);
   // Which mode is in flight (null = idle). Lets the toolbar label Run vs Submit independently while sharing one request path.
   const [runningMode, setRunningMode] = useState<RunMode | null>(null);
@@ -41,8 +49,32 @@ export const useJudge = (problem: ClientProblem) => {
 
   const setSource = (next: string) => setSources((prev) => ({ ...prev, [language]: next }));
 
-  const resetSolution = () =>
+  // Reset is problem-level: it restores the starter buffer AND clears the last run's results (which
+  // live outside the editor), so the panel doesn't show stale output for code that no longer exists.
+  const resetSolution = () => {
     setSources((prev) => ({ ...prev, [language]: problem.starterCode[language] }));
+    setOutcome(null);
+  };
+
+  /** Load the last passing submission back into its language's buffer (no-op if there isn't one). */
+  const restoreSubmission = () => {
+    if (!submittedSolution) return;
+    setLanguage(submittedSolution.language);
+    setSources((prev) => ({ ...prev, [submittedSolution.language]: submittedSolution.source }));
+  };
+
+  /** Prettier-format the current buffer in place; a syntax error surfaces as a toast, not a thrown render. */
+  const format = async () => {
+    setIsFormatting(true);
+    try {
+      const formatted = await formatCode(sourcesRef.current[language], language === "typescript" ? "typescript" : "babel");
+      setSources((prev) => ({ ...prev, [language]: formatted }));
+    } catch {
+      toast.error("Couldn't format — check for syntax errors.");
+    } finally {
+      setIsFormatting(false);
+    }
+  };
 
   const save = useCallback(() => {
     const current = sourcesRef.current;
@@ -74,7 +106,9 @@ export const useJudge = (problem: ClientProblem) => {
       setOutcome(result);
       // Submit is the graded run: passing every case (visible + hidden) is the algo completion oracle.
       if (mode === "submit" && result.status === "ok" && result.results.every((test) => test.passed)) {
-        markComplete(problem.id, { language, source: sources[language] });
+        const passing: CompletedSolution = { language, source: sources[language] };
+        markComplete(problem.id, passing);
+        setSubmittedSolution(passing);
       }
     } catch (error) {
       setOutcome({ status: "crashed", message: error instanceof Error ? error.message : "Request failed." });
@@ -89,6 +123,10 @@ export const useJudge = (problem: ClientProblem) => {
     source: sources[language],
     setSource,
     resetSolution,
+    restoreSubmission,
+    submittedSolution,
+    format,
+    isFormatting,
     save,
     isDirty,
     settings,

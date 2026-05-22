@@ -22,7 +22,7 @@ export const RecentPads = () => {
             href={`/pad/${pad.id}`}
             className="flex items-center justify-between px-4 py-3 text-sm transition-colors hover:bg-accent"
           >
-            <span className="font-mono">{pad.id}</span>
+            <span className={pad.title ? "font-medium" : "font-mono"}>{pad.title ?? pad.id}</span>
             <span className="flex items-center gap-2 text-xs text-muted-foreground">
               {relativeTime(pad.updatedAt)}
               <LuArrowRight className="size-3.5" />

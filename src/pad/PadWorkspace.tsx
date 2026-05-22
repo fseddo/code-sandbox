@@ -18,19 +18,29 @@ const CONSOLE_DEFAULT_SIZE = "36%";
 const CONSOLE_COLLAPSED_SIZE = "6%";
 
 /** State a custom toolbar needs; the hooks that produce it live inside PadWorkspace. */
-export type PadToolbarState = { padId: string; isDirty: boolean; save: () => void };
+export type PadToolbarState = {
+  padId: string;
+  isDirty: boolean;
+  save: () => void;
+  autosave: boolean;
+  onAutosaveChange: (next: boolean) => void;
+};
 
 type PadWorkspaceProps = {
   padId: string;
+  /** A fixed display name persisted with the pad (build problems pass their title); scratchpads omit it. */
+  title?: string;
   /** Optional first column, rendered before the file tree (e.g. a build problem's prompt). */
   leadingPanel?: ReactNode;
+  /** Optional full-width bar between the top bar and the panels (e.g. a build problem's title bar). */
+  headerBar?: ReactNode;
   /** Override the top bar; defaults to the standard pad toolbar. A render prop so it can read `isDirty`/`save`. */
   renderToolbar?: (state: PadToolbarState) => ReactNode;
 };
 
 /** Three-pane layout: file tree, code editor, and live preview + console. */
-export const PadWorkspace = ({ padId, leadingPanel, renderToolbar }: PadWorkspaceProps) => {
-  usePadPersistence(padId);
+export const PadWorkspace = ({ padId, title, leadingPanel, headerBar, renderToolbar }: PadWorkspaceProps) => {
+  usePadPersistence(padId, title);
   const { isDirty, save, addFile, deleteFile } = usePadSave();
   const [autosave, setAutosave] = useState(false);
   useAutosave(autosave, save);
@@ -45,13 +55,13 @@ export const PadWorkspace = ({ padId, leadingPanel, renderToolbar }: PadWorkspac
     else panel.collapse();
   };
 
-  const toolbar = renderToolbar
-    ? renderToolbar({ padId, isDirty, save })
-    : <PadToolbar padId={padId} isDirty={isDirty} />;
+  const toolbarState: PadToolbarState = { padId, isDirty, save, autosave, onAutosaveChange: setAutosave };
+  const toolbar = renderToolbar ? renderToolbar(toolbarState) : <PadToolbar {...toolbarState} />;
 
   return (
     <div className="flex h-full flex-col bg-background">
       {toolbar}
+      {headerBar}
       <Group orientation="horizontal" className="flex-1">
         {leadingPanel ? (
           <>
@@ -73,11 +83,7 @@ export const PadWorkspace = ({ padId, leadingPanel, renderToolbar }: PadWorkspac
         </Panel>
         <ResizeBar axis="x" />
         <Panel id="editor" className="min-w-0" defaultSize="44%" minSize="22%">
-          <PadEditor
-            save={save}
-            autosave={autosave}
-            onAutosaveChange={setAutosave}
-          />
+          <PadEditor save={save} autosave={autosave} isDirty={isDirty} />
         </Panel>
         <ResizeBar axis="x" />
         <Panel id="output" className="min-w-0" defaultSize="40%" minSize="22%">

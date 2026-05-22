@@ -259,10 +259,10 @@ export const PadConsolePanel = ({
         </div>
         <div className="ml-auto flex items-center gap-1">
           <Button
-            variant="ghost"
+            variant="outline"
             size="xs"
             onClick={restart}
-            title="Cold-restart the Vite dev server"
+            title="Cold-restart the Vite dev server (keeps your code)"
           >
             <LuRotateCcw className="size-3" />
             Restart server

@@ -11,7 +11,7 @@ destination. Code lives under [`src/judge/`](../../src/judge/) (catalog UI + fil
 /                 src/app/page.tsx — home = AppHeader + the catalog (server; lists summaries, renders <ProblemCatalog>)
 /problems/[id]    src/app/problems/[id]/page.tsx — one problem (algo → JudgeWorkspace, build → BuildLoader)
 /pad              src/app/pad/page.tsx — force-dynamic; mints a fresh pad id and redirects to /pad/[id]
-/pad/[id]         src/app/pad/[id]/page.tsx — a blank scratchpad
+/pad/[id]         src/app/pad/[id]/page.tsx — a blank scratchpad (redirects to /problems/[id] if the id is a problem)
 /api/judge        src/app/api/judge/route.ts — the judge engine (unchanged; named for the engine, not the catalog)
 ```
 

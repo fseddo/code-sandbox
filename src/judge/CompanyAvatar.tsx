@@ -1,4 +1,5 @@
 import { titleizeSlug } from "./format";
+import { cn } from "@/lib/utils";
 
 /** First letter of each word, capped at two — `new-york-times` → "NY", `stripe` → "S". */
 const monogram = (slug: string): string =>
@@ -17,13 +18,16 @@ const hueOf = (slug: string): number => {
 };
 
 /** A small monogram square tinted by a hue hashed from the company slug — no logo assets needed. */
-export const CompanyAvatar = ({ company }: { company: string }) => {
+export const CompanyAvatar = ({ company, className }: { company: string; className?: string }) => {
   const hue = hueOf(company);
   return (
     <span
       aria-hidden
       title={titleizeSlug(company)}
-      className="inline-flex size-5 shrink-0 items-center justify-center rounded text-[0.6rem] font-semibold"
+      className={cn(
+        "inline-flex size-5 shrink-0 items-center justify-center rounded text-[0.6rem] font-semibold",
+        className,
+      )}
       style={{
         backgroundColor: `hsl(${hue} 45% 22%)`,
         color: `hsl(${hue} 70% 78%)`,
