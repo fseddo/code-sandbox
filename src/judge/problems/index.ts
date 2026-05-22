@@ -1,5 +1,14 @@
 import type { ClientProblem, Problem } from "../problem";
 import { twoSum } from "./twoSum";
+import { addTwoNumbers } from "./addTwoNumbers";
+import { lengthOfLongestSubstring } from "./lengthOfLongestSubstring";
+import { findMedianSortedArrays } from "./findMedianSortedArrays";
+import { longestPalindrome } from "./longestPalindrome";
+import { zigzagConversion } from "./zigzagConversion";
+import { reverseInteger } from "./reverseInteger";
+import { myAtoi } from "./myAtoi";
+import { palindromeNumber } from "./palindromeNumber";
+import { isMatch } from "./isMatch";
 import { fizzBuzz } from "./fizzBuzz";
 import { isPalindrome } from "./isPalindrome";
 
@@ -10,6 +19,15 @@ import { isPalindrome } from "./isPalindrome";
  */
 export const problems = {
   [twoSum.id]: twoSum,
+  [addTwoNumbers.id]: addTwoNumbers,
+  [lengthOfLongestSubstring.id]: lengthOfLongestSubstring,
+  [findMedianSortedArrays.id]: findMedianSortedArrays,
+  [longestPalindrome.id]: longestPalindrome,
+  [zigzagConversion.id]: zigzagConversion,
+  [reverseInteger.id]: reverseInteger,
+  [myAtoi.id]: myAtoi,
+  [palindromeNumber.id]: palindromeNumber,
+  [isMatch.id]: isMatch,
   [fizzBuzz.id]: fizzBuzz,
   [isPalindrome.id]: isPalindrome,
 } satisfies Record<string, Problem>;
@@ -22,9 +40,12 @@ export const getProblem = (id: string): Problem | undefined =>
 
 export const listProblems = (): Problem[] => Object.values(problems);
 
-/** Strip the server-only hidden tests, leaving the shape safe to serialize into a client component's props. */
-export const toClientProblem = (problem: Problem): ClientProblem => {
-  const clientProblem: Problem = { ...problem };
-  delete clientProblem.hiddenTests;
-  return clientProblem;
+/** Drop `keys` from `value`, keeping the result type *derived* (`Omit<T, K>`) rather than cast. */
+const omit = <T extends object, K extends keyof T>(value: T, keys: readonly K[]): Omit<T, K> => {
+  const copy = { ...value };
+  for (const key of keys) delete (copy as Partial<T>)[key];
+  return copy;
 };
+
+/** Strip the server-only fields (hidden tests, answer-checker), leaving a shape safe to serialize into client props. */
+export const toClientProblem = (problem: Problem): ClientProblem => omit(problem, ["hiddenTests", "checker"]);

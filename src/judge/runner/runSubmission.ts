@@ -16,10 +16,10 @@ export type Submission = {
 };
 
 /** The exposed examples, plus the hidden set when submitting. Each case is tagged so the worker can mask hidden output. */
-const testsForMode = ({ tests, hiddenTests }: Problem, mode: RunMode) => [
-  ...tests.map((test, index) => ({ name: test.name ?? `case ${index + 1}`, args: test.args, expected: test.expected, hidden: false })),
+const testsForMode = ({ examples, hiddenTests }: Problem, mode: RunMode) => [
+  ...examples.map((example, index) => ({ name: example.name ?? `case ${index + 1}`, args: example.args, expected: example.expected, hidden: false })),
   ...(mode === "submit"
-    ? (hiddenTests ?? []).map((test, index) => ({ name: `hidden case ${index + 1}`, args: test.args, expected: test.expected, hidden: true }))
+    ? hiddenTests.map((test, index) => ({ name: `hidden case ${index + 1}`, args: test.args, expected: test.expected, hidden: true }))
     : []),
 ];
 
@@ -30,7 +30,14 @@ const testsForMode = ({ tests, hiddenTests }: Problem, mode: RunMode) => [
 export const runSubmission = ({ problem, language, source, mode }: Submission): Promise<SubmissionOutcome> =>
   new Promise((resolve) => {
     const worker = new Worker(workerPath, {
-      workerData: { source, language, functionName: problem.functionName, tests: testsForMode(problem, mode) },
+      workerData: {
+        source,
+        language,
+        functionName: problem.functionName,
+        tests: testsForMode(problem, mode),
+        io: problem.io ?? null,
+        checker: problem.checker ?? null,
+      },
     });
 
     let settled = false;

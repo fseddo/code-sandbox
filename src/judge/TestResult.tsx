@@ -34,7 +34,7 @@ const CaseDetail = ({ result, problem, index }: { result: TestResultData; proble
     );
   }
 
-  const args = problem.tests[index]?.args ?? [];
+  const args = problem.examples[index]?.args ?? [];
   const paramNames = deriveParamNames(problem.starterCode.javascript, problem.functionName, args.length);
 
   return (

@@ -21,24 +21,38 @@ const DescriptionTab = ({ problem }: { problem: ClientProblem }) => (
     <section className="flex flex-col gap-2">
       <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Example cases</h2>
       <ul className="flex flex-col gap-2">
-        {problem.tests.map((test, index) => (
+        {problem.examples.map((example, index) => (
           <li
             key={index}
             className="rounded-md border border-border bg-background p-3 font-mono text-xs text-foreground"
           >
-            <div className="text-muted-foreground">{test.name ?? `case ${index + 1}`}</div>
+            <div className="text-muted-foreground">{example.name ?? `case ${index + 1}`}</div>
             <div>
               <span className="text-muted-foreground">in </span>
-              {test.args.map(stringify).join(", ")}
+              {example.args.map(stringify).join(", ")}
             </div>
             <div>
               <span className="text-muted-foreground">out </span>
-              {stringify(test.expected)}
+              {stringify(example.expected)}
             </div>
+            {example.explanation ? (
+              <div className="mt-1 font-sans text-muted-foreground">{example.explanation}</div>
+            ) : null}
           </li>
         ))}
       </ul>
     </section>
+
+    {problem.constraints.length > 0 ? (
+      <section className="flex flex-col gap-2">
+        <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Constraints</h2>
+        <ul className="flex flex-col gap-1 font-mono text-xs text-muted-foreground">
+          {problem.constraints.map((constraint, index) => (
+            <li key={index}>{constraint}</li>
+          ))}
+        </ul>
+      </section>
+    ) : null}
   </div>
 );
 
@@ -56,7 +70,17 @@ export const ProblemPanel = ({
       <header className="flex shrink-0 flex-col gap-3 border-b border-sidebar-border px-5 pt-5">
         <div className="flex flex-col gap-2">
           <h1 className="text-lg font-semibold tracking-tight">{problem.title}</h1>
-          <DifficultyBadge difficulty={problem.difficulty} />
+          <div className="flex flex-wrap items-center gap-2">
+            <DifficultyBadge difficulty={problem.difficulty} />
+            {problem.tags.map((tag) => (
+              <span
+                key={tag}
+                className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
         </div>
         <div role="tablist" className="flex items-stretch">
           {TABS.map((id) => {

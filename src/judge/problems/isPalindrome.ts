@@ -4,10 +4,12 @@ export const isPalindrome = defineProblem<[string], boolean>({
   id: "valid-palindrome",
   title: "Valid Palindrome",
   difficulty: "easy",
+  tags: ["two-pointers", "string"],
   functionName: "isPalindrome",
   prompt: `Given a string \`s\`, return \`true\` if it reads the same forwards and backwards after lowercasing and removing every non-alphanumeric character, and \`false\` otherwise.
 
 An empty string (after cleaning) counts as a palindrome.`,
+  constraints: ["1 <= s.length <= 2 * 10^5", "s consists only of printable ASCII characters."],
   starterCode: {
     javascript: `function isPalindrome(s) {
   // your code here
@@ -16,8 +18,8 @@ An empty string (after cleaning) counts as a palindrome.`,
   // your code here
 }`,
   },
-  tests: [
-    { name: "classic", args: ["A man, a plan, a canal: Panama"], expected: true },
+  examples: [
+    { name: "classic", args: ["A man, a plan, a canal: Panama"], expected: true, explanation: `Cleaned to "amanaplanacanalpanama", a palindrome.` },
     { name: "not a palindrome", args: ["race a car"], expected: false },
     { name: "empty after cleaning", args: [" "], expected: true },
     { name: "alphanumeric mix", args: ["0P"], expected: false },
@@ -30,6 +32,7 @@ An empty string (after cleaning) counts as a palindrome.`,
     { args: ["Able was I ere I saw Elba"], expected: true },
     { args: ["abc"], expected: false },
   ],
+  source: { origin: "leetcode", frontendId: "125" },
   solutions: [
     {
       name: "Clean, then two pointers",

@@ -4,10 +4,17 @@ export const twoSum = defineProblem<[number[], number], number[]>({
   id: "two-sum",
   title: "Two Sum",
   difficulty: "easy",
+  tags: ["array", "hash-table"],
   functionName: "twoSum",
   prompt: `Given an array of integers \`nums\` and an integer \`target\`, return the indices of the two numbers that add up to \`target\`.
 
 Each input has exactly one solution, and you may not use the same element twice. Return the indices in ascending order.`,
+  constraints: [
+    "2 <= nums.length <= 10^4",
+    "-10^9 <= nums[i] <= 10^9",
+    "-10^9 <= target <= 10^9",
+    "Exactly one valid answer exists.",
+  ],
   starterCode: {
     javascript: `function twoSum(nums, target) {
   // your code here
@@ -16,9 +23,9 @@ Each input has exactly one solution, and you may not use the same element twice.
   // your code here
 }`,
   },
-  tests: [
-    { name: "basic", args: [[2, 7, 11, 15], 9], expected: [0, 1] },
-    { name: "middle pair", args: [[3, 2, 4], 6], expected: [1, 2] },
+  examples: [
+    { name: "basic", args: [[2, 7, 11, 15], 9], expected: [0, 1], explanation: "nums[0] + nums[1] = 2 + 7 = 9." },
+    { name: "middle pair", args: [[3, 2, 4], 6], expected: [1, 2], explanation: "nums[1] + nums[2] = 2 + 4 = 6." },
     { name: "duplicates", args: [[3, 3], 6], expected: [0, 1] },
     { name: "negatives", args: [[-1, -2, -3, -4, -5], -8], expected: [2, 4] },
   ],
@@ -28,6 +35,7 @@ Each input has exactly one solution, and you may not use the same element twice.
     { args: [[5, 75, 25], 100], expected: [1, 2] },
     { args: [[1, 2, 3, 4, 5, 6, 7, 8], 15], expected: [6, 7] },
   ],
+  source: { origin: "leetcode", frontendId: "1", acRate: 0.5749902892875883 },
   solutions: [
     {
       name: "Brute force",

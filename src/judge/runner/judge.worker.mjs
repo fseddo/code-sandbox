@@ -23,8 +23,31 @@ const format = (value) =>
     }
   })();
 
+/** Singly-linked node, injected as a sandbox global so linked-list solutions can reference `ListNode`. */
+class ListNode {
+  constructor(val, next) {
+    this.val = val === undefined ? 0 : val;
+    this.next = next === undefined ? null : next;
+  }
+}
+
+const arrayToList = (values) => {
+  let head = null;
+  for (let i = values.length - 1; i >= 0; i--) head = new ListNode(values[i], head);
+  return head;
+};
+
+const listToArray = (node) => {
+  const values = [];
+  for (let current = node; current !== null && current !== undefined; current = current.next) values.push(current.val);
+  return values;
+};
+
+const hydrate = (value, shape) => (shape === "linked-list" ? arrayToList(value) : value);
+const dehydrate = (value, shape) => (shape === "linked-list" ? listToArray(value) : value);
+
 const run = () => {
-  const { source, language, functionName, tests } = workerData;
+  const { source, language, functionName, tests, io, checker } = workerData;
 
   // Transpile TS to JS (sucrase strips types only — no type-checking, which is what a judge wants).
   let code = source;
@@ -34,6 +57,7 @@ const run = () => {
 
   const logs = [];
   const sandbox = {
+    ListNode,
     console: {
       log: (...args) => logs.push(args.map(format).join(" ")),
       error: (...args) => logs.push(args.map(format).join(" ")),
@@ -42,6 +66,9 @@ const run = () => {
     },
   };
   const context = vm.createContext(sandbox);
+
+  // Authored (trusted) validator for problems with multiple valid answers; replaces deep-equal when present.
+  const checkerFn = checker ? vm.runInContext(`(${checker})`, context, { timeout: 1000 }) : null;
 
   // Wrap in a function scope so both `function foo(){}` and `const foo = …` resolve, then hand back the reference.
   const factory = vm.runInContext(
@@ -59,18 +86,21 @@ const run = () => {
   }
 
   const results = tests.map((test, index) => {
-    const args = structuredClone(test.args);
+    const cloned = structuredClone(test.args);
+    // Hydrate any reference-type params (e.g. arrays → ListNode) before the call; tests stay plain arrays.
+    const args = io?.params ? cloned.map((arg, i) => hydrate(arg, io.params[i])) : cloned;
     const name = test.name ?? `case ${index + 1}`;
     const hidden = Boolean(test.hidden);
     logs.length = 0;
     const startedAt = performance.now();
     try {
-      const actual = fn(...args);
+      const actual = io?.result ? dehydrate(fn(...args), io.result) : fn(...args);
       const ms = performance.now() - startedAt;
+      const passed = checkerFn ? Boolean(checkerFn(actual, test.args, test.expected)) : deepEqual(actual, test.expected);
       // Hidden cases report only pass/fail + timing — expected/actual/logs would leak the probing inputs.
       return {
         name,
-        passed: deepEqual(actual, test.expected),
+        passed,
         expected: hidden ? null : test.expected,
         actual: hidden ? null : actual,
         logs: hidden ? [] : [...logs],

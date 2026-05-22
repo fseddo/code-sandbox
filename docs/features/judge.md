@@ -27,12 +27,22 @@ Unlike Sandpack, CodeMirror (`@uiw/react-codemirror`) is SSR-safe — it renders
 
 ```ts
 type TestCase<Args extends unknown[], Result> = { name?: string; args: Args; expected: Result };
-type Problem<Args extends unknown[] = unknown[], Result = unknown> = { …; tests: TestCase<Args, Result>[] };
+type Example<Args extends unknown[], Result> = TestCase<Args, Result> & { explanation?: string };
+type Problem<Args extends unknown[] = unknown[], Result = unknown> = {
+  …; tags: TopicTag[]; constraints: string[];
+  examples: Example<Args, Result>[];   // visible: Run uses them, Description tab renders them
+  hiddenTests: TestCase<Args, Result>[]; // server-only: Submit adds them, never reaches the client
+  io?: ProblemIo; checker?: string;       // see below
+};
 ```
 
-[`defineProblem<Args, Result>(…)`](../../src/judge/problem.ts) is an identity helper that pins the signature so authoring a problem type-checks each case's `args` tuple and `expected` against it — see [twoSum.ts](../../src/judge/problems/twoSum.ts) (`defineProblem<[number[], number], number[]>`). Get the signature wrong in a test case and it's a compile error, not a runtime surprise.
+[`defineProblem<Args, Result>(…)`](../../src/judge/problem.ts) is an identity helper that pins the signature so authoring a problem type-checks each case's `args` tuple and `expected` against it — see [twoSum.ts](../../src/judge/problems/twoSum.ts) (`defineProblem<[number[], number], number[]>`). Get the signature wrong in a case and it's a compile error, not a runtime surprise. There is no separate `tests` field: the visible run set is built from `examples` in [runSubmission](../../src/judge/runner/runSubmission.ts). `TopicTag` is a single-source literal union of the catalog's topic slugs; `source` carries provenance (`frontendId`, `acRate`, authoring `confidence`).
 
-[`problems/index.ts`](../../src/judge/problems/index.ts) is the registry: a `Record<id, Problem>` built with `satisfies` so the authored modules keep their precise generics while the registry erases them to the base `Problem` (it holds heterogeneous signatures). `getProblem(id)` / `listProblems()` are the read API — problem *info* needs no HTTP route; server components import the registry directly. Adding a problem = a new module under `problems/` + one line in `index.ts`.
+Two harness extensions widen what's expressible (full rationale in [problem-authoring.md](problem-authoring.md)):
+- **`io: { params?, result? }`** marks params/results as `"linked-list"` so the worker hydrates array test data into a `ListNode` chain before the call and flattens the return back — tests stay plain arrays. See [addTwoNumbers.ts](../../src/judge/problems/addTwoNumbers.ts).
+- **`checker`** (JS arrow-source `(actual, args, expected) => boolean`, server-only) replaces deep-equal for problems with multiple valid answers. See [longestPalindrome.ts](../../src/judge/problems/longestPalindrome.ts).
+
+[`problems/index.ts`](../../src/judge/problems/index.ts) is the registry: a `Record<id, Problem>` built with `satisfies` so the authored modules keep their precise generics while the registry erases them to the base `Problem` (it holds heterogeneous signatures). `getProblem(id)` / `listProblems()` are the read API — problem *info* needs no HTTP route; server components import the registry directly. Adding a problem = a new module under `problems/` + one line in `index.ts`; the full authoring rubric (and the `problem-importer` agent that runs it) live in [problem-authoring.md](problem-authoring.md). [`scripts/verifyProblems.mjs`](../../scripts/verifyProblems.mjs) runs every reference solution through the real worker as a correctness gate.
 
 `SubmissionOutcome` (also in `problem.ts`) is the discriminated union the runner and UI share: `ok` | `compile-error` | `timeout` | `crashed`. It's the wire contract between [route.ts](../../src/app/api/judge/route.ts) and [ResultsPanel](../../src/judge/ResultsPanel.tsx).
 
@@ -43,8 +53,8 @@ The judge must run server-side (the user can't be trusted to grade their own cod
 Flow:
 
 1. [`route.ts`](../../src/app/api/judge/route.ts) (`runtime = "nodejs"` — worker_threads can't run on Edge) validates `{ problemId, language, source }`, looks up the problem, and calls `runSubmission`.
-2. [`runSubmission`](../../src/judge/runner/runSubmission.ts) spawns the worker with `{ source, language, functionName, tests }` as `workerData`, then **races the worker's message against a 2s `setTimeout`**. On overrun it calls `worker.terminate()` and resolves `{ status: "timeout" }`.
-3. [`judge.worker.mjs`](../../src/judge/runner/judge.worker.mjs) transpiles TS→JS with **sucrase** (type-strip only, no type-checking — what a judge wants), builds a `vm` context whose only injected global is a `console` capturer, runs each test, deep-equals `actual` vs `expected`, and posts back `{ status: "ok", results }`.
+2. [`runSubmission`](../../src/judge/runner/runSubmission.ts) spawns the worker with `{ source, language, functionName, tests, io, checker }` as `workerData`, then **races the worker's message against a 2s `setTimeout`**. On overrun it calls `worker.terminate()` and resolves `{ status: "timeout" }`.
+3. [`judge.worker.mjs`](../../src/judge/runner/judge.worker.mjs) transpiles TS→JS with **sucrase** (type-strip only, no type-checking — what a judge wants), builds a `vm` context whose injected globals are a `console` capturer and a `ListNode` class, runs each test (hydrating `io` params, flattening an `io` result), compares via the `checker` when present else **deep-equals** `actual` vs `expected`, and posts back `{ status: "ok", results }`.
 
 ### Why a worker, and why terminate is the point
 
@@ -63,6 +73,7 @@ Wrapping in one script means both `function twoSum(){}` (hoisted) and `const two
 ### Security posture and the build caveat
 
 - **`vm` is not a hard security boundary** — `this.constructor.constructor("return process")()` can escape the context. For this **local, single-trusted-user** sandbox that's acceptable; the only submitter is the developer. Before any public/multi-tenant deploy, the boxed run step should move to `isolated-vm` (true isolation) and ultimately a container/microVM (the only real answer for untrusted multi-tenant code). The worker/`runSubmission` seam doesn't change when that happens.
+- **The `checker` is a second eval surface.** When a problem defines a `checker`, the worker compiles it via `vm.runInContext(..., { timeout: 1000 })` in the same context as the submission. Unlike the submission it's **authored, trusted source** (it ships in the problem module, not from the user), so it doesn't widen the untrusted-input surface — but it is a second place code is eval'd, and it shares the run's 2s wall-clock budget.
 - **Worker path resolution:** [`runSubmission`](../../src/judge/runner/runSubmission.ts) resolves the worker by absolute path from `process.cwd()`. This works under `next dev` (source files on disk). `next build` / `next start` will need `outputFileTracingIncludes` in `next.config` to copy `judge.worker.mjs` into the server output — **not yet configured**, since the dev workflow is the current target.
 
 ## Editor — shared `CodeEditor`
