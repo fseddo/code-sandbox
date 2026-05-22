@@ -1,48 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useSyncExternalStore } from "react";
 import { LuArrowRight } from "react-icons/lu";
-import { listPads, type PadSummary } from "@/pad/pad";
+import { relativeTime, useRecentPads } from "@/pad/useRecentPads";
 import { Card } from "@/components/ui/card";
-
-const relativeTime = (ts: number): string => {
-  const mins = Math.round((Date.now() - ts) / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.round(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.round(hrs / 24)}d ago`;
-};
-
-// Only fires on cross-tab writes; same-tab savePad/clearPad don't dispatch `storage`.
-const subscribe = (notify: () => void) => {
-  window.addEventListener("storage", notify);
-  return () => window.removeEventListener("storage", notify);
-};
-
-// useSyncExternalStore re-renders whenever getSnapshot returns a new ref — cache by content hash.
-let cachedSnapshot: PadSummary[] = [];
-let cachedKey = "";
-
-const getSnapshot = (): PadSummary[] => {
-  const pads = listPads();
-  const key = pads.map((p) => `${p.id}:${p.updatedAt}`).join(",");
-  if (key !== cachedKey) {
-    cachedSnapshot = pads;
-    cachedKey = key;
-  }
-  return cachedSnapshot;
-};
-
-// Empty on the server so the SSR markup matches the client's first paint before hydration. Must be a
-// stable ref — useSyncExternalStore loops if getServerSnapshot returns a fresh value each call.
-const EMPTY: PadSummary[] = [];
-const getServerSnapshot = (): PadSummary[] => EMPTY;
 
 /** Lists pads saved in this browser. Renders nothing until there is one. */
 export const RecentPads = () => {
-  const pads = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const pads = useRecentPads();
   if (pads.length === 0) return null;
 
   return (

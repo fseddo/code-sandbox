@@ -8,11 +8,29 @@ destination. Code lives under [`src/judge/`](../../src/judge/) (catalog UI + fil
 ## Routes
 
 ```
-/                 src/app/page.tsx — home = the catalog (server; lists summaries, renders <ProblemCatalog>)
+/                 src/app/page.tsx — home = AppHeader + the catalog (server; lists summaries, renders <ProblemCatalog>)
 /problems/[id]    src/app/problems/[id]/page.tsx — one problem (algo → JudgeWorkspace, build → BuildLoader)
-/pad/[id]         src/app/pad/[id]/page.tsx — a blank scratchpad (the "New blank pad" button mints one)
+/pad              src/app/pad/page.tsx — force-dynamic; mints a fresh pad id and redirects to /pad/[id]
+/pad/[id]         src/app/pad/[id]/page.tsx — a blank scratchpad
 /api/judge        src/app/api/judge/route.ts — the judge engine (unchanged; named for the engine, not the catalog)
 ```
+
+## App shell — [AppHeader](../../src/components/AppHeader.tsx)
+
+Browse pages render a persistent top bar: the **noodle** brand, a `Problems` link, the [`PadsMenu`](../../src/components/PadsMenu.tsx)
+control, and the ⌘K search trigger. It's a reusable component (not a root layout), so the full-height workspaces
+(`JudgeWorkspace` / `BuildWorkspace`) keep their own chrome and opt out.
+
+- **`PadsMenu`** is the `Pads` nav, a **two-segment control** `[ Pads ▾ | + ]`: the left segment opens a dropdown of
+  recent pads (most-recent first) to revisit; the `+` segment mints a fresh pad (`/pad` redirects to a new id). One
+  control means there's no separate `New pad` button to duplicate it. Pads live in localStorage; the recency list
+  comes from [`useRecentPads`](../../src/pad/useRecentPads.ts) (the `useSyncExternalStore` snapshot shared with
+  [`RecentPads`](../../src/components/RecentPads.tsx)).
+- **⌘K command palette** ([CommandPalette](../../src/components/CommandPalette.tsx)) is mounted **once** in the root
+  layout by [`CommandPaletteProvider`](../../src/components/CommandPaletteProvider.tsx), which owns the open state and
+  the global ⌘K/Ctrl-K shortcut and exposes `useCommandPalette().open()` to the header. Problem **summaries** are
+  passed in from the server layout so the client never imports the problem registry (answers + hidden tests). It
+  fuzzy-matches title/topic/company via the shared `searchCatalog`, with arrow-key navigation and Enter to open.
 
 The detail route was renamed `/judge/[id]` → `/problems/[id]` so the URL stops leaking the "judge"
 implementation name. The **API** route stays `/api/judge` deliberately: it's the worker-backed grader, not
@@ -27,9 +45,18 @@ across them. The render path:
 
 ```
 <ProblemCatalog problems={listProblemSummaries()} />   src/judge/ProblemCatalog.tsx — "use client"
-  ├─ <FacetFilterBar>   src/judge/FacetFilterBar.tsx — toggle-chip groups, one row per facet
-  └─ <ProblemRow>       src/judge/ProblemRow.tsx — status dot, title, KindBadge, DifficultyBadge, topic/company chips
+  ├─ <CatalogSidebar>   src/judge/CatalogSidebar.tsx — left rail: facet sections (counts, show-more) by dimension
+  ├─ <CatalogToolbar>   src/judge/CatalogToolbar.tsx — search box, sort menu (catalogSort.ts), Random jump
+  ├─ <ActiveFilters>    src/judge/ActiveFilters.tsx — removable selection pills + "N of M match" tally
+  └─ <CatalogTable>     src/judge/CatalogTable.tsx — column header + <ProblemRow> per item (shared ROW_GRID)
 ```
+
+`ProblemCatalog` owns three pieces of local state — facet `selection`, free-text `query`, and `sort` — and derives
+the visible rows as `sortItems(searchCatalog(filterCatalog(items, selection), query), sort)`. Each `CatalogItem`
+carries a stable 1-based `number` (authored order, shown in the `#` column and used as the newest/oldest sort axis).
+Sorts are a single-source registry in [catalogSort.ts](../../src/judge/catalogSort.ts) (`SortKey` derived from its
+keys, same posture as `FACETS`). `searchCatalog` is generic over the row shape so the catalog (`CatalogItem`) and the
+command palette (`ProblemSummary`) share one matcher. `Random` jumps to a random *currently-visible* problem.
 
 - **`listProblemSummaries()`** ([problems/index.ts](../../src/judge/problems/index.ts)) is the client-safe
   projection: `id`, `title`, `difficulty`, `tags`, `kind`, plus the `companies` resolved from
@@ -58,8 +85,9 @@ Keying by facet makes it **exhaustive by construction** (a key can't exist witho
 `status`, many for `tags`/`companies` — so one matcher handles one-of and many-of facets uniformly: an item
 passes when, for every facet *with* a selection, at least one of its values is chosen (OR within a facet, AND
 across facets). `order` fixes display order for closed sets; open sets (topics, companies) sort alphabetically.
-`buildFacetViews(items)` lists only the option values that actually occur in the bank, so the UI never offers a
-filter that matches nothing.
+`buildFacetViews(items)` lists only the option values that actually occur in the bank (so the UI never offers a
+filter that matches nothing) and tags each option with its `count` for the sidebar. `activeSelections(selection)`
+flattens the selection into labeled `{ key, value, label }` pairs for the removable pill row.
 
 Iteration uses **`typedEntries<K, V>`** ([lib/utils.ts](../../src/lib/utils.ts)) — `Object.entries` typed to keep
 keys as `keyof`, with the lone unavoidable cast (`Object.entries` widens keys to `string` by language design)
