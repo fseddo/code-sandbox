@@ -1,4 +1,5 @@
-import type { AnyProblem, ClientProblem, Problem } from "../problem";
+import type { AnyProblem, ClientProblem, Problem, ProblemBase, ProblemKind } from "../problem";
+import { type CompanyTag, companiesForProblem } from "../companies";
 import { twoSum } from "./twoSum";
 import { addTwoNumbers } from "./addTwoNumbers";
 import { lengthOfLongestSubstring } from "./lengthOfLongestSubstring";
@@ -49,6 +50,27 @@ export const getProblem = (id: string): AnyProblem | undefined =>
   (problems as Record<string, AnyProblem>)[id];
 
 export const listProblems = (): AnyProblem[] => Object.values(problems);
+
+/**
+ * The catalog row's view of a problem: identity, difficulty, `kind`, topics, and the companies it's
+ * associated with (resolved from [companies.ts](../companies.ts)). Derived from `ProblemBase` so it
+ * tracks the problem shape, and deliberately free of any algo server-only field — safe to serialize
+ * into the client catalog.
+ */
+export type ProblemSummary = Pick<ProblemBase, "id" | "title" | "difficulty" | "tags"> & {
+  kind: ProblemKind;
+  companies: CompanyTag[];
+};
+
+export const listProblemSummaries = (): ProblemSummary[] =>
+  listProblems().map(({ id, title, difficulty, tags, kind }) => ({
+    id,
+    title,
+    difficulty,
+    tags,
+    kind,
+    companies: companiesForProblem(id as ProblemId),
+  }));
 
 /** Drop `keys` from `value`, keeping the result type *derived* (`Omit<T, K>`) rather than cast. */
 const omit = <T extends object, K extends keyof T>(value: T, keys: readonly K[]): Omit<T, K> => {

@@ -219,7 +219,8 @@ The [`problem-importer`](../../.claude/agents/problem-importer.md) agent runs th
    script could regenerate it and emit a `catalogIndex` of unauthored rows for a "coming soon" list.
 7. **Budget revisit (open)** — if scale tests start brushing the limit, split Run vs. Submit timeouts
    in [`runSubmission`](../../src/judge/runner/runSubmission.ts). Not needed yet.
-8. **Filter UI (open)** — surface `tags` as a filter on the `/judge` problem list.
+8. **Filter UI (done)** — `tags` (and kind, difficulty, company, progress status) are filter facets on
+   the home-page catalog. See [navigation.md](navigation.md).
 
 ## Provenance & licensing
 

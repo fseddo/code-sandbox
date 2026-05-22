@@ -147,10 +147,11 @@ is never appended to.
 
 A build problem is an authored `BuildProblem` solved in the existing pad bundler. How it's wired:
 
-- **Route:** [`/judge/[id]`](../../src/app/judge/[id]/page.tsx) branches on `kind` — `build` renders
-  [`BuildLoader`](../../src/app/judge/[id]/BuildLoader.tsx) (`dynamic`, `ssr: false`, since Sandpack
+- **Route:** [`/problems/[id]`](../../src/app/problems/[id]/page.tsx) branches on `kind` — `build` renders
+  [`BuildLoader`](../../src/app/problems/[id]/BuildLoader.tsx) (`dynamic`, `ssr: false`, since Sandpack
   can't SSR), which loads [`BuildWorkspace`](../../src/judge/BuildWorkspace.tsx); `algo` renders the
-  judge as before. Build problems appear in the `/judge` list alongside algo ones.
+  judge as before. Build problems appear in the home-page catalog alongside algo ones — see
+  [navigation.md](navigation.md).
 - **Reuse, not a fork:** `BuildWorkspace` renders [`CoderPad`](../../src/pad/CoderPad.tsx) — the same
   bundler/save/persistence machinery — passing a `PadProfile` built from the problem and two new
   generic seams on the pad: `leadingPanel` (the prompt column) and a render-prop `renderToolbar`
@@ -195,11 +196,11 @@ re-author. Flow:
 Glassdoor / Blind / aggregator lists are leads, not ground truth — so association confidence is
 reported separately and aggregator-only evidence is capped low.
 
-## Phase 4 — Company filter on `/judge`
+## Phase 4 — Company filter on the catalog — **Done**
 
-Folds into the already-open _Filter UI_ follow-up in
-[problem-authoring.md](problem-authoring.md#planphases). Surface `companyProblems` as a filter facet
-on the `/judge` list alongside topic tags.
+The home-page catalog surfaces `companyProblems` as a `companies` filter facet alongside topic tags,
+difficulty, kind, and progress status — see [navigation.md](navigation.md). `companiesForProblem` feeds
+each row's company chips and the facet options.
 
 ---
 

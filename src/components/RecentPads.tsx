@@ -35,8 +35,10 @@ const getSnapshot = (): PadSummary[] => {
   return cachedSnapshot;
 };
 
-// Empty on the server so the SSR markup matches the client's first paint before hydration.
-const getServerSnapshot = (): PadSummary[] => [];
+// Empty on the server so the SSR markup matches the client's first paint before hydration. Must be a
+// stable ref — useSyncExternalStore loops if getServerSnapshot returns a fresh value each call.
+const EMPTY: PadSummary[] = [];
+const getServerSnapshot = (): PadSummary[] => EMPTY;
 
 /** Lists pads saved in this browser. Renders nothing until there is one. */
 export const RecentPads = () => {

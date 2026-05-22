@@ -1,12 +1,11 @@
 # Judge
 
-The LeetCode side: pick a problem, write a solution in JS or TS, and run it server-side against the problem's test cases. All code lives under [`src/judge/`](../../src/judge/) (UI + data + runner) and [`src/app/judge/`](../../src/app/judge/) (routes); the API route is [`src/app/api/judge/route.ts`](../../src/app/api/judge/route.ts). The submission editor is the shared [`CodeEditor`](../../src/components/CodeEditor.tsx).
+The LeetCode side: pick a problem, write a solution in JS or TS, and run it server-side against the problem's test cases. All code lives under [`src/judge/`](../../src/judge/) (UI + data + runner) and [`src/app/problems/`](../../src/app/problems/) (the problem route); the API route is [`src/app/api/judge/route.ts`](../../src/app/api/judge/route.ts). The problem *list* lives in the catalog on the home page — see [navigation.md](navigation.md). The submission editor is the shared [`CodeEditor`](../../src/components/CodeEditor.tsx).
 
 ## Render tree
 
 ```
-/judge                     src/app/judge/page.tsx — problem list (server)
-/judge/[id]                src/app/judge/[id]/page.tsx — server, getProblem + notFound
+/problems/[id]             src/app/problems/[id]/page.tsx — server, getProblem + notFound
   └─ <JudgeWorkspace>      src/judge/JudgeWorkspace.tsx — "use client"
       └─ <Group horizontal>
           ├─ <ProblemPanel>            src/judge/ProblemPanel.tsx
@@ -19,7 +18,7 @@ Same [react-resizable-panels v4](../../src/components/ResizeBar.tsx) layout prim
 
 ## Why no PadLoader-style `ssr:false`
 
-Unlike Sandpack, CodeMirror (`@uiw/react-codemirror`) is SSR-safe — it renders a placeholder on the server and mounts on the client in an effect. So `/judge/[id]` renders `<JudgeWorkspace>` (a client component) directly from the server page; no `next/dynamic` wrapper is needed. The page itself stays a server component so the `[id]` param resolves and `getProblem` runs server-side.
+Unlike Sandpack, CodeMirror (`@uiw/react-codemirror`) is SSR-safe — it renders a placeholder on the server and mounts on the client in an effect. So `/problems/[id]` renders `<JudgeWorkspace>` (a client component) directly from the server page; no `next/dynamic` wrapper is needed. The page itself stays a server component so the `[id]` param resolves and `getProblem` runs server-side.
 
 ## Problem model — the typed core
 
@@ -38,13 +37,13 @@ type Problem<Args extends unknown[] = unknown[], Result = unknown> = {
 
 [`defineProblem<Args, Result>(…)`](../../src/judge/problem.ts) pins the signature so authoring a problem type-checks each case's `args` tuple and `expected` against it — see [twoSum.ts](../../src/judge/problems/twoSum.ts) (`defineProblem<[number[], number], number[]>`). Get the signature wrong in a case and it's a compile error, not a runtime surprise. There is no separate `tests` field: the visible run set is built from `examples` in [runSubmission](../../src/judge/runner/runSubmission.ts). `TopicTag` is a single-source literal union of the catalog's topic slugs; `source` carries provenance (`origin`, `frontendId`, `acRate`, authoring `confidence`).
 
-**`Problem` is the `"algo"` arm of a discriminated union.** A `ProblemBase` (`id`, `title`, `difficulty`, `tags`, `prompt`, `source`) is shared; `Problem` adds `kind: "algo"` plus the judge-specific fields above, and `BuildProblem` adds `kind: "build"` with a pad-backed Sandpack sandbox (`template`, `files`, `evaluationNotes`) — open-ended, **not** worker-graded. `AnyProblem = Problem | BuildProblem`. `defineProblem` injects `kind: "algo"` (so the authored modules never spell it out); `defineBuildProblem` is the build-arm counterpart. The build kind powers the company-sourcing feature ([company-sourcing.md](company-sourcing.md)): a build problem renders at `/judge/[id]` as a pad-backed sandbox ([`BuildWorkspace`](../../src/judge/BuildWorkspace.tsx)), not the judge — this doc's editor/runner/results detail is the **algo arm**. Consumers narrow on `kind` (`getProblem` returns `AnyProblem`). Company↔problem associations live in [companies.ts](../../src/judge/companies.ts), deliberately *not* on the problem.
+**`Problem` is the `"algo"` arm of a discriminated union.** A `ProblemBase` (`id`, `title`, `difficulty`, `tags`, `prompt`, `source`) is shared; `Problem` adds `kind: "algo"` plus the judge-specific fields above, and `BuildProblem` adds `kind: "build"` with a pad-backed Sandpack sandbox (`template`, `files`, `evaluationNotes`) — open-ended, **not** worker-graded. `AnyProblem = Problem | BuildProblem`. `defineProblem` injects `kind: "algo"` (so the authored modules never spell it out); `defineBuildProblem` is the build-arm counterpart. The build kind powers the company-sourcing feature ([company-sourcing.md](company-sourcing.md)): a build problem renders at `/problems/[id]` as a pad-backed sandbox ([`BuildWorkspace`](../../src/judge/BuildWorkspace.tsx)), not the judge — this doc's editor/runner/results detail is the **algo arm**. Consumers narrow on `kind` (`getProblem` returns `AnyProblem`). Company↔problem associations live in [companies.ts](../../src/judge/companies.ts), deliberately *not* on the problem.
 
 Two harness extensions widen what's expressible (full rationale in [problem-authoring.md](problem-authoring.md)):
 - **`io: { params?, result? }`** marks params/results as `"linked-list"` so the worker hydrates array test data into a `ListNode` chain before the call and flattens the return back — tests stay plain arrays. See [addTwoNumbers.ts](../../src/judge/problems/addTwoNumbers.ts).
 - **`checker`** (JS arrow-source `(actual, args, expected) => boolean`, server-only) replaces deep-equal for problems with multiple valid answers. See [longestPalindrome.ts](../../src/judge/problems/longestPalindrome.ts).
 
-[`problems/index.ts`](../../src/judge/problems/index.ts) is the registry: a `Record<id, AnyProblem>` built with `satisfies` so the authored modules keep their precise generics while the registry erases them to `AnyProblem` (it holds heterogeneous signatures and both kinds). `getProblem(id)` / `listProblems()` are the read API (returning `AnyProblem`) — problem *info* needs no HTTP route; server components import the registry directly. The two algo-only boundaries — the [`/judge/[id]` page](../../src/app/judge/[id]/page.tsx) and the [`/api/judge` route](../../src/app/api/judge/route.ts) — narrow on `kind === "algo"` before touching judge-specific fields. Adding a problem = a new module under `problems/` + one line in `index.ts`; the full authoring rubric (and the `problem-importer` agent that runs it) live in [problem-authoring.md](problem-authoring.md). [`scripts/verifyProblems.mjs`](../../scripts/verifyProblems.mjs) runs every reference solution through the real worker as a correctness gate.
+[`problems/index.ts`](../../src/judge/problems/index.ts) is the registry: a `Record<id, AnyProblem>` built with `satisfies` so the authored modules keep their precise generics while the registry erases them to `AnyProblem` (it holds heterogeneous signatures and both kinds). `getProblem(id)` / `listProblems()` are the read API (returning `AnyProblem`) — problem *info* needs no HTTP route; server components import the registry directly. The two algo-only boundaries — the [`/problems/[id]` page](../../src/app/problems/[id]/page.tsx) and the [`/api/judge` route](../../src/app/api/judge/route.ts) — narrow on `kind === "algo"` before touching judge-specific fields. Adding a problem = a new module under `problems/` + one line in `index.ts`; the full authoring rubric (and the `problem-importer` agent that runs it) live in [problem-authoring.md](problem-authoring.md). [`scripts/verifyProblems.mjs`](../../scripts/verifyProblems.mjs) runs every reference solution through the real worker as a correctness gate.
 
 `SubmissionOutcome` (also in `problem.ts`) is the discriminated union the runner and UI share: `ok` | `compile-error` | `timeout` | `crashed`. It's the wire contract between [route.ts](../../src/app/api/judge/route.ts) and [ResultsPanel](../../src/judge/ResultsPanel.tsx).
 
@@ -109,7 +108,7 @@ Saving is **manual**, mirroring the pad's [`usePadSave`](../../src/pad/usePadSav
 
 ### Restore: a `useState` initializer, not a mount effect
 
-Buffers seed from `{ ...starterCode, ...(loadSolution(id) ?? {}) }` in a `useState` lazy initializer (both `sources` and `savedSnapshot`). The merge means a never-edited language keeps its starter and a problem that later adds a language doesn't break. Reading localStorage in the initializer is safe even though `/judge/[id]` **server-renders** (`JudgeWorkspace` is a client component but not `ssr:false`, see [Why no PadLoader-style `ssr:false`](#why-no-padloader-style-ssrfalse)): CodeMirror renders a placeholder on the server with no buffer text in the SSR HTML, so a client initializer reading saved code can't produce a hydration mismatch. This sidesteps the "set state in a mount effect" cascade the lint rule flags.
+Buffers seed from `{ ...starterCode, ...(loadSolution(id) ?? {}) }` in a `useState` lazy initializer (both `sources` and `savedSnapshot`). The merge means a never-edited language keeps its starter and a problem that later adds a language doesn't break. Reading localStorage in the initializer is safe even though `/problems/[id]` **server-renders** (`JudgeWorkspace` is a client component but not `ssr:false`, see [Why no PadLoader-style `ssr:false`](#why-no-padloader-style-ssrfalse)): CodeMirror renders a placeholder on the server with no buffer text in the SSR HTML, so a client initializer reading saved code can't produce a hydration mismatch. This sidesteps the "set state in a mount effect" cascade the lint rule flags.
 
 ## UI notes
 

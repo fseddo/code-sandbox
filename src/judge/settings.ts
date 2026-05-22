@@ -1,3 +1,5 @@
+import { typedEntries } from "@/lib/utils";
+
 const STORAGE_KEY = "noodle:judge-settings";
 
 type SettingDef = {
@@ -23,7 +25,7 @@ export const JUDGE_SETTINGS = {
 export type JudgeSettingKey = keyof typeof JUDGE_SETTINGS;
 export type JudgeSettings = Record<JudgeSettingKey, boolean>;
 
-const entries = Object.entries(JUDGE_SETTINGS) as [JudgeSettingKey, SettingDef][];
+const entries = typedEntries<JudgeSettingKey, SettingDef>(JUDGE_SETTINGS);
 
 const defaultSettings = (): JudgeSettings =>
   Object.fromEntries(entries.map(([key, def]) => [key, def.default])) as JudgeSettings;

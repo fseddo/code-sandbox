@@ -103,6 +103,7 @@ Auto-loaded CLAUDE files are not enough for area-specific work — read the rele
 | [src/judge/](src/judge/) — the LeetCode judge | [docs/features/judge.md](docs/features/judge.md) |
 | [src/judge/problems/](src/judge/problems/) — authoring/sourcing problems | [docs/features/problem-authoring.md](docs/features/problem-authoring.md) |
 | [companies.ts](src/judge/companies.ts) / build problems / the `company-sourcer` agent | [docs/features/company-sourcing.md](docs/features/company-sourcing.md) |
+| The home page / problem catalog / routing / progress tracking | [docs/features/navigation.md](docs/features/navigation.md) |
 
 Touching an area not listed here? That's a doc gap — flag it before writing.
 

@@ -38,7 +38,7 @@ export const JudgeWorkspace = ({ problem }: { problem: ClientProblem }) => {
     <div className="flex h-full flex-col bg-background">
       <div className="flex items-center gap-2 border-b border-sidebar-border bg-card px-3 py-2">
         <Link
-          href="/judge"
+          href="/"
           className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
         >
           <LuArrowLeft className="size-4" />
