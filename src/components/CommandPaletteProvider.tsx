@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import type { ProblemSummary } from "@/judge/problems";
+import type { ProblemSummary } from "@/problems/data/problems";
 import { CommandPalette } from "./CommandPalette";
 
 type CommandPaletteApi = { open: () => void };

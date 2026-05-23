@@ -1,6 +1,6 @@
 /**
- * Shared Prettier front-end for the two editors that format code: the judge's single-function buffer
- * ([useJudge](../judge/useJudge.ts), by language) and the pad's active file ([PadEditor](../pad/PadEditor.tsx),
+ * Shared Prettier front-end for the two editors that format code: the algo editor's single-function buffer
+ * ([useAlgo](../problems/algo/useAlgo.ts), by language) and the pad's active file ([PadEditor](../pad/PadEditor.tsx),
  * by extension). Prettier and its plugins are **lazy-imported per call** so nothing ships in the main bundle.
  */
 

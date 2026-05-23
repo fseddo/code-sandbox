@@ -1,0 +1,54 @@
+import { typedEntries } from "@/lib/utils";
+
+const STORAGE_KEY = "noodle:judge-settings";
+
+type SettingDef = {
+  label: string;
+  description: string;
+  default: boolean;
+};
+
+/** Single source of truth: each editor toggle's metadata + default. Add a key here and the menu, state, and persistence all pick it up. */
+export const ALGO_SETTINGS = {
+  autocomplete: {
+    label: "Autocomplete",
+    description: "Suggest completions as you type; Tab accepts.",
+    default: true,
+  },
+  autosave: {
+    label: "Autosave",
+    description: "Persist your solution while you type.",
+    default: false,
+  },
+} as const satisfies Record<string, SettingDef>;
+
+export type AlgoSettingKey = keyof typeof ALGO_SETTINGS;
+export type AlgoSettings = Record<AlgoSettingKey, boolean>;
+
+const entries = typedEntries<AlgoSettingKey, SettingDef>(ALGO_SETTINGS);
+
+const defaultSettings = (): AlgoSettings =>
+  Object.fromEntries(entries.map(([key, def]) => [key, def.default])) as AlgoSettings;
+
+/** Reads editor settings from this browser, merged over defaults so a newly-added key gets its default. */
+export const loadSettings = (): AlgoSettings => {
+  const defaults = defaultSettings();
+  if (typeof window === "undefined") return defaults;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return defaults;
+    return { ...defaults, ...(JSON.parse(raw) as Partial<AlgoSettings>) };
+  } catch {
+    return defaults;
+  }
+};
+
+/** Persists editor settings to this browser. */
+export const saveSettings = (settings: AlgoSettings): void => {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  } catch {
+    // ignore
+  }
+};

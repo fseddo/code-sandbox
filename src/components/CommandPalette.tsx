@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LuSearch } from "react-icons/lu";
-import type { ProblemSummary } from "@/judge/problems";
-import { searchCatalog } from "@/judge/catalogFilters";
-import { DifficultyBadge } from "@/judge/DifficultyBadge";
-import { KindBadge } from "@/judge/KindBadge";
-import { titleizeSlug } from "@/judge/format";
+import type { ProblemSummary } from "@/problems/data/problems";
+import { searchCatalog } from "@/problems/catalog/catalogFilters";
+import { DifficultyBadge } from "@/problems/shared/DifficultyBadge";
+import { KindBadge } from "@/problems/shared/KindBadge";
+import { titleizeSlug } from "@/problems/shared/format";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 

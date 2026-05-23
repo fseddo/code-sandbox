@@ -1,6 +1,6 @@
 import { AppHeader } from "@/components/AppHeader";
-import { listProblemSummaries } from "@/judge/problems";
-import { ProblemCatalog } from "@/judge/ProblemCatalog";
+import { listProblemSummaries } from "@/problems/data/problems";
+import { ProblemCatalog } from "@/problems/catalog/ProblemCatalog";
 
 const Home = () => {
   const problems = listProblemSummaries();

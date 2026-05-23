@@ -3,12 +3,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 // Resolve a problem name/slug to the seed metadata an importer needs (a `ProblemStub`, see
-// src/judge/problem.ts). A catalog hit emits the stub; an off-catalog name emits a skeleton stub
+// src/problems/data/problem.ts). A catalog hit emits the stub; an off-catalog name emits a skeleton stub
 // whose difficulty/tags must be sourced from the web. Authoring-time tooling, like verifyProblems.mjs
 // — never imported by the app, so the 85KB catalog stays out of the bundle.
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const catalogPath = path.join(root, "src/judge/problems/leetcodeProblemSet.json");
+const catalogPath = path.join(root, "src/problems/data/problems/leetcodeProblemSet.json");
 
 const query = process.argv.slice(2).join(" ").trim();
 if (!query) {

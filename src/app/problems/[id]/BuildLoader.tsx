@@ -1,11 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { BuildProblem } from "@/judge/problem";
+import type { BuildProblem } from "@/problems/data/problem";
 
 // Sandpack touches the DOM on import, so the build workspace must never render on the server.
 const BuildWorkspace = dynamic(
-  () => import("@/judge/BuildWorkspace").then((m) => m.BuildWorkspace),
+  () => import("@/problems/build/BuildWorkspace").then((m) => m.BuildWorkspace),
   {
     ssr: false,
     loading: () => (

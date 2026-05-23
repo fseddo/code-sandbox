@@ -5,10 +5,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const problemsDir = path.join(root, "src/judge/problems");
-const workerPath = path.join(root, "src/judge/runner/judge.worker.mjs");
+const problemsDir = path.join(root, "src/problems/data/problems");
+const workerPath = path.join(root, "src/problems/algo/tester/problemTester.worker.mjs");
 
-// Transpile a problem .ts module to CJS and evaluate it with defineProblem stubbed to identity.
+// Transpile a problem .ts module to CJS and evaluate it with defineAlgoProblem stubbed to identity.
 const loadProblem = (file) => {
   const src = fs.readFileSync(path.join(problemsDir, file), "utf8");
   const { code } = transform(src, { transforms: ["typescript", "imports"], disableESTransforms: true });
@@ -16,7 +16,7 @@ const loadProblem = (file) => {
   const fakeRequire = (id) =>
     id.includes("problem")
       ? {
-          defineProblem: (p) => ({ kind: "algo", ...p }),
+          defineAlgoProblem: (p) => ({ kind: "algo", ...p }),
           defineBuildProblem: (p) => ({ kind: "build", ...p }),
         }
       : {};

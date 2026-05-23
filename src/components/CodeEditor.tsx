@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import CodeMirror, { EditorView, keymap, Prec } from "@uiw/react-codemirror";
 import { javascript } from "@codemirror/lang-javascript";
 import { acceptCompletion } from "@codemirror/autocomplete";
-import type { SupportedLanguage } from "@/judge/problem";
+import type { SupportedLanguage } from "@/problems/data/problem";
 import { cn } from "@/lib/utils";
 
 type CodeEditorProps = {

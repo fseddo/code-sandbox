@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getProblem } from "@/judge/problems";
+import { getProblem } from "@/problems/data/problems";
 import { CoderPadLoader } from "./PadLoader";
 
 const PadPage = async ({

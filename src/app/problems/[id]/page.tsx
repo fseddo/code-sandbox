@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
-import { getProblem, problemNumber, toClientProblem, type ProblemId } from "@/judge/problems";
-import { companiesForProblem } from "@/judge/companies";
-import { JudgeWorkspace } from "@/judge/JudgeWorkspace";
+import { getProblem, problemNumber, toClientProblem, type ProblemId } from "@/problems/data/problems";
+import { companiesForProblem } from "@/problems/data/companies";
+import { AlgoWorkspace } from "@/problems/algo/AlgoWorkspace";
 import { BuildLoader } from "./BuildLoader";
 
 const ProblemPage = async ({ params }: { params: Promise<{ id: string }> }) => {
@@ -20,7 +20,7 @@ const ProblemPage = async ({ params }: { params: Promise<{ id: string }> }) => {
       {problem.kind === "build" ? (
         <BuildLoader problem={problem} number={number} companies={companies} />
       ) : (
-        <JudgeWorkspace problem={toClientProblem(problem)} number={number} companies={companies} />
+        <AlgoWorkspace problem={toClientProblem(problem)} number={number} companies={companies} />
       )}
     </main>
   );

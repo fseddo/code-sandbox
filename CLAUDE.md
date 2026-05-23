@@ -2,7 +2,7 @@
 
 # Repo orientation
 
-noodle — a CoderPad + LeetCode hybrid. Single Next.js 16 (App Router) app, React 19, no separate backend yet. The CoderPad pane is built; a first cut of the LeetCode judge (typed problem bank + server-side judge via a worker thread) is in [src/judge/](src/judge/) — see [docs/features/judge.md](docs/features/judge.md).
+noodle — a CoderPad + LeetCode hybrid. Single Next.js 16 (App Router) app, React 19, no separate backend yet. The CoderPad pane is built; a first cut of the algo problems feature (typed problem bank + server-side test runner via a worker thread) is in [src/problems/](src/problems/) — see [docs/features/algo.md](docs/features/algo.md).
 
 ## Stack notes
 
@@ -27,7 +27,7 @@ src/
 
 Feature folders own everything for one area: components, hooks, local utilities. Cross-feature code lives in `src/components/`; shadcn primitives stay in `src/components/ui/` because the shadcn CLI writes there.
 
-When the LeetCode phase lands, it gets its own folder (e.g. `src/judge/`), not a split inside `pad/`.
+When the LeetCode phase lands, it gets its own folder (e.g. `src/problems/`), not a split inside `pad/`.
 
 ## File + symbol naming
 
@@ -100,9 +100,9 @@ Auto-loaded CLAUDE files are not enough for area-specific work — read the rele
 | Touching                                      | Read first                                       |
 | --------------------------------------------- | ------------------------------------------------ |
 | [src/pad/](src/pad/) — the CoderPad pane      | [docs/features/pad.md](docs/features/pad.md)     |
-| [src/judge/](src/judge/) — the LeetCode judge | [docs/features/judge.md](docs/features/judge.md) |
-| [src/judge/problems/](src/judge/problems/) — authoring/sourcing problems | [docs/features/problem-authoring.md](docs/features/problem-authoring.md) |
-| [companies.ts](src/judge/companies.ts) / build problems / the `company-sourcer` agent | [docs/features/company-sourcing.md](docs/features/company-sourcing.md) |
+| [src/problems/algo/](src/problems/algo/) — the algo workspace, editor & tester | [docs/features/algo.md](docs/features/algo.md) |
+| [src/problems/data/problems/](src/problems/data/problems/) — authoring/sourcing problems | [docs/features/problem-authoring.md](docs/features/problem-authoring.md) |
+| [companies.ts](src/problems/data/companies.ts) / build problems / the `company-sourcer` agent | [docs/features/company-sourcing.md](docs/features/company-sourcing.md) |
 | The home page / problem catalog / routing / progress tracking | [docs/features/navigation.md](docs/features/navigation.md) |
 
 Touching an area not listed here? That's a doc gap — flag it before writing.

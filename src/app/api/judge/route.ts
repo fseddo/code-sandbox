@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
-import type { RunMode, SupportedLanguage } from "@/judge/problem";
-import { getProblem } from "@/judge/problems";
-import { runSubmission } from "@/judge/runner/runSubmission";
+import type { RunMode, SupportedLanguage } from "@/problems/data/problem";
+import { getProblem } from "@/problems/data/problems";
+import { runTests } from "@/problems/algo/tester/runTests";
 
 // Worker threads + node:vm are Node-only; the Edge runtime can't host them.
 export const runtime = "nodejs";
@@ -30,6 +30,6 @@ export const POST = async (request: NextRequest) => {
 
   // Default to the exposed-only run; only an explicit "submit" pulls in the hidden set.
   const runMode: RunMode = mode === "submit" ? "submit" : "run";
-  const outcome = await runSubmission({ problem, language: language as SupportedLanguage, source, mode: runMode });
+  const outcome = await runTests({ problem, language: language as SupportedLanguage, source, mode: runMode });
   return Response.json(outcome);
 };

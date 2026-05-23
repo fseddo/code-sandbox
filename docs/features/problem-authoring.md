@@ -1,19 +1,19 @@
 # Problem authoring & sourcing
 
 > **Status: implemented.** The data model below (`examples`, `constraints`, `tags`, `source`, plus
-> the `io` / `checker` harness extensions) is live in [problem.ts](../../src/judge/problem.ts), and
+> the `io` / `checker` harness extensions) is live in [problem.ts](../../src/problems/data/problem.ts), and
 > the first 10 catalog problems are authored. This doc is now the standing **authoring guide** — the
-> data-model wiring lives in [judge.md → Problem model](judge.md#problem-model--the-typed-core); the
+> data-model wiring lives in [algo.md → Problem model](algo.md#problem-model--the-typed-core); the
 > rubric and test-case policy here are what you follow when adding a problem.
 >
 > Authoring is automatable: the [`problem-importer`](../../.claude/agents/problem-importer.md) agent
 > takes one catalog row and produces a verified module, reporting a confidence score. Every problem
 > is checked end-to-end by [`scripts/verifyProblems.mjs`](../../scripts/verifyProblems.mjs), which
-> runs each reference solution through the real judge worker.
+> runs each reference solution through the real tester worker.
 
 ## What `leetcodeProblemSet.json` actually is
 
-[`leetcodeProblemSet.json`](../../src/judge/problems/leetcodeProblemSet.json) is a **catalog**, not
+[`leetcodeProblemSet.json`](../../src/problems/data/problems/leetcodeProblemSet.json) is a **catalog**, not
 problem content. It's a paginated GraphQL response (`problemsetQuestionListV2`, note the
 `hasMore` / `totalLength` / `finishedLength` envelope) holding 100 rows. Each row is metadata only:
 
@@ -57,7 +57,7 @@ authored (and must not be scraped verbatim — see [Provenance & licensing](#pro
 
 The model was already generic over `(...Args) => Result` with cases type-checked against the
 signature; this work added **examples, constraints, tags, and provenance**. The field wiring lives
-in [judge.md → Problem model](judge.md#problem-model--the-typed-core); the rest of this section
+in [algo.md → Problem model](algo.md#problem-model--the-typed-core); the rest of this section
 records _why_ each was added and the design calls made.
 
 ## Data-structure additions — design notes
@@ -68,7 +68,7 @@ rather than redeclare, let the solution signature flow through.
 ### `examples` — typed off the same signature
 
 LeetCode examples (Input / Output / Explanation) used to dissolve into the `prompt` markdown.
-Structuring them lets [`ProblemPanel`](../../src/judge/ProblemPanel.tsx) render them as distinct
+Structuring them lets [`ProblemPanel`](../../src/problems/algo/ProblemPanel.tsx) render them as distinct
 blocks, and — the clever-TS payoff — lets an example **be** a test case plus a human explanation,
 type-checked against `Args`/`Result` for free:
 
@@ -80,7 +80,7 @@ export type Example<Args extends unknown[], Result> = TestCase<Args, Result> & {
 ```
 
 **The visible test set is derived from `examples`, not authored twice.** There is no separate
-`tests` field: [`runSubmission`](../../src/judge/runner/runSubmission.ts) builds the visible cases
+`tests` field: [`runTests`](../../src/problems/algo/tester/runTests.ts) builds the visible cases
 from `examples` (Run uses them; Submit adds `hiddenTests`). This removed the drift where a prompt's
 example could claim an output the visible test didn't check.
 
@@ -97,7 +97,7 @@ problem needs the huge-illustrative-input escape hatch.
 
 Rather than `string`, `TopicTag` is a literal union of the catalog's distinct topic slugs, so an
 authored problem can't invent a tag the filter UI won't know about — the same move as the
-`PadTemplate` literal and the `JUDGE_SETTINGS` registry. It's **hand-maintained** today (seeded from
+`PadTemplate` literal and the `ALGO_SETTINGS` registry. It's **hand-maintained** today (seeded from
 the 30 slugs in the catalog); regenerating it from the catalog on demand is the open follow-up in
 the plan below.
 
@@ -119,7 +119,7 @@ export type ProblemSource = {
 ### `ClientProblem` projection
 
 `examples`, `constraints`, `tags`, and `source` are all client-safe. The server-only fields are
-`hiddenTests` **and** `checker` (the answer-validator source) — [`toClientProblem`](../../src/judge/problems/index.ts)
+`hiddenTests` **and** `checker` (the answer-validator source) — [`toClientProblem`](../../src/problems/data/problems/index.ts)
 strips exactly those two via a derived `omit`, so adding a future server-only field to the
 `ClientProblem` `Omit` becomes a compile error there until it's also dropped.
 
@@ -129,11 +129,11 @@ The instinct behind "~20+ hidden tests per problem" is right: **a thin hidden se
 hardcoded solutions pass.** But a flat "20 for every problem" is the wrong knob, for two concrete
 reasons:
 
-1. **Padding, not coverage.** An easy problem like [fizzBuzz](../../src/judge/problems/fizzBuzz.ts)
+1. **Padding, not coverage.** An easy problem like [fizzBuzz](../../src/problems/data/problems/fizzBuzz.ts)
    has maybe 6–8 _meaningfully distinct_ inputs. Forcing 20 means 12 near-duplicates that add
    runtime and reviewer fatigue without probing anything new. Count is an _output_ of coverage, not
    a target.
-2. **The 2s budget.** [`runSubmission`](../../src/judge/runner/runSubmission.ts) races the **entire
+2. **The 2s budget.** [`runTests`](../../src/problems/algo/tester/runTests.ts) races the **entire
    submission** against a single 2000 ms timeout — not per-test. Twenty large-input stress cases can
    blow that budget for a legitimately optimal `O(n)` solution, turning a correct answer into a
    `timeout`. So large cases are a scarce resource, not something to mint 20 of.
@@ -162,7 +162,7 @@ just don't manufacture them.
 
 **Open follow-up on the 2s budget:** if scale cases routinely brush the limit, Submit mode may need
 a higher ceiling than Run (e.g. 5s for the hidden batch), since the user is no longer waiting on a
-fast feedback loop. That's a `runSubmission` change, not a data-model one — flagged here, decided
+fast feedback loop. That's a `runTests` change, not a data-model one — flagged here, decided
 when the first hard problem with real stress tests forces it.
 
 ## Conversion rubric — catalog row → authored problem
@@ -177,7 +177,7 @@ For each problem promoted from the catalog:
    [`resolveProblem.mjs`](../../scripts/resolveProblem.mjs) → an `origin: "authored"` stub whose
    `difficulty`/`tags` come from the web — see [company-sourcing.md](company-sourcing.md#phase-1--name--metadata-resolution--done).)
 3. **Author the prompt** in our own words. Do **not** paste LeetCode's description — restate it.
-   Markdown, backtick inline code (what [ProblemPanel](../../src/judge/ProblemPanel.tsx) renders).
+   Markdown, backtick inline code (what [ProblemPanel](../../src/problems/algo/ProblemPanel.tsx) renders).
 4. **Author `examples`** (2–4): each an `{ args, expected, explanation }`, type-checked against the
    signature. These double as the visible tests.
 5. **Author `constraints`** — the input bounds. These also tell you how to _size the scale tests_.
@@ -186,18 +186,18 @@ For each problem promoted from the catalog:
    hit every category, meet the difficulty floor.
 8. **Author ≥1 `solution`** with explanation + per-language code. The reference solution is also the
    oracle.
-9. **Register** in [`problems/index.ts`](../../src/judge/problems/index.ts) (one line).
+9. **Register** in [`problems/index.ts`](../../src/problems/data/problems/index.ts) (one line).
 10. **Verify** — run `node scripts/verifyProblems.mjs`; your problem must print `PASS N/N`. It runs
     the reference solution through the real worker against every example + hidden case, so a wrong
     `expected` (or a wrong solution) shows up here. `npx tsc --noEmit` and `eslint` must be clean too.
 
-For reference-type I/O use `io` and array test data ([addTwoNumbers](../../src/judge/problems/addTwoNumbers.ts));
-for multiple-valid-answer problems use a `checker` ([longestPalindrome](../../src/judge/problems/longestPalindrome.ts)).
+For reference-type I/O use `io` and array test data ([addTwoNumbers](../../src/problems/data/problems/addTwoNumbers.ts));
+for multiple-valid-answer problems use a `checker` ([longestPalindrome](../../src/problems/data/problems/longestPalindrome.ts)).
 The [`problem-importer`](../../.claude/agents/problem-importer.md) agent runs this whole rubric for one row.
 
 **Quality gate (a problem isn't done until all hold):**
 
-- [ ] `defineProblem<Args, Result>` compiles — no `any`, signature pinned.
+- [ ] `defineAlgoProblem<Args, Result>` compiles — no `any`, signature pinned.
 - [ ] Every example's `expected` matches the reference solution's output.
 - [ ] Hidden set covers all five categories and meets the difficulty floor.
 - [ ] At least one scale case, sized against `constraints`, runs under the budget on the reference
@@ -207,18 +207,18 @@ The [`problem-importer`](../../.claude/agents/problem-importer.md) agent runs th
 
 ## Plan / phases
 
-1. ~~**Model** — `examples`, `constraints`, `tags`, `source` on [`problem.ts`](../../src/judge/problem.ts);
+1. ~~**Model** — `examples`, `constraints`, `tags`, `source` on [`problem.ts`](../../src/problems/data/problem.ts);
    `examples` are the single source for visible tests (no separate `tests` field).~~ **Done.**
 2. ~~**Harness** — `io` linked-list hydration + `checker` support in
-   [judge.worker.mjs](../../src/judge/runner/judge.worker.mjs) / [runSubmission](../../src/judge/runner/runSubmission.ts).~~ **Done.**
-3. ~~**Render** — [`ProblemPanel`](../../src/judge/ProblemPanel.tsx) shows `examples` (with
+   [problemTester.worker.mjs](../../src/problems/algo/tester/problemTester.worker.mjs) / [runTests](../../src/problems/algo/tester/runTests.ts).~~ **Done.**
+3. ~~**Render** — [`ProblemPanel`](../../src/problems/algo/ProblemPanel.tsx) shows `examples` (with
    explanations), a `constraints` list, and `tags` chips.~~ **Done.**
 4. ~~**Backfill** — the three original problems migrated to the new shape.~~ **Done.**
 5. ~~**Author** — first 10 catalog problems imported (ids 1–10) via the importer agent.~~ **Done.**
 6. **Tags index (open)** — the `TopicTag` union is hand-maintained from the catalog today. A small
    script could regenerate it and emit a `catalogIndex` of unauthored rows for a "coming soon" list.
 7. **Budget revisit (open)** — if scale tests start brushing the limit, split Run vs. Submit timeouts
-   in [`runSubmission`](../../src/judge/runner/runSubmission.ts). Not needed yet.
+   in [`runTests`](../../src/problems/algo/tester/runTests.ts). Not needed yet.
 8. **Filter UI (done)** — `tags` (and kind, difficulty, company, progress status) are filter facets on
    the home-page catalog. See [navigation.md](navigation.md).
 

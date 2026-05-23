@@ -3,7 +3,7 @@
 > **Status: in progress — Phases 0–3 done, Phase 4 (filter UI) open.** The end-to-end loop works: a
 > company name → sourced, tagged, and (where possible) authored problems via the
 > [`company-sourcer`](../../.claude/agents/company-sourcer.md) agent. Current-state detail for the
-> model lives in [judge.md → Problem model](judge.md#problem-model--the-typed-core) and the pad seams
+> model lives in [algo.md → Problem model](algo.md#problem-model--the-typed-core) and the pad seams
 > in [pad.md → Reusable seams](pad.md#reusable-seams-leadingpanel--rendertoolbar). This doc turns a
 > prompt like _"I'm interviewing at NYTimes today, gather their problems"_ into tagged, solvable
 > problems. When a phase lands, flip its marker to **Done** and move _current-state_ detail into the
@@ -17,7 +17,7 @@
   → 2. RESOLVE    name → existing problem? catalog row? off-catalog stub?
   → 3a. TAG       exists → associate it with the company
   → 3b. ADD       missing → author it, then associate
-  → 4. CLASSIFY   algo problem  → problem-importer path (pure-function judge)
+  → 4. CLASSIFY   algo problem  → problem-importer path (pure-function tester)
                   build problem → pad-backed sandbox-with-prompt
                   unsupportable → don't fake it: record + write an upgrade plan
 ```
@@ -46,7 +46,7 @@ re-implementing it, so there stays exactly one authoring path and one verificati
 
 ## Phase 0 — `Problem` becomes a discriminated union — **Done**
 
-Today [problem.ts](../../src/judge/problem.ts) has a single `Problem<Args, Result>` shape bound to
+Today [problem.ts](../../src/problems/data/problem.ts) has a single `Problem<Args, Result>` shape bound to
 pure-function judging (`functionName`, `examples`, `hiddenTests`). A build problem can't be
 expressed in it. Split into a shared base + a `kind` discriminant — the same single-source-union
 posture as `TopicTag` / `PadTemplate`:
@@ -61,7 +61,7 @@ type ProblemBase = {
   source?: ProblemSource;
 };
 
-// shipped as `Problem<Args, Result>` (the existing name kept, now the algo arm)
+// the algo arm — shipped as `AlgoProblem<Args, Result>`
 type AlgoProblem<Args extends unknown[], Result> = ProblemBase & {
   kind: "algo";
   constraints: string[];        // input-bounds — stays on the algo arm, meaningless for a build task
@@ -81,10 +81,10 @@ type BuildProblem = ProblemBase & {
   evaluationNotes?: string[];            // what a reviewer looks for (no auto-grading)
 };
 
-export type AnyProblem = Problem | BuildProblem;
+export type AnyProblem = AlgoProblem | BuildProblem;
 ```
 
-- **`defineProblem` injects `kind: "algo"`** (takes `Omit<Problem, "kind">`) so the 12 existing
+- **`defineAlgoProblem` injects `kind: "algo"`** (takes `Omit<AlgoProblem, "kind">`) so the 12 existing
   modules didn't change. A new `defineBuildProblem` covers the build arm.
 - **Company tags are _not_ on the problem** (see Phase 0b) — a problem doesn't own its associations.
 - **No `PadTemplate` literal exists** — pads use a `PadProfile` over Sandpack's
@@ -92,9 +92,9 @@ export type AnyProblem = Problem | BuildProblem;
   (type-only, erased imports). Whether build problems adopt the full `PadProfile` is Phase 2's call.
 - **`ProblemSource.origin`** widened to `"leetcode" | "authored"` (and `frontendId` is now optional)
   so off-catalog and build problems have honest provenance.
-- **`toClientProblem` is unchanged** (`Problem → ClientProblem`); `getProblem`/`listProblems` now
+- **`toClientProblem` is unchanged** (`AlgoProblem → ClientProblem`); `getProblem`/`listProblems` now
   return `AnyProblem`, and the two algo-only server boundaries
-  ([`/judge/[id]` page](../../src/app/judge/[id]/page.tsx), [`/api/judge` route](../../src/app/api/judge/route.ts))
+  ([`/problems/[id]` page](../../src/app/problems/[id]/page.tsx), [`/api/judge` route](../../src/app/api/judge/route.ts))
   narrow on `kind === "algo"` — build problems `notFound`/`400` until their route lands in Phase 2.
 
 **Honest cost:** every consumer that reads a problem now narrows on `kind`. That's the real,
@@ -105,7 +105,7 @@ and "build a carousel" are not the same thing and shouldn't share one shape.
 
 A problem doesn't own its companies — Merge Intervals is asked _everywhere_, and we don't want to
 re-edit a problem module every time a new company surfaces it. The association lives out of the
-problem files, in its own single-source module — [companies.ts](../../src/judge/companies.ts):
+problem files, in its own single-source module — [companies.ts](../../src/problems/data/companies.ts):
 
 ```ts
 export type CompanyTag = "new-york-times"; // grown as companies are sourced
@@ -126,11 +126,11 @@ because an empty literal under `satisfies` infers `{}` and breaks lookups by `Co
 ## Phase 1 — Name → metadata resolution — **Done**
 
 Given `"Merge Intervals"`, resolution yields the seed metadata (`ProblemStub` in
-[problem.ts](../../src/judge/problem.ts) — `id`/`title`/`difficulty`/`tags`/`source`, derived from
+[problem.ts](../../src/problems/data/problem.ts) — `id`/`title`/`difficulty`/`tags`/`source`, derived from
 `ProblemBase` so it can't drift):
 
 - **catalog hit** ([resolveProblem.mjs](../../scripts/resolveProblem.mjs) searches
-  [leetcodeProblemSet.json](../../src/judge/problems/leetcodeProblemSet.json) by title/slug) → emits
+  [leetcodeProblemSet.json](../../src/problems/data/problems/leetcodeProblemSet.json) by title/slug) → emits
   the stub with `origin: "leetcode"`;
 - **off-catalog** (e.g. _Convert BST to Sorted Doubly Linked List_, _Make String a Subsequence…_) →
   emits a skeleton stub (`origin: "authored"`, `difficulty`/`tags` `null`/empty) whose missing fields
@@ -149,13 +149,13 @@ A build problem is an authored `BuildProblem` solved in the existing pad bundler
 
 - **Route:** [`/problems/[id]`](../../src/app/problems/[id]/page.tsx) branches on `kind` — `build` renders
   [`BuildLoader`](../../src/app/problems/[id]/BuildLoader.tsx) (`dynamic`, `ssr: false`, since Sandpack
-  can't SSR), which loads [`BuildWorkspace`](../../src/judge/BuildWorkspace.tsx); `algo` renders the
-  judge as before. Build problems appear in the home-page catalog alongside algo ones — see
+  can't SSR), which loads [`BuildWorkspace`](../../src/problems/build/BuildWorkspace.tsx); `algo` renders the
+  the algo workspace as before. Build problems appear in the home-page catalog alongside algo ones — see
   [navigation.md](navigation.md).
 - **Reuse, not a fork:** `BuildWorkspace` renders [`CoderPad`](../../src/pad/CoderPad.tsx) — the same
   bundler/save/persistence machinery — passing a `PadProfile` built from the problem and two new
   generic seams on the pad: `leadingPanel` (the prompt column) and a render-prop `renderToolbar`
-  (a judge-style back/title/Save/Reset bar). The pad layer stays free of judge concepts. See
+  (an algo-style back/title/Save/Reset bar). The pad layer stays free of problem concepts. See
   [pad.md → Reusable seams](pad.md#reusable-seams-leadingpanel--rendertoolbar).
 - **Persistence + reset:** the pad id **is** the problem id, so a solver's edits persist across
   visits via the normal [pad.ts](../../src/pad/pad.ts) localStorage path, and Reset
@@ -163,14 +163,14 @@ A build problem is an authored `BuildProblem` solved in the existing pad bundler
   question.
 - **No auto-grading.** Build tasks are open-ended / human-evaluated; the worker never scores them.
   `evaluationNotes` is the rubric a reviewer reads, surfaced in
-  [`BuildProblemPanel`](../../src/judge/BuildProblemPanel.tsx). [verifyProblems.mjs](../../scripts/verifyProblems.mjs)
+  [`BuildProblemPanel`](../../src/problems/build/BuildProblemPanel.tsx). [verifyProblems.mjs](../../scripts/verifyProblems.mjs)
   `SKIP`s `kind: "build"`.
 
 **v1 simplification:** `BuildWorkspace` layers the problem's `files` over the shared
 `typescriptFrontend` base layout (so a problem only specifies what it overrides). This resolves the
 "which template" open question below to "the one TS-frontend profile, for now" — revisit when a
 build problem needs a different stack. First authored example:
-[buildStarRating.ts](../../src/judge/problems/buildStarRating.ts).
+[buildStarRating.ts](../../src/problems/data/problems/buildStarRating.ts).
 
 ## Phase 3 — The `company-sourcer` agent — **Done**
 
@@ -181,12 +181,12 @@ re-author. Flow:
 2. WebSearch → candidate problem names, **deduped and ranked by source reliability** (first-party
    signals over recycled aggregator anecdotes), each classified **algo** vs **build**.
 3. For each resolved problem:
-   - **exists** (in [problems/index.ts](../../src/judge/problems/index.ts)) → add the edge in `companyProblems`;
+   - **exists** (in [problems/index.ts](../../src/problems/data/problems/index.ts)) → add the edge in `companyProblems`;
    - **algo, missing** → resolve via [resolveProblem.mjs](../../scripts/resolveProblem.mjs), delegate
      to the `problem-importer` subagent (its self-verification +
      [`verifyProblems.mjs`](../../scripts/verifyProblems.mjs) gate apply unchanged), then add the edge;
    - **build, missing & pad-supportable** → author a `BuildProblem` (à la
-     [buildStarRating.ts](../../src/judge/problems/buildStarRating.ts)), then add the edge;
+     [buildStarRating.ts](../../src/problems/data/problems/buildStarRating.ts)), then add the edge;
    - **build, unsupportable** → record it in `docs/improvements/build-sandbox-gaps.md` + an upgrade
      plan in the report; **never fabricate** a problem.
 4. Report a per-company table: action (tagged / imported / authored / unsupported) and **two**
@@ -207,13 +207,13 @@ each row's company chips and the facet options.
 ## Build vs. defer — decided
 
 Both the algo path and the pad-backed build path are in scope for v1 (not algo-only with build
-deferred). Build problems reuse the existing CoderPad sandbox rather than getting a new judge
+deferred). Build problems reuse the existing CoderPad sandbox rather than getting a new algo
 problem kind, because they're open-ended and don't need automated grading.
 
 ## Open questions — resolved in Phase 2
 
-- **Where build-problem definitions live** → **one bank.** `src/judge/problems/`, discriminated, since
-  the registry is already `AnyProblem` ([buildStarRating.ts](../../src/judge/problems/buildStarRating.ts)).
+- **Where build-problem definitions live** → **one bank.** `src/problems/data/problems/`, discriminated, since
+  the registry is already `AnyProblem` ([buildStarRating.ts](../../src/problems/data/problems/buildStarRating.ts)).
 - **Seeding without clobbering edits** → **pad id = problem id.** Edits persist via the normal
   localStorage path; `resetPad` is the "reset to starter" affordance.
 - **Template reuse** → **the one TS-frontend profile, for now.** `BuildWorkspace` layers a problem's
