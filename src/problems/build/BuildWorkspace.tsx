@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import type { BuildProblem } from "@/problems/data/problem";
+import type { BuildProblem, ProblemHeaderData } from "@/problems/data/problem";
 import { BuildProblemPanel } from "@/problems/build/BuildProblemPanel";
 import { BuildToolbar } from "@/problems/build/BuildToolbar";
 import { ProblemTitleBar } from "@/problems/shared/ProblemTitleBar";
@@ -15,10 +15,8 @@ import type { PadProfile } from "@/pad/padProfiles/typescriptFrontend";
  * TS-frontend base layout — the v1 simplification of the "which template" question in
  * [company-sourcing.md](../../docs/features/company-sourcing.md).
  */
-type BuildWorkspaceProps = {
+type BuildWorkspaceProps = ProblemHeaderData & {
   problem: BuildProblem;
-  number: number;
-  companies: readonly string[];
 };
 
 export const BuildWorkspace = ({ problem, number, companies }: BuildWorkspaceProps) => {

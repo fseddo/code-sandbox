@@ -2,6 +2,7 @@ import { defineAlgoProblem } from "../problem";
 
 export const fizzBuzz = defineAlgoProblem<[number], string[]>({
   id: "fizz-buzz",
+  number: 11,
   title: "Fizz Buzz",
   difficulty: "easy",
   tags: ["math", "string", "simulation"],

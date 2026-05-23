@@ -1,4 +1,4 @@
-import type { ReactElement, ReactNode } from "react";
+import { useState, type ReactElement, type ReactNode } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,18 +45,33 @@ export const ConfirmDialog = ({
   confirmLabel,
   onConfirm,
   cancelLabel = "Cancel",
-}: ConfirmDialogProps) => (
-  <AlertDialog open={open} onOpenChange={onOpenChange}>
-    {trigger ? <AlertDialogTrigger render={trigger} /> : null}
-    <AlertDialogContent>
-      <AlertDialogHeader>
-        <AlertDialogTitle>{title}</AlertDialogTitle>
-        <AlertDialogDescription>{description}</AlertDialogDescription>
-      </AlertDialogHeader>
-      <AlertDialogFooter>
-        <AlertDialogCancel>{cancelLabel}</AlertDialogCancel>
-        <AlertDialogAction onClick={onConfirm}>{confirmLabel}</AlertDialogAction>
-      </AlertDialogFooter>
-    </AlertDialogContent>
-  </AlertDialog>
-);
+}: ConfirmDialogProps) => {
+  // Owned here (even in uncontrolled mode) because Base UI's AlertDialogAction is a plain button — it
+  // doesn't auto-close like Radix's, so confirming has to dismiss the dialog explicitly. Cancel/Escape/
+  // backdrop still close via onOpenChange. Don't "simplify" back to an uncontrolled Root, or confirm
+  // leaves the modal open.
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const isOpen = open ?? uncontrolledOpen;
+  const setOpen = onOpenChange ?? setUncontrolledOpen;
+
+  const handleConfirm = () => {
+    onConfirm();
+    setOpen(false);
+  };
+
+  return (
+    <AlertDialog open={isOpen} onOpenChange={setOpen}>
+      {trigger ? <AlertDialogTrigger render={trigger} /> : null}
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{cancelLabel}</AlertDialogCancel>
+          <AlertDialogAction onClick={handleConfirm}>{confirmLabel}</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+};

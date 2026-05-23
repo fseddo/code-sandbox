@@ -1,139 +1,56 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { toast } from "sonner";
-import type { ClientProblem, RunMode, SubmissionOutcome, SupportedLanguage } from "@/problems/data/problem";
-import { loadSolution, saveSolution } from "@/problems/progress/solution";
-import { type CompletedSolution, getEntry, markComplete, markInProgress } from "@/problems/progress/progress";
+import type { ClientProblem, RunMode } from "@/problems/data/problem";
 import { useAlgoSettings } from "@/problems/progress/useAlgoSettings";
-import { formatCode } from "@/lib/prettier";
-import { useSaveShortcut } from "@/components/useSaveShortcut";
-import { useLatestRef } from "@/components/useLatestRef";
-import { useDirtyTracker } from "@/components/useDirtyTracker";
-import { AUTOSAVE_DEBOUNCE_MS, useDebouncedCallback } from "@/components/useDebouncedCallback";
-
-type Sources = Record<SupportedLanguage, string>;
+import { useAlgoEditor } from "@/problems/algo/useAlgoEditor";
+import { useAlgoSubmission } from "@/problems/algo/useAlgoSubmission";
 
 /**
- * Buffers (one per language), the run request, and the save model.
- *
- * Save persists the buffers to localStorage; Run is the "apply" step, so there's
- * no preview to keep in sync — saving only governs surviving a reload.
+ * Composition root for the algo workspace. Wires three concerns — editor settings
+ * ([useAlgoSettings](../progress/useAlgoSettings.ts)), the editing surface ([useAlgoEditor](./useAlgoEditor.ts)),
+ * and the grading lifecycle ([useAlgoSubmission](./useAlgoSubmission.ts)) — and owns only the actions
+ * that span them: Run reads the current buffer, Reset clears buffer *and* outcome, Restore pushes the
+ * answer-of-record back into the buffer. Keeping those here is what lets the two leaves stay independent.
  */
 export const useAlgo = (problem: ClientProblem) => {
-  // Lazy initializer, not a mount effect: this page server-renders, but CodeMirror
-  // renders a placeholder on the server (no buffer text in the SSR HTML), so reading
-  // localStorage here can't cause a hydration mismatch. saved is merged over
-  // starterCode so a never-edited language keeps its starter.
-  const seed = (): Sources => ({ ...problem.starterCode, ...(loadSolution(problem.id) ?? {}) });
-
   const { settings, setSetting } = useAlgoSettings();
-  const [language, setLanguage] = useState<SupportedLanguage>("typescript");
-  const [sources, setSources] = useState<Sources>(seed);
-  const { setSavedSnapshot, isDirty } = useDirtyTracker(sources, seed);
-  // The buffer that last passed Submit (seeded from the progress store, refreshed on each pass) — drives
-  // the "Last submission" restore button. Same lazy-localStorage-read rationale as `seed`.
-  const [submittedSolution, setSubmittedSolution] = useState<CompletedSolution | null>(
-    () => getEntry(problem.id)?.solution ?? null,
-  );
-  const [isFormatting, setIsFormatting] = useState(false);
-  const [outcome, setOutcome] = useState<SubmissionOutcome | null>(null);
-  // Which mode is in flight (null = idle). Lets the toolbar label Run vs Submit independently while sharing one request path.
-  const [runningMode, setRunningMode] = useState<RunMode | null>(null);
+  const editor = useAlgoEditor(problem, settings.autosave);
+  const submission = useAlgoSubmission(problem);
 
-  // Stable save() reads the latest buffers through a ref so it doesn't re-create on every keystroke.
-  const sourcesRef = useLatestRef(sources);
+  const run = (mode: RunMode) =>
+    submission.run(mode, { language: editor.language, source: editor.source });
 
-  const save = useCallback(() => {
-    const current = sourcesRef.current;
-    saveSolution(problem.id, current);
-    setSavedSnapshot(current);
-  }, [problem.id, sourcesRef, setSavedSnapshot]);
-
-  // Autosave is event-driven: edits flow through these handlers, so the debounce rides the change
-  // rather than a useEffect watching `sources` (no need to tell edits apart from language switches).
-  const scheduleAutosave = useDebouncedCallback(save, AUTOSAVE_DEBOUNCE_MS);
-  const autosave = () => {
-    if (settings.autosave) scheduleAutosave();
-  };
-
-  const setSource = (next: string) => {
-    setSources((prev) => ({ ...prev, [language]: next }));
-    autosave();
-  };
-
-  // Reset is problem-level: it restores the starter buffer AND clears the last run's results (which
-  // live outside the editor), so the panel doesn't show stale output for code that no longer exists.
+  // Reset is problem-level: restore the starter buffer AND clear the last run's results (they live
+  // outside the editor), so the panel doesn't show stale output for code that no longer exists.
   const resetSolution = () => {
-    setSources((prev) => ({ ...prev, [language]: problem.starterCode[language] }));
-    setOutcome(null);
-    autosave();
+    editor.resetBuffer();
+    submission.clearOutcome();
   };
 
   /** Load the last passing submission back into its language's buffer (no-op if there isn't one). */
   const restoreSubmission = () => {
-    if (!submittedSolution) return;
-    setLanguage(submittedSolution.language);
-    setSources((prev) => ({ ...prev, [submittedSolution.language]: submittedSolution.source }));
-    autosave();
-  };
-
-  /** Prettier-format the current buffer in place; a syntax error surfaces as a toast, not a thrown render. */
-  const format = async () => {
-    setIsFormatting(true);
-    try {
-      const formatted = await formatCode(sourcesRef.current[language], language === "typescript" ? "typescript" : "babel");
-      setSources((prev) => ({ ...prev, [language]: formatted }));
-      autosave();
-    } catch {
-      toast.error("Couldn't format — check for syntax errors.");
-    } finally {
-      setIsFormatting(false);
-    }
-  };
-
-  useSaveShortcut(save);
-
-  const run = async (mode: RunMode) => {
-    setRunningMode(mode);
-    markInProgress(problem.id);
-    try {
-      const response = await fetch("/api/judge", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ problemId: problem.id, language, source: sources[language], mode }),
-      });
-      const result = (await response.json()) as SubmissionOutcome;
-      setOutcome(result);
-      // Submit is the graded run: passing every case (visible + hidden) is the algo completion oracle.
-      if (mode === "submit" && result.status === "ok" && result.results.every((test) => test.passed)) {
-        const passing: CompletedSolution = { language, source: sources[language] };
-        markComplete(problem.id, passing);
-        setSubmittedSolution(passing);
-      }
-    } catch (error) {
-      setOutcome({ status: "crashed", message: error instanceof Error ? error.message : "Request failed." });
-    } finally {
-      setRunningMode(null);
-    }
+    const submitted = submission.submittedSolution;
+    if (!submitted) return;
+    editor.setLanguage(submitted.language);
+    editor.setBuffer(submitted.language, submitted.source);
   };
 
   return {
-    language,
-    setLanguage,
-    source: sources[language],
-    setSource,
+    language: editor.language,
+    setLanguage: editor.setLanguage,
+    source: editor.source,
+    setSource: editor.setSource,
     resetSolution,
     restoreSubmission,
-    submittedSolution,
-    format,
-    isFormatting,
-    save,
-    isDirty,
+    submittedSolution: submission.submittedSolution,
+    format: editor.format,
+    isFormatting: editor.isFormatting,
+    save: editor.save,
+    isDirty: editor.isDirty,
     settings,
     setSetting,
-    outcome,
-    runningMode,
+    outcome: submission.outcome,
+    runningMode: submission.runningMode,
     run,
   };
 };

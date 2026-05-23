@@ -2,6 +2,7 @@ import { defineAlgoProblem } from "../problem";
 
 export const findMedianSortedArrays = defineAlgoProblem<[number[], number[]], number>({
   id: "median-of-two-sorted-arrays",
+  number: 4,
   title: "Median of Two Sorted Arrays",
   difficulty: "hard",
   tags: ["array", "binary-search", "divide-and-conquer"],

@@ -2,6 +2,7 @@ import { defineAlgoProblem } from "../problem";
 
 export const mergeIntervals = defineAlgoProblem<[number[][]], number[][]>({
   id: "merge-intervals",
+  number: 13,
   title: "Merge Intervals",
   difficulty: "medium",
   tags: ["array", "sorting"],

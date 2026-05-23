@@ -5,6 +5,7 @@ import { defineAlgoProblem } from "../problem";
 // strings, then sort the groups — and compares. `expected` is one valid grouping.
 export const groupAnagrams = defineAlgoProblem<[string[]], string[][]>({
   id: "group-anagrams",
+  number: 14,
   title: "Group Anagrams",
   difficulty: "medium",
   tags: ["array", "hash-table", "string", "sorting"],

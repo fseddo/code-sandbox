@@ -3,8 +3,8 @@ import type { ProgressStatus } from "@/problems/progress/progress";
 import { titleizeSlug } from "@/problems/shared/format";
 import { typedEntries } from "@/lib/utils";
 
-/** A catalog row is a problem summary plus the solver's progress and its stable catalog number. */
-export type CatalogItem = ProblemSummary & { status: ProgressStatus; number: number };
+/** A catalog row is a problem summary (which carries the stable catalog `number`) plus progress. */
+export type CatalogItem = ProblemSummary & { status: ProgressStatus };
 
 /** Display labels for progress statuses in the catalog UI (the wireframe's wording, not the raw slug). */
 const STATUS_LABEL: Record<ProgressStatus, string> = {

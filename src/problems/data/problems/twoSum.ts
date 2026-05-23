@@ -2,6 +2,7 @@ import { defineAlgoProblem } from "../problem";
 
 export const twoSum = defineAlgoProblem<[number[], number], number[]>({
   id: "two-sum",
+  number: 1,
   title: "Two Sum",
   difficulty: "easy",
   tags: ["array", "hash-table"],

@@ -6,6 +6,7 @@ const SCALE_OUTPUT =
 
 export const zigzagConversion = defineAlgoProblem<[string, number], string>({
   id: "zigzag-conversion",
+  number: 6,
   title: "Zigzag Conversion",
   difficulty: "medium",
   tags: ["string"],

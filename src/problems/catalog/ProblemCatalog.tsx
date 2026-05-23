@@ -36,10 +36,10 @@ export const ProblemCatalog = ({ problems }: { problems: ProblemSummary[] }) => 
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>(DEFAULT_SORT);
 
-  // Status comes from the client-side progress store, so items are derived per render, not synced. The
-  // 1-based catalog `number` is the authored order — stable across sorts and shown in the "#" column.
+  // Status comes from the client-side progress store, so items are derived per render, not synced.
+  // `number` is the problem's stored catalog number — stable across sorts and shown in the "#" column.
   const items: CatalogItem[] = useMemo(
-    () => problems.map((problem, index) => ({ ...problem, status: statusOf(problem.id), number: index + 1 })),
+    () => problems.map((problem) => ({ ...problem, status: statusOf(problem.id) })),
     [problems, statusOf],
   );
 

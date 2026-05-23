@@ -5,6 +5,7 @@ import { defineAlgoProblem } from "../problem";
 // actually a palindrome. `expected` is one known-longest answer, used only for its length.
 export const longestPalindrome = defineAlgoProblem<[string], string>({
   id: "longest-palindromic-substring",
+  number: 5,
   title: "Longest Palindromic Substring",
   difficulty: "medium",
   tags: ["two-pointers", "string", "dynamic-programming"],

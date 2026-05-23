@@ -2,6 +2,7 @@ import { defineAlgoProblem } from "../problem";
 
 export const palindromeNumber = defineAlgoProblem<[number], boolean>({
   id: "palindrome-number",
+  number: 9,
   title: "Palindrome Number",
   difficulty: "easy",
   tags: ["math"],

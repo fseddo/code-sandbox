@@ -133,9 +133,11 @@ reasons:
    has maybe 6–8 _meaningfully distinct_ inputs. Forcing 20 means 12 near-duplicates that add
    runtime and reviewer fatigue without probing anything new. Count is an _output_ of coverage, not
    a target.
-2. **The 2s budget.** [`runTests`](../../src/problems/algo/tester/runTests.ts) races the **entire
-   submission** against a single 2000 ms timeout — not per-test. Twenty large-input stress cases can
-   blow that budget for a legitimately optimal `O(n)` solution, turning a correct answer into a
+2. **The wall-clock budget.** [`runTests`](../../src/problems/algo/tester/runTests.ts) races the
+   **entire submission** against one timeout — not per-test — and it's **per-mode**: Run (examples only)
+   = 2000 ms for snappy feedback; Submit (examples + hidden) = 8000 ms, since the hidden batch carries
+   the scale cases and the solver isn't waiting on a tight loop. Even at 8 s, twenty large-input stress
+   cases can blow the budget for a legitimately optimal solution, turning a correct answer into a
    `timeout`. So large cases are a scarce resource, not something to mint 20 of.
 
 **Recommended policy — drive by category, floor by difficulty:**
@@ -147,8 +149,8 @@ Every hidden set should cover these _categories_ (the count falls out of coverin
 - **Structural** — answer at the start vs. end, multiple valid spots, no-answer case.
 - **Anti-hardcode** — inputs that differ from the visible examples enough that a lookup-table
   solution fails (this is the one the "more tests" instinct is really chasing).
-- **Scale** — 1–3 large inputs sized to separate `O(n)` from `O(n²)` _without_ tripping the 2s
-  budget. These are the ones to ration.
+- **Scale** — 1–3 large inputs sized to separate `O(n)` from `O(n²)` _without_ tripping the Submit
+  budget (8 s for the whole hidden batch). These are the ones to ration.
 
 | Difficulty | Visible (`examples`) | Hidden floor      |
 | ---------- | -------------------- | ----------------- |
@@ -160,10 +162,10 @@ So: **not 20 across the board, but ~8 / 12 / 16 floors with category coverage** 
 often _does_ land near 20, an easy one shouldn't. If a problem genuinely warrants 20+, add them;
 just don't manufacture them.
 
-**Open follow-up on the 2s budget:** if scale cases routinely brush the limit, Submit mode may need
-a higher ceiling than Run (e.g. 5s for the hidden batch), since the user is no longer waiting on a
-fast feedback loop. That's a `runTests` change, not a data-model one — flagged here, decided
-when the first hard problem with real stress tests forces it.
+**Resolved (2026-05-22):** Run and Submit now have **separate budgets** (Run 2 s, Submit 8 s) — see
+`WALL_CLOCK_LIMIT_MS` in [`runTests`](../../src/problems/algo/tester/runTests.ts). Bumping Submit
+further is a one-line change there; the trade is a longer per-request worker-hold (a DoS-surface knob),
+not a data-model change.
 
 ## Conversion rubric — catalog row → authored problem
 
@@ -176,6 +178,8 @@ For each problem promoted from the catalog:
    copied from the catalog. (Off-catalog problems resolve the same seed via
    [`resolveProblem.mjs`](../../scripts/resolveProblem.mjs) → an `origin: "authored"` stub whose
    `difficulty`/`tags` come from the web — see [company-sourcing.md](company-sourcing.md#phase-1--name--metadata-resolution--done).)
+   Also assign **`number`** — the permanent `#NN` catalog number. It is **not** from the catalog: take
+   `max(existing numbers) + 1` (the verifier prints "next available"). Never reuse or renumber.
 3. **Author the prompt** in our own words. Do **not** paste LeetCode's description — restate it.
    Markdown, backtick inline code (what [ProblemPanel](../../src/problems/algo/ProblemPanel.tsx) renders).
 4. **Author `examples`** (2–4): each an `{ args, expected, explanation }`, type-checked against the
@@ -198,6 +202,7 @@ The [`problem-importer`](../../.claude/agents/problem-importer.md) agent runs th
 **Quality gate (a problem isn't done until all hold):**
 
 - [ ] `defineAlgoProblem<Args, Result>` compiles — no `any`, signature pinned.
+- [ ] `number` is unique (`max + 1`); the verifier's `NUMBERS ok` line confirms it.
 - [ ] Every example's `expected` matches the reference solution's output.
 - [ ] Hidden set covers all five categories and meets the difficulty floor.
 - [ ] At least one scale case, sized against `constraints`, runs under the budget on the reference

@@ -5,6 +5,7 @@ const INT_MAX = 2 ** 31 - 1;
 
 export const myAtoi = defineAlgoProblem<[string], number>({
   id: "string-to-integer-atoi",
+  number: 8,
   title: "String to Integer (atoi)",
   difficulty: "medium",
   tags: ["string"],

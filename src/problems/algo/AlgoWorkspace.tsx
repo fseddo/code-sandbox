@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { LuPlay, LuSend } from "react-icons/lu";
 import { Group, Panel } from "react-resizable-panels";
-import type { ClientProblem, RunMode } from "@/problems/data/problem";
+import type { ClientProblem, ProblemHeaderData, RunMode } from "@/problems/data/problem";
 import { ProblemDetailHeader } from "@/problems/shared/ProblemDetailHeader";
 import { ProblemTitleBar } from "@/problems/shared/ProblemTitleBar";
 import { ProblemPanel } from "@/problems/algo/ProblemPanel";
@@ -16,10 +16,8 @@ import { ResizeBar } from "@/components/ResizeBar";
 import { Button } from "@/components/ui/button";
 import { ResetAction } from "@/components/ResetAction";
 
-type AlgoWorkspaceProps = {
+type AlgoWorkspaceProps = ProblemHeaderData & {
   problem: ClientProblem;
-  number: number;
-  companies: readonly string[];
 };
 
 /** Two-column judge layout: problem on the left, editor over results on the right. */

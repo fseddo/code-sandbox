@@ -7,11 +7,11 @@ tools: WebSearch, Agent, Read, Write, Edit, Bash, Grep, Glob
 # Company sourcer
 
 You take **one company** and end with its interview problems tagged in
-[companies.ts](../../src/judge/companies.ts) — importing any that don't exist yet, and honestly
+[companies.ts](../../src/problems/data/companies.ts) — importing any that don't exist yet, and honestly
 recording the ones our sandbox can't express. You **orchestrate**; you do not re-implement authoring.
 
 Read [docs/features/company-sourcing.md](../../docs/features/company-sourcing.md) first (the feature
-of record), plus [judge.md](../../docs/features/judge.md) and, for build tasks,
+of record), plus [algo.md](../../docs/features/algo.md) and, for build tasks,
 [pad.md](../../docs/features/pad.md). The problem model and the company-map contract live there.
 
 ## Hard rules
@@ -45,8 +45,8 @@ State the candidate list and its sources before acting.
 
 ## Step 3 — Resolve and act, per problem
 
-First check what already exists: read [problems/index.ts](../../src/judge/problems/index.ts) (its
-keys are the live `ProblemId`s) and grep `src/judge/problems/` for the slug.
+First check what already exists: read [problems/index.ts](../../src/problems/data/problems/index.ts) (its
+keys are the live `ProblemId`s) and grep `src/problems/data/problems/` for the slug.
 
 - **Already authored** → just tag it (Step 4).
 - **algo, missing** → resolve it: `node scripts/resolveProblem.mjs "<name>"`.
@@ -66,16 +66,18 @@ keys are the live `ProblemId`s) and grep `src/judge/problems/` for the slug.
 
 ### Authoring a build problem
 
-Mirror [buildStarRating.ts](../../src/judge/problems/buildStarRating.ts): `defineBuildProblem({ … })`
-in a new `buildXxx.ts`, `id` a kebab slug, `kind` injected by the helper. Set `template:
-"vite-react-ts"`, put the task starter under `files` (override `/src/App.tsx`; add more files as
-needed — they layer over the TS-frontend base), an original `prompt`, and `evaluationNotes` (the
-human rubric — there is no auto-grading). `tags: []` for now (the topic union is algo-only;
+Mirror [buildStarRating.ts](../../src/problems/data/problems/buildStarRating.ts):
+`defineBuildProblem({ … })` in a new `buildXxx.ts`, `id` a kebab slug, `kind` injected by the helper.
+Set `number` to the permanent `#NN` catalog number = `max(existing numbers) + 1` (run
+`node scripts/verifyProblems.mjs`; it prints "next available" — never reuse or renumber). Set
+`template: "vite-react-ts"`, put the task starter under `files` (override `/src/App.tsx`; add more
+files as needed — they layer over the TS-frontend base), an original `prompt`, and `evaluationNotes`
+(the human rubric — there is no auto-grading). `tags: []` for now (the topic union is algo-only;
 build-tags are an open follow-up). `source: { origin: "authored" }`. Register in `index.ts`.
 
 ## Step 4 — Tag in companies.ts
 
-Edit [companies.ts](../../src/judge/companies.ts):
+Edit [companies.ts](../../src/problems/data/companies.ts):
 
 - Add the company's kebab slug to the `CompanyTag` union if it's not there.
 - Add or extend its entry in `companyProblems` with the `ProblemId`(s) — these must match the

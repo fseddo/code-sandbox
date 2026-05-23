@@ -2,6 +2,7 @@ import { defineAlgoProblem } from "../problem";
 
 export const isMatch = defineAlgoProblem<[string, string], boolean>({
   id: "regular-expression-matching",
+  number: 10,
   title: "Regular Expression Matching",
   difficulty: "hard",
   tags: ["string", "dynamic-programming", "recursion"],

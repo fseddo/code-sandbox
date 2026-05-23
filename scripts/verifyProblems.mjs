@@ -41,6 +41,25 @@ const runOnWorker = (problem, source) =>
 const files = fs.readdirSync(problemsDir).filter((f) => f.endsWith(".ts") && f !== "index.ts" && f !== "problem.ts");
 
 let allGood = true;
+
+// Number integrity: every problem must carry a unique positive-integer `number` (the stable `#NN`).
+const numbers = new Map();
+for (const file of files) {
+  const { id, number } = loadProblem(file);
+  if (!Number.isInteger(number) || number < 1) {
+    allGood = false;
+    console.log(`FAIL ${id}: number must be a positive integer (got ${JSON.stringify(number)})`);
+  } else if (numbers.has(number)) {
+    allGood = false;
+    console.log(`FAIL ${id}: number ${number} already used by ${numbers.get(number)}`);
+  } else {
+    numbers.set(number, id);
+  }
+}
+if (numbers.size > 0) {
+  console.log(`NUMBERS ok: ${numbers.size} unique; next available is ${Math.max(...numbers.keys()) + 1}`);
+}
+
 for (const file of files) {
   const problem = loadProblem(file);
   if (problem.kind === "build") { console.log(`SKIP ${problem.id}: build problem (human-evaluated, no automated tests)`); continue; }

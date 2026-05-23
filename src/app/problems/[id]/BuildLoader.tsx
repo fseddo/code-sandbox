@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { BuildProblem } from "@/problems/data/problem";
+import type { BuildProblem, ProblemHeaderData } from "@/problems/data/problem";
 
 // Sandpack touches the DOM on import, so the build workspace must never render on the server.
 const BuildWorkspace = dynamic(
@@ -16,10 +16,8 @@ const BuildWorkspace = dynamic(
   },
 );
 
-type BuildLoaderProps = {
+type BuildLoaderProps = ProblemHeaderData & {
   problem: BuildProblem;
-  number: number;
-  companies: readonly string[];
 };
 
 export const BuildLoader = ({ problem, number, companies }: BuildLoaderProps) => (

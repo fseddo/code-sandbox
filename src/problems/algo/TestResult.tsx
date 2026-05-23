@@ -108,7 +108,7 @@ export const TestResult = ({ outcome, runningMode, problem }: TestResultProps) =
       <StatusBlock
         title="Time Limit Exceeded"
         tone="warn"
-        message={`Timed out after ${outcome.ms}ms — check for an infinite loop.`}
+        message={`Timed out after ${outcome.ms}ms — check for an infinite loop or a too-slow algorithm.`}
       />
     );
 

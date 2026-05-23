@@ -14,7 +14,7 @@ docs/
                   # — punch lists, not explanations
 ```
 
-`features/` is the most-populated section (see [features/pad.md](features/pad.md)); `improvements/` has its first punch-list ([improvements/algo-tester-gaps.md](improvements/algo-tester-gaps.md)). `architecture/` fills in as cross-cutting patterns emerge; resist writing aspirational docs for code that doesn't exist yet.
+`features/` is the most-populated section (see [features/pad.md](features/pad.md)); `improvements/` holds the punch-lists ([improvements/algo-tester-gaps.md](improvements/algo-tester-gaps.md), [improvements/database-migration.md](improvements/database-migration.md)). `architecture/` fills in as cross-cutting patterns emerge; resist writing aspirational docs for code that doesn't exist yet.
 
 ## Reading order, by task
 

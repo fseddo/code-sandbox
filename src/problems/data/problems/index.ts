@@ -49,8 +49,8 @@ export type ProblemId = keyof typeof problems;
 export const getProblem = (id: string): AnyProblem | undefined =>
   (problems as Record<string, AnyProblem>)[id];
 
-/** The problem's stable 1-based catalog number (authored registry order) — shown as `#NN` in the UI. */
-export const problemNumber = (id: string): number => Object.keys(problems).indexOf(id) + 1;
+/** The problem's stable 1-based catalog number (a stored field) — shown as `#NN` in the UI. */
+export const problemNumber = (id: string): number => getProblem(id)?.number ?? 0;
 
 export const listProblems = (): AnyProblem[] => Object.values(problems);
 
@@ -60,14 +60,15 @@ export const listProblems = (): AnyProblem[] => Object.values(problems);
  * tracks the problem shape, and deliberately free of any algo server-only field — safe to serialize
  * into the client catalog.
  */
-export type ProblemSummary = Pick<ProblemBase, "id" | "title" | "difficulty" | "tags"> & {
+export type ProblemSummary = Pick<ProblemBase, "id" | "number" | "title" | "difficulty" | "tags"> & {
   kind: ProblemKind;
   companies: CompanyTag[];
 };
 
 export const listProblemSummaries = (): ProblemSummary[] =>
-  listProblems().map(({ id, title, difficulty, tags, kind }) => ({
+  listProblems().map(({ id, number, title, difficulty, tags, kind }) => ({
     id,
+    number,
     title,
     difficulty,
     tags,

@@ -4,6 +4,7 @@ import { defineAlgoProblem } from "../problem";
 // (and flattens the result back), so the test data stays serializable. See problem-authoring.md.
 export const addTwoNumbers = defineAlgoProblem<[number[], number[]], number[]>({
   id: "add-two-numbers",
+  number: 2,
   title: "Add Two Numbers",
   difficulty: "medium",
   tags: ["linked-list", "math", "recursion"],

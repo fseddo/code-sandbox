@@ -1,25 +1,25 @@
 ---
 name: problem-importer
-description: Converts a single problem — a catalog row from src/judge/problems/leetcodeProblemSet.json, a problem name/slug, or an off-catalog stub — into a fully authored, verified problem module under src/judge/problems/ (prompt, examples, constraints, hidden tests, reference solution, tags, source). Self-verifies every case against the real worker before finishing and reports a confidence score. Use when importing one problem.
+description: Converts a single problem — a catalog row from src/problems/data/problems/leetcodeProblemSet.json, a problem name/slug, or an off-catalog stub — into a fully authored, verified problem module under src/problems/data/problems/ (prompt, examples, constraints, hidden tests, reference solution, tags, source). Self-verifies every case against the real worker before finishing and reports a confidence score. Use when importing one problem.
 tools: Read, Write, Edit, Bash, Grep, Glob
 ---
 
 # Problem importer
 
 You take **one** catalog row (a `ProblemSetQuestionNode` from
-[leetcodeProblemSet.json](../../src/judge/problems/leetcodeProblemSet.json)) and produce **one**
-authored, verified problem module under `src/judge/problems/`, registered in
-[index.ts](../../src/judge/problems/index.ts). You author original content, you do not scrape it,
+[leetcodeProblemSet.json](../../src/problems/data/problems/leetcodeProblemSet.json)) and produce **one**
+authored, verified problem module under `src/problems/data/problems/`, registered in
+[index.ts](../../src/problems/data/problems/index.ts). You author original content, you do not scrape it,
 and you do not finish until every test case passes against the real judge worker.
 
 Read [docs/features/problem-authoring.md](../../docs/features/problem-authoring.md) and
-[docs/features/judge.md](../../docs/features/judge.md) first — they are the source of truth for the
+[docs/features/algo.md](../../docs/features/algo.md) first — they are the source of truth for the
 data model and the conversion rubric. This file is the operating procedure.
 
 ## Your input
 
 One problem, in any of three forms — all resolve to the same **stub** (`ProblemStub` in
-[problem.ts](../../src/judge/problem.ts)): the seed metadata you copy, with everything else authored.
+[problem.ts](../../src/problems/data/problem.ts)): the seed metadata you copy, with everything else authored.
 
 1. **A catalog row** (a `ProblemSetQuestionNode`), e.g. `{ "title": "Reverse Integer", "titleSlug":
    "reverse-integer", "difficulty": "MEDIUM", "topicTags": [{ "slug": "math" }],
@@ -34,9 +34,12 @@ One problem, in any of three forms — all resolve to the same **stub** (`Proble
    (you confirm them) — and `source` is `{ origin: "authored" }` with **no** `frontendId`/`acRate`.
 
 From the resolved stub you copy: `title`, `id` (= slug), `difficulty` (lowercased), `tags`, and
-`source`. **Everything else you author.** Off-catalog tags may not yet exist in the `TopicTag` union
-in [problem.ts](../../src/judge/problem.ts) — add any missing slug to the union (it's hand-maintained
-and meant to grow); `tsc` will flag an invalid tag otherwise.
+`source`. **Everything else you author.** That includes **`number`** — the permanent `#NN` catalog
+number, which is *not* copied from the catalog: set it to `max(existing numbers) + 1` (run
+`node scripts/verifyProblems.mjs`; it prints "next available"). Never reuse or renumber. Off-catalog
+tags may not yet exist in the `TopicTag` union in [problem.ts](../../src/problems/data/problem.ts) —
+add any missing slug to the union (it's hand-maintained and meant to grow); `tsc` will flag an invalid
+tag otherwise.
 
 ## Eligibility — stop early if the harness can't express it
 
@@ -45,9 +48,9 @@ hydrates only `"value"` and `"linked-list"` I/O. Before authoring, classify the 
 
 - **Plain value I/O, single correct answer** → straightforward; author it.
 - **Multiple valid answers** (e.g. "return any longest…") → use a `checker` (see
-  [longestPalindrome.ts](../../src/judge/problems/longestPalindrome.ts)).
+  [longestPalindrome.ts](../../src/problems/data/problems/longestPalindrome.ts)).
 - **Linked-list I/O** → use `io: { params: […], result: … }` with array test data (see
-  [addTwoNumbers.ts](../../src/judge/problems/addTwoNumbers.ts)). `ListNode` is injected as a global.
+  [addTwoNumbers.ts](../../src/problems/data/problems/addTwoNumbers.ts)). `ListNode` is injected as a global.
 - **Tree / graph / other reference types, in-place mutation scored on the mutated arg, or
   interactive/design problems** → **not supported.** Do not fake it. Write a one-paragraph summary
   of what's missing, set confidence to 0, and stop without creating a module.
@@ -55,8 +58,8 @@ hydrates only `"value"` and `"linked-list"` I/O. Before authoring, classify the 
 ## Authoring procedure
 
 1. **Pick the module name** — camelCase of the function, e.g. `reverseInteger.ts`. The exported
-   const matches: `export const reverseInteger = defineProblem<Args, Result>({ … })`.
-2. **Pin the signature** in `defineProblem<Args, Result>`. For hydrated I/O the generics describe
+   const matches: `export const reverseInteger = defineAlgoProblem<Args, Result>({ … })`.
+2. **Pin the signature** in `defineAlgoProblem<Args, Result>`. For hydrated I/O the generics describe
    the **array test format**, not the runtime `ListNode` form.
 3. **Write the prompt in your own words.** Markdown, backtick inline code. Never paste LeetCode's
    text. State input/output and any rounding/ordering rules precisely.
@@ -66,18 +69,18 @@ hydrates only `"value"` and `"linked-list"` I/O. Before authoring, classify the 
 6. **`starterCode`** for both `javascript` and `typescript`, function named `functionName`. For
    reference-type I/O (e.g. linked lists), open the starter with a LeetCode-style multi-line JSDoc
    block defining the type — the readable `/** Definition for singly-linked list. … */` form, not a
-   crammed one-liner. See [addTwoNumbers.ts](../../src/judge/problems/addTwoNumbers.ts). (This is
+   crammed one-liner. See [addTwoNumbers.ts](../../src/problems/data/problems/addTwoNumbers.ts). (This is
    editor content the solver reads, so the repo's "no multi-line comment" rule does not apply to it.)
 7. **`hiddenTests`** — meet the policy below.
 8. **`solutions`** (≥1) — name, explanation (with complexity), per-language `code`. The first
    solution's JS is the **oracle** the verifier runs, so it must be genuinely correct.
 9. **`source`** — catalog: `{ origin: "leetcode", frontendId, acRate, confidence }`. Off-catalog:
    `{ origin: "authored", confidence }` (no `frontendId`/`acRate`).
-10. **Register** in [index.ts](../../src/judge/problems/index.ts): import + one line in the
+10. **Register** in [index.ts](../../src/problems/data/problems/index.ts): import + one line in the
     `problems` map.
 
-Match the style of the existing modules exactly: arrow functions, `export const`, `defineProblem`,
-no default exports. See [twoSum.ts](../../src/judge/problems/twoSum.ts) for the canonical shape.
+Match the style of the existing modules exactly: arrow functions, `export const`, `defineAlgoProblem`,
+no default exports. See [twoSum.ts](../../src/problems/data/problems/twoSum.ts) for the canonical shape.
 
 ## Test-case policy (from problem-authoring.md)
 
@@ -87,8 +90,9 @@ anti-hardcode (inputs unlike the examples so a lookup-table solution fails), and
 Hidden-set floors: **easy ≥ 8, medium ≥ 12, hard ≥ 16.** Count is an output of coverage — don't pad
 with near-duplicates.
 
-**The 2s budget is shared across the whole submission.** Size scale cases so a correct `O(n)`/
-`O(n log n)` solution finishes well under it; a single case near the limit is a bug, not coverage.
+**The wall-clock budget is shared across the whole submission** and is per-mode (Run 2 s on examples,
+Submit 8 s on examples + hidden). Size scale cases so a correct `O(n)`/`O(n log n)` solution finishes
+well under the Submit budget; a single case near the limit is a bug, not coverage.
 
 ## Verification — mandatory, iterate until green
 
@@ -102,7 +106,7 @@ You may not finish on an unverified module.
    re-run.
 3. For an anti-hardcode or scale case you added to catch cheating, sanity-check that a naive/wrong
    solution would actually fail it — a hidden case that every solution passes isn't probing anything.
-4. Run `npx tsc --noEmit` and `npx eslint <your new file> src/judge/problems/index.ts`. Both clean.
+4. Run `npx tsc --noEmit` and `npx eslint <your new file> src/problems/data/problems/index.ts`. Both clean.
 
 ## Confidence score (0–1) — store and report
 

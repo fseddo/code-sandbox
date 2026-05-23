@@ -2,6 +2,7 @@ import { defineAlgoProblem } from "../problem";
 
 export const reverseInteger = defineAlgoProblem<[number], number>({
   id: "reverse-integer",
+  number: 7,
   title: "Reverse Integer",
   difficulty: "medium",
   tags: ["math"],

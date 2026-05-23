@@ -2,6 +2,7 @@ import { defineAlgoProblem } from "../problem";
 
 export const makeStringSubsequenceCyclic = defineAlgoProblem<[string, string], boolean>({
   id: "make-string-a-subsequence-using-cyclic-increments",
+  number: 15,
   title: "Make String a Subsequence Using Cyclic Increments",
   difficulty: "medium",
   tags: ["two-pointers", "string", "greedy"],

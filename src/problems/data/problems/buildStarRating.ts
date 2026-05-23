@@ -26,6 +26,7 @@ export default function App() {
  */
 export const buildStarRating = defineBuildProblem({
   id: "build-star-rating",
+  number: 16,
   title: "Build a Star Rating Component",
   difficulty: "easy",
   tags: [],

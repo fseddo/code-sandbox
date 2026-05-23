@@ -54,6 +54,7 @@ export function searchHeadlines(query: string): Promise<string[]> {
  */
 export const buildDebouncedAutocomplete = defineBuildProblem({
   id: "build-debounced-autocomplete",
+  number: 17,
   title: "Build a Debounced Autocomplete Search",
   difficulty: "medium",
   tags: [],

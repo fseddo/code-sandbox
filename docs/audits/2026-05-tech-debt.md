@@ -407,9 +407,24 @@ which is correct — so the shared component needs per-surface copy, not one str
 
 ## 5. Data structures & the DB migration 🔴
 
+> **Deferred — not scheduled (2026-05-22).** The DB migration is parked. The actionable task list moved
+> to [improvements/database-migration.md](../improvements/database-migration.md); the analysis below
+> stays here as the rationale it points back to. **§5.1 is done** (see below); everything else in §5 is
+> future work, gated on the two decisions (§5.2 source-of-truth, §5.9 ORM) being made first.
+
 This is where the current design and a DB diverge most. Catalogued by what has to change.
 
-### 5.1 🔴 Catalog `#NN` = registry insertion order — will break
+### 5.1 🔴 Catalog `#NN` = registry insertion order — ✅ Fixed (2026-05-22)
+
+> ✅ **Done.** `number` is now a stored field on `ProblemBase` (each of the 17 modules carries a
+> permanent `#NN`, 1–17 by the old order so display is unchanged). `problemNumber` reads
+> `getProblem(id)?.number`; `listProblemSummaries` projects it; `ProblemCatalog` no longer derives
+> `index + 1`; the `Object.keys().indexOf` O(n²) is gone. `verifyProblems.mjs` now rejects duplicate /
+> non-positive numbers and prints the next available. Authoring rubric + the `problem-importer` /
+> `company-sourcer` agents updated to set `number = max + 1`. Migration is now a column copy. The
+> analysis below is the original finding.
+
+
 
 [problems/index.ts:53](../../src/judge/problems/index.ts#L53):
 
@@ -549,21 +564,23 @@ row-level security) is worth it specifically because §5.4 needs auth anyway —
 
 ## 6. Smaller findings 🟢
 
-- **`useJudge` is a god-hook** ([useJudge.ts](../../src/judge/useJudge.ts), 14 returned values). Once
-  the save model is extracted (§4.4), it shrinks naturally; consider splitting run/grade from
-  edit/format/save.
-- **`number` & `companies` resolved server-side and threaded as props** through 3 components
-  ([page.tsx](../../src/app/problems/[id]/page.tsx) → workspaces → headers). Fine, but a
-  `ProblemHeaderData` type would tidy the repeated `{ number, companies }` prop pair.
-- **`runner` worker path** is resolved from `process.cwd()` and **`outputFileTracingIncludes` is still
+- **`useAlgo` is still a god-hook** (was `useJudge`, ~15 returned values). §4.4 extracted the save
+  model but it didn't shrink much; splitting run/grade from edit/format/save is **still open** —
+  optional polish, left as-is. 🟢
+- ✅ **`ProblemHeaderData` type** — **Done** (2026-05-22): the repeated `{ number, companies }` prop pair
+  across `AlgoWorkspace` / `BuildWorkspace` / `BuildLoader` is now a single `ProblemHeaderData` type in
+  [problem.ts](../../src/problems/data/problem.ts), composed into each via intersection.
+- **`tester` worker path** is resolved from `process.cwd()` and **`outputFileTracingIncludes` is still
   not configured** ([algo.md → security posture](../features/algo.md#security-posture-and-the-build-caveat));
-  `next build`/`start` will not ship the worker. Pre-existing known gap — flag it stays open.
-- **2s wall-clock budget is shared Run vs Submit** — the open follow-up in
-  [problem-authoring.md](../features/problem-authoring.md) (split timeouts). Not new, noted for the DB
-  era when hidden sets grow.
-- **Doc-path debt:** the target moves in §1/§2 touch path references in all six `docs/features/*.md`
-  files (they cite `src/judge/...` heavily). Budget the doc updates into the rename commit, per
-  CLAUDE.md's "update the relevant feature doc" rule.
+  `next build`/`start` will not ship the worker. Pre-existing known gap — **stays open** (a deploy-config
+  task, not a refactor). 🟢
+- ✅ **Run vs Submit wall-clock budget** — **Done** (2026-05-22): `WALL_CLOCK_LIMIT_MS` in
+  [runTests.ts](../../src/problems/algo/tester/runTests.ts) is now per-mode (Run 2 s, Submit 8 s). Bumping
+  Submit further is a one-line change (trade: longer per-request worker-hold). 🟢
+- ✅ **Doc-path debt** — **Done** (2026-05-22): the §1/§2 moves were updated in `docs/features/*.md` at
+  reorg time; the two authoring agents (`.claude/agents/{problem-importer,company-sourcer}.md`) still
+  carried `src/judge/...` / `judge.md` / `defineProblem` references and are now fixed. (The two audit
+  docs keep their `src/judge/` references on purpose — they're the historical analysis.)
 
 ---
 
@@ -571,8 +588,8 @@ row-level security) is worth it specifically because §5.4 needs auth anyway —
 
 Ordered to isolate the DB seam first and keep each step a reviewable, behavior-preserving diff:
 
-1. **Stable problem number (§5.1)** — promote `number`/`sortOrder` to a stored field. Smallest change,
-   removes the order-fragility before anything else moves. 🔴
+1. ✅ **Stable problem number (§5.1)** — **Done** (2026-05-22): `number` promoted to a stored field on
+   `ProblemBase`, derivation + verifier + authoring agents updated. 🔴
 2. **`createLocalStore` factory (§4.1)** — collapse the 4 storage modules onto one generic store. This
    *is* the persistence adapter the DB will replace. 🔴
 3. ✅ **Naming rename (§2)** — `judge → algo` / `runner → tester`, `Problem → AlgoProblem`. **Done** —
@@ -584,9 +601,10 @@ Ordered to isolate the DB seam first and keep each step a reviewable, behavior-p
 6. ✅ **State dedup (§4.4)** + ~~the §3 effect fix (#1)~~ — **Done** (2026-05-22): settings-persist moved
    into its handler; `useLatestRef` + `useDirtyTracker` + `useDebouncedCallback` extracted, algo autosave
    now event-driven, pad autosave kept effect-driven. 🟡
-7. **DB decision (§5.2) + sync→async rewrite (§5.7) + ORM pick (§5.9)** — decide source-of-truth (recommend Option A), pick
-   Drizzle+Postgres, design the schema against the `data/` read API. Then auth → migrate per-user
-   stores (§5.4). 🔴
+7. **DB migration — deferred, not scheduled.** Task list parked in
+   [improvements/database-migration.md](../improvements/database-migration.md): decide source-of-truth
+   (§5.2, recommend Option A) + ORM (§5.9, Drizzle+Postgres), then the sync→async rewrite (§5.7), then
+   auth → migrate per-user stores (§5.4). 🔴
 
 Steps 1–2 pay off immediately and de-risk 7; 3–4 are the structural cleanup you asked for; 5–6 are the
 "reusable solutions for duped code" pass; 7 is the DB itself.

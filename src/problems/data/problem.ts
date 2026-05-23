@@ -111,6 +111,13 @@ export type ProblemKind = "algo" | "build";
 /** Fields every problem carries, regardless of kind. The shared spine of the discriminated union. */
 export type ProblemBase = {
   id: string;
+  /**
+   * Permanent 1-based catalog number shown as `#NN` and used as the newest/oldest sort axis. Assigned
+   * once and never reused, so reordering or back-filling the bank can't renumber other problems. New
+   * problems take `max(existing) + 1`; `verifyProblems` rejects duplicates (gaps are fine — a removed
+   * problem's number isn't recycled).
+   */
+  number: number;
   title: string;
   difficulty: Difficulty;
   tags: TopicTag[];
@@ -161,6 +168,15 @@ export type BuildProblem = ProblemBase & {
 
 /** Either kind of problem. Narrow on `kind` before touching kind-specific fields. */
 export type AnyProblem = AlgoProblem | BuildProblem;
+
+/**
+ * The header bits resolved *outside* the problem module (server-side in the route) and threaded to the
+ * workspaces → `ProblemTitleBar`: the catalog `number` and the company associations from `companies.ts`.
+ */
+export type ProblemHeaderData = {
+  number: number;
+  companies: readonly string[];
+};
 
 /** The client-safe projection of an algo problem: drops the server-only hidden tests and answer-checker. */
 export type ClientProblem<Args extends unknown[] = unknown[], Result = unknown> = Omit<

@@ -2,7 +2,16 @@ import path from "node:path";
 import { Worker } from "node:worker_threads";
 import type { AlgoProblem, RunMode, SubmissionOutcome, SupportedLanguage } from "@/problems/data/problem";
 
-const WALL_CLOCK_LIMIT_MS = 2000;
+/**
+ * Per-mode wall-clock budget for the *whole* submission (all cases share one worker). Run hits only the
+ * exposed examples, so it stays tight for snappy feedback; Submit adds the hidden set — including scale /
+ * runtime cases — so it gets real headroom. The worker is terminated at the limit, so a runaway (or a
+ * too-slow algorithm) is still bounded; raising Submit trades a longer per-request worker-hold for it.
+ */
+const WALL_CLOCK_LIMIT_MS: Record<RunMode, number> = {
+  run: 2000,
+  submit: 8000,
+};
 
 // Resolved at runtime, not bundled: the worker is plain JS Node runs directly.
 // Works under `next dev`; `next build` needs outputFileTracingIncludes to ship the file.
@@ -49,7 +58,8 @@ export const runTests = ({ problem, language, source, mode }: Submission): Promi
       resolve(outcome);
     };
 
-    const timer = setTimeout(() => finish({ status: "timeout", ms: WALL_CLOCK_LIMIT_MS }), WALL_CLOCK_LIMIT_MS);
+    const limitMs = WALL_CLOCK_LIMIT_MS[mode];
+    const timer = setTimeout(() => finish({ status: "timeout", ms: limitMs }), limitMs);
 
     worker.on("message", (outcome: SubmissionOutcome) => finish(outcome));
     worker.on("error", (error) => finish({ status: "crashed", message: error.message }));

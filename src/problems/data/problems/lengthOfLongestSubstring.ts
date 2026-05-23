@@ -2,6 +2,7 @@ import { defineAlgoProblem } from "../problem";
 
 export const lengthOfLongestSubstring = defineAlgoProblem<[string], number>({
   id: "longest-substring-without-repeating-characters",
+  number: 3,
   title: "Longest Substring Without Repeating Characters",
   difficulty: "medium",
   tags: ["hash-table", "string", "sliding-window"],

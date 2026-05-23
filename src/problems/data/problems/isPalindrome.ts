@@ -2,6 +2,7 @@ import { defineAlgoProblem } from "../problem";
 
 export const isPalindrome = defineAlgoProblem<[string], boolean>({
   id: "valid-palindrome",
+  number: 12,
   title: "Valid Palindrome",
   difficulty: "easy",
   tags: ["two-pointers", "string"],
