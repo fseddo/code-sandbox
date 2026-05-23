@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useState } from "react";
-import { LuChevronDown, LuChevronUp, LuRotateCcw } from "react-icons/lu";
+import { LuRotateCcw } from "react-icons/lu";
 import {
   useSandpackConsole,
   useSandpackShell,
@@ -9,6 +9,7 @@ import {
 } from "@codesandbox/sandpack-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { CollapsiblePane } from "@/components/CollapsiblePane";
 import { UnderlineTabs } from "@/components/UnderlineTabs";
 
 const TABS = ["server", "client"] as const;
@@ -213,61 +214,50 @@ const ConsoleView = () => {
 // --- Panel ----------------------------------------------------------------
 
 /**
- * Tabbed console pane with collapse. Both panes stay mounted at all times
- * (each owns its own subscription via a hook) so neither misses messages —
- * switching tabs only toggles visibility.
+ * Tabbed console pane that collapses to its tab header. Both views stay mounted at all times
+ * (each owns its own subscription via a hook) so neither misses messages — switching tabs only
+ * toggles visibility. Collapse mechanics + the chevron come from {@link CollapsiblePane}.
  */
-export const PadConsolePanel = ({
-  isCollapsed,
-  onToggleCollapse,
-}: {
-  isCollapsed: boolean;
-  onToggleCollapse: () => void;
-}) => {
+export const PadConsolePanel = () => {
   const [tab, setTab] = useState<ConsoleTab>("server");
   const { restart } = useSandpackShell();
-  const ToggleIcon = isCollapsed ? LuChevronUp : LuChevronDown;
 
   return (
-    <div className="flex h-full flex-col bg-card">
-      <div className="flex h-9 shrink-0 items-center border-b pr-1.5">
+    <CollapsiblePane
+      id="console"
+      expandToward="up"
+      defaultSize="36%"
+      minSize="6%"
+      collapsedSize="6%"
+      className="bg-card"
+      header={
         <UnderlineTabs
           tabs={TABS}
           labelOf={TAB_LABEL}
           active={tab}
           onSelect={setTab}
           className="h-full"
-          tabClassName="px-3 text-xs tracking-wide uppercase"
+          tabClassName="flex items-center px-3 text-xs tracking-wide uppercase"
         />
-        <div className="ml-auto flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="xs"
-            onClick={restart}
-            title="Cold-restart the Vite dev server (keeps your code)"
-          >
-            <LuRotateCcw className="size-3" />
-            Restart server
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label={isCollapsed ? "Expand console" : "Collapse console"}
-            title={isCollapsed ? "Expand" : "Collapse"}
-            onClick={onToggleCollapse}
-          >
-            <ToggleIcon className="size-4" />
-          </Button>
-        </div>
+      }
+      actions={
+        <Button
+          variant="outline"
+          size="xs"
+          onClick={restart}
+          title="Cold-restart the Vite dev server (keeps your code)"
+        >
+          <LuRotateCcw className="size-3" />
+          Restart server
+        </Button>
+      }
+    >
+      <div className={cn("h-full", tab !== "server" && "hidden")}>
+        <ServerView />
       </div>
-      <div className={cn("min-h-0 flex-1", isCollapsed && "hidden")}>
-        <div className={cn("h-full", tab !== "server" && "hidden")}>
-          <ServerView />
-        </div>
-        <div className={cn("h-full", tab !== "client" && "hidden")}>
-          <ConsoleView />
-        </div>
+      <div className={cn("h-full", tab !== "client" && "hidden")}>
+        <ConsoleView />
       </div>
-    </div>
+    </CollapsiblePane>
   );
 };

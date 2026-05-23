@@ -174,4 +174,9 @@
   .sp-wrapper .sp-preview-iframe {
     background: var(--background) !important;
   }
+  /* react-resizable-panels has no collapse animation; useCollapsiblePanel adds this class to the
+     group for one toggle so every sibling panel's flex-grow eases together (live drags stay snappy). */
+  .panels-animating > [data-panel] {
+    transition: flex-grow 240ms ease;
+  }
 }

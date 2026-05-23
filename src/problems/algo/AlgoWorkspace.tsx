@@ -99,9 +99,14 @@ export const AlgoWorkspace = ({ problem, number, companies }: AlgoWorkspaceProps
       />
 
       <Group orientation="horizontal" className="flex-1">
-        <Panel id="problem" className="min-w-0" defaultSize="40%" minSize="22%">
-          <ProblemPanel problem={problem} language={language} />
-        </Panel>
+        <ProblemPanel
+          problem={problem}
+          language={language}
+          expandToward="right"
+          defaultSize="40%"
+          minSize="22%"
+          collapsedSize="3%"
+        />
         <ResizeBar axis="x" />
         <Panel id="solution" className="min-w-0" defaultSize="60%" minSize="30%">
           <Group orientation="vertical" className="h-full">

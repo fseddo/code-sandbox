@@ -3,6 +3,7 @@ import type { ClientProblem, SupportedLanguage } from "@/problems/data/problem";
 import { Prose } from "@/problems/shared/Prose";
 import { SolutionsTab } from "@/problems/algo/SolutionsTab";
 import { stringify } from "@/problems/shared/format";
+import { CollapsiblePane, type CollapsiblePaneLayout } from "@/components/CollapsiblePane";
 import { UnderlineTabs } from "@/components/UnderlineTabs";
 
 const TABS = ["description", "solutions"] as const;
@@ -55,28 +56,37 @@ const DescriptionTab = ({ problem }: { problem: ClientProblem }) => (
   </div>
 );
 
-export const ProblemPanel = ({
-  problem,
-  language,
-}: {
+type ProblemPanelProps = CollapsiblePaneLayout & {
   problem: ClientProblem;
   language: SupportedLanguage;
-}) => {
+};
+
+export const ProblemPanel = ({ problem, language, ...layout }: ProblemPanelProps) => {
   const [tab, setTab] = useState<ProblemTab>("description");
 
   return (
-    <div className="flex h-full flex-col bg-card">
-      <header className="flex shrink-0 border-b border-sidebar-border px-5 pt-3">
-        <UnderlineTabs tabs={TABS} labelOf={TAB_LABEL} active={tab} onSelect={setTab} />
-      </header>
-
-      <div className="min-h-0 flex-1 overflow-auto p-5">
+    <CollapsiblePane
+      {...layout}
+      id="problem"
+      className="bg-card"
+      header={
+        <UnderlineTabs
+          tabs={TABS}
+          labelOf={TAB_LABEL}
+          active={tab}
+          onSelect={setTab}
+          className="h-full"
+          tabClassName="flex items-center px-3 text-sm"
+        />
+      }
+    >
+      <div className="h-full overflow-auto p-5">
         {tab === "description" ? (
           <DescriptionTab problem={problem} />
         ) : (
           <SolutionsTab solutions={problem.solutions} language={language} />
         )}
       </div>
-    </div>
+    </CollapsiblePane>
   );
 };

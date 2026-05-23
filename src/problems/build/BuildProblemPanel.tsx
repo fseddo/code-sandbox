@@ -1,5 +1,6 @@
 import type { BuildProblem } from "@/problems/data/problem";
 import { Prose } from "@/problems/shared/Prose";
+import { CollapsiblePane } from "@/components/CollapsiblePane";
 import { UnderlineTabs } from "@/components/UnderlineTabs";
 
 type BuildProblemPanelProps = {
@@ -9,14 +10,26 @@ type BuildProblemPanelProps = {
 const TABS = ["description"] as const;
 const TAB_LABEL = { description: "Description" } as const;
 
-/** Left column of a build problem: the prompt and the (human-judged) evaluation rubric. Identity lives in the title bar. */
+/** Top pane of a build problem's context rail: the prompt and the (human-judged) evaluation rubric. Identity lives in the title bar. */
 export const BuildProblemPanel = ({ problem }: BuildProblemPanelProps) => (
-  <div className="flex h-full flex-col bg-card">
-    <header className="flex shrink-0 border-b border-sidebar-border px-5 pt-3">
-      <UnderlineTabs tabs={TABS} labelOf={TAB_LABEL} active="description" />
-    </header>
-
-    <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-auto p-5">
+  <CollapsiblePane
+    id="prompt"
+    expandToward="down"
+    defaultSize="55%"
+    minSize="6%"
+    collapsedSize="6%"
+    className="bg-card"
+    header={
+      <UnderlineTabs
+        tabs={TABS}
+        labelOf={TAB_LABEL}
+        active="description"
+        className="h-full"
+        tabClassName="flex items-center px-3 text-xs tracking-wide uppercase"
+      />
+    }
+  >
+    <div className="flex h-full flex-col gap-6 overflow-auto p-5">
       <Prose text={problem.prompt} />
 
       {problem.evaluationNotes && problem.evaluationNotes.length > 0 ? (
@@ -37,5 +50,5 @@ export const BuildProblemPanel = ({ problem }: BuildProblemPanelProps) => (
         the live preview.
       </p>
     </div>
-  </div>
+  </CollapsiblePane>
 );

@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { CollapsiblePane, type CollapsiblePaneLayout } from "@/components/CollapsiblePane";
 import { PadFileTree } from "@/pad/PadFileTree";
 
 type CreateKind = "file" | "folder";
@@ -54,8 +55,10 @@ const starterContent = (path: string): string => {
 
 type PadSaveOps = Pick<ReturnType<typeof usePadSave>, "addFile" | "deleteFile">;
 
-/** File tree with a slim header for root-level file creation. */
-export const PadFilesPanel = ({ addFile, deleteFile }: PadSaveOps) => {
+type PadFilesPanelProps = PadSaveOps & CollapsiblePaneLayout;
+
+/** Collapsible file tree with root-level file/folder creation in its header. */
+export const PadFilesPanel = ({ addFile, deleteFile, ...layout }: PadFilesPanelProps) => {
   const { sandpack } = useSandpack();
   const [createState, setCreateState] = useState<CreateState>(CLOSED_CREATE);
   const [deletePath, setDeletePath] = useState<string | null>(null);
@@ -114,12 +117,17 @@ export const PadFilesPanel = ({ addFile, deleteFile }: PadSaveOps) => {
   const placeholder = createState.kind === "folder" ? "components" : "Button.tsx";
 
   return (
-    <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
-      <div className="flex h-9 shrink-0 items-center justify-between border-b border-sidebar-border pr-1.5 pl-3">
-        <span className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
+    <CollapsiblePane
+      {...layout}
+      id="files"
+      className="bg-sidebar text-sidebar-foreground"
+      header={
+        <span className="pl-3 text-xs font-medium tracking-wider text-muted-foreground uppercase">
           Files
         </span>
-        <div className="flex items-center gap-0.5">
+      }
+      actions={
+        <>
           <Button
             variant="ghost"
             size="icon-sm"
@@ -138,10 +146,10 @@ export const PadFilesPanel = ({ addFile, deleteFile }: PadSaveOps) => {
           >
             <LuFolderPlus className="size-4" />
           </Button>
-        </div>
-      </div>
-
-      <div className="min-h-0 flex-1 overflow-auto">
+        </>
+      }
+    >
+      <div className="h-full overflow-auto">
         <PadFileTree
           onCreateInDir={openCreateDialog}
           onDelete={setDeletePath}
@@ -203,6 +211,6 @@ export const PadFilesPanel = ({ addFile, deleteFile }: PadSaveOps) => {
         confirmLabel="Delete file"
         onConfirm={confirmDelete}
       />
-    </div>
+    </CollapsiblePane>
   );
 };

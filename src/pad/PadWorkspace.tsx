@@ -1,8 +1,8 @@
 "use client";
 
-import { type ReactNode, useRef, useState } from "react";
+import { type ReactNode, useState } from "react";
 import { SandpackPreview } from "@codesandbox/sandpack-react";
-import { Group, Panel, type PanelImperativeHandle } from "react-resizable-panels";
+import { Group, Panel } from "react-resizable-panels";
 import { ResizeBar } from "@/components/ResizeBar";
 import { PadToolbar } from "@/pad/PadToolbar";
 import { PadEditor } from "@/pad/PadEditor";
@@ -13,9 +13,6 @@ import { useAutosave, usePadSave } from "@/pad/usePadSave";
 import { useSaveShortcut } from "@/components/useSaveShortcut";
 
 const fill = { height: "100%" } as const;
-
-const CONSOLE_DEFAULT_SIZE = "36%";
-const CONSOLE_COLLAPSED_SIZE = "6%";
 
 /** State a custom toolbar needs; the hooks that produce it live inside PadWorkspace. */
 export type PadToolbarState = {
@@ -46,15 +43,6 @@ export const PadWorkspace = ({ padId, title, leadingPanel, headerBar, renderTool
   useAutosave(autosave, save);
   useSaveShortcut(save);
 
-  const consolePanelRef = useRef<PanelImperativeHandle>(null);
-  const [consoleCollapsed, setConsoleCollapsed] = useState(false);
-  const toggleConsole = () => {
-    const panel = consolePanelRef.current;
-    if (!panel) return;
-    if (panel.isCollapsed()) panel.expand();
-    else panel.collapse();
-  };
-
   const toolbarState: PadToolbarState = { padId, isDirty, save, autosave, onAutosaveChange: setAutosave };
   const toolbar = renderToolbar ? renderToolbar(toolbarState) : <PadToolbar {...toolbarState} />;
 
@@ -64,23 +52,32 @@ export const PadWorkspace = ({ padId, title, leadingPanel, headerBar, renderTool
       {headerBar}
       <Group orientation="horizontal" className="flex-1">
         {leadingPanel ? (
-          <>
-            <Panel id="prompt" className="min-w-0" defaultSize="26%" minSize="0%" collapsible collapsedSize="0%">
+          // Context rail: the prompt over the file tree, each collapsing vertically to its header.
+          <Panel id="context" className="min-w-0" defaultSize="26%" minSize="14%">
+            <Group orientation="vertical" className="h-full">
               {leadingPanel}
-            </Panel>
-            <ResizeBar axis="x" />
-          </>
-        ) : null}
-        <Panel
-          id="files"
-          className="min-w-0"
-          defaultSize="16%"
-          minSize="12%"
-          collapsible
-          collapsedSize="0%"
-        >
-          <PadFilesPanel addFile={addFile} deleteFile={deleteFile} />
-        </Panel>
+              <ResizeBar axis="y" />
+              <PadFilesPanel
+                addFile={addFile}
+                deleteFile={deleteFile}
+                expandToward="up"
+                defaultSize="34%"
+                minSize="6%"
+                collapsedSize="6%"
+              />
+            </Group>
+          </Panel>
+        ) : (
+          // Standalone scratchpad: the file tree is its own column, collapsing horizontally.
+          <PadFilesPanel
+            addFile={addFile}
+            deleteFile={deleteFile}
+            expandToward="right"
+            defaultSize="16%"
+            minSize="12%"
+            collapsedSize="3%"
+          />
+        )}
         <ResizeBar axis="x" />
         <Panel id="editor" className="min-w-0" defaultSize="44%" minSize="22%">
           <PadEditor save={save} autosave={autosave} isDirty={isDirty} />
@@ -103,23 +100,7 @@ export const PadWorkspace = ({ padId, title, leadingPanel, headerBar, renderTool
               />
             </Panel>
             <ResizeBar axis="y" />
-            <Panel
-              id="console"
-              className="min-h-0"
-              panelRef={consolePanelRef}
-              defaultSize={CONSOLE_DEFAULT_SIZE}
-              minSize={CONSOLE_COLLAPSED_SIZE}
-              collapsible
-              collapsedSize={CONSOLE_COLLAPSED_SIZE}
-              onResize={(size) =>
-                setConsoleCollapsed(size.asPercentage <= 7)
-              }
-            >
-              <PadConsolePanel
-                isCollapsed={consoleCollapsed}
-                onToggleCollapse={toggleConsole}
-              />
-            </Panel>
+            <PadConsolePanel />
           </Group>
         </Panel>
       </Group>

@@ -13,14 +13,33 @@ The CoderPad pane: a Sandpack bundler scoped to one pad, with a file tree, code 
               └─ <PadWorkspace>      src/pad/PadWorkspace.tsx
                   ├─ <PadToolbar>    src/pad/PadToolbar.tsx
                   └─ <Group orientation="horizontal">
-                      ├─ <PadFilesPanel>   src/pad/PadFilesPanel.tsx
+                      ├─ <PadFilesPanel>   src/pad/PadFilesPanel.tsx  (scratchpad: standalone column)
                       ├─ <PadEditor>       src/pad/PadEditor.tsx
                       └─ <Group orientation="vertical">
                           ├─ <SandpackPreview />
                           └─ <PadConsolePanel>     src/pad/PadConsolePanel.tsx
 ```
 
-[react-resizable-panels v4](https://github.com/bvaughn/react-resizable-panels): `Group` / `Panel` / `Separator`, with percentage-string sizes (`defaultSize="44%"`, `minSize="22%"`). The files panel is `collapsible` with `collapsedSize="0%"`; the console panel is `collapsible` with `collapsedSize="6%"` so its tab header stays visible — see [Preview / console](#preview--console) below.
+With a `leadingPanel` (build problems), the first column is instead a **context rail** — a vertical `Group` stacking the prompt over the file tree:
+
+```
+                  └─ <Group orientation="horizontal">
+                      ├─ <Panel id="context">                      ← the rail
+                      │   └─ <Group orientation="vertical">
+                      │       ├─ {leadingPanel}    e.g. <BuildProblemPanel>  (prompt)
+                      │       └─ <PadFilesPanel>                              (files)
+                      ├─ <PadEditor> …
+```
+
+[react-resizable-panels v4](https://github.com/bvaughn/react-resizable-panels): `Group` / `Panel` / `Separator`, with percentage-string sizes (`defaultSize="44%"`, `minSize="22%"`). `PadFilesPanel`, `PadConsolePanel`, and `BuildProblemPanel` are each a [`CollapsiblePane`](#collapsible-panes), so they collapse to their header strip — see [Collapsible panes](#collapsible-panes) below.
+
+## Collapsible panes
+
+[`CollapsiblePane`](../../src/components/CollapsiblePane.tsx) is the shared primitive behind the files, prompt, and console panes. It is a `react-resizable-panels` `Panel` that collapses to its **header strip, not to `0%`**, so the chevron stays reachable to reopen it (full-zero collapse strands the pane). The header is a slot (`header` + an optional `actions` cluster) so each caller keeps its own label/tabs/buttons; the chevron is appended automatically.
+
+- **Axis-aware.** `expandToward` (`"up" | "down" | "left" | "right"`) picks the chevron *and* implies the axis. The caller owns the surrounding `Group`'s orientation and forwards `expandToward` + the sizes via the derived [`CollapsiblePaneLayout`](../../src/components/CollapsiblePane.tsx) (`Pick` of the four size/axis props). So `PadFilesPanel` is `expandToward="right"` (horizontal) as a standalone scratchpad column but `expandToward="up"` (vertical) inside the build rail — same component, same content, different axis. **Horizontal collapse** clips a top header strip, so when collapsed horizontally the pane renders a thin vertical rail with only the chevron; vertical collapse keeps the full header strip.
+- **Mechanics** live in [`useCollapsiblePanel`](../../src/components/useCollapsiblePanel.ts): the imperative `panelRef`, an `isCollapsed` flag derived from `onResize` (≤ 7%), and a `toggle`.
+- **Slide animation.** v4 has no built-in collapse animation (`collapse()`/`expand()` snap). `toggle` adds a `.panels-animating` class to the panel's parent `Group` element for one toggle (240 ms, matching the CSS in [globals.css](../../src/app/globals.css)), which transitions every sibling `[data-panel]`'s `flex-grow` together. The class is removed after the toggle so **live dragging stays un-animated** (a transition there would lag the cursor). The transition rides the flex item the library controls — reached via `Panel`'s `elementRef` (the `[data-panel]` div carrying `flexGrow`); `className`/`style` only reach a nested inner div.
 
 ## Why client-side only
 
@@ -118,8 +137,9 @@ problem concepts into the pad layer:
 - **`CoderPad` takes an optional `profile`** (the existing `PadProfile`) and `activeFile`, defaulting
   to `typescriptFrontend` / `/src/App.tsx`. A build problem composes a profile from its `template` +
   `files`; the `/pad` route passes neither, so its behaviour is unchanged.
-- **`PadWorkspace` takes `leadingPanel?: ReactNode`** (an optional first column, rendered collapsible
-  before the file tree) **and `renderToolbar?: (state: PadToolbarState) => ReactNode`** — a render
+- **`PadWorkspace` takes `leadingPanel?: ReactNode`** (when present, the first column becomes a vertical
+  [context rail](#render-tree) stacking the prompt over the file tree; the prompt is expected to be its
+  own [`CollapsiblePane`](#collapsible-panes)) **and `renderToolbar?: (state: PadToolbarState) => ReactNode`** — a render
   prop so a custom top bar can read `isDirty`/`save`, which are produced by the hooks *inside*
   `PadWorkspace`. The default reproduces `<PadToolbar>` exactly.
 
@@ -135,7 +155,7 @@ context slot + a trailing action cluster) and the [`SaveStatus`](../../src/compo
 
 ## Files panel
 
-[PadFilesPanel.tsx](../../src/pad/PadFilesPanel.tsx) is a slim header (Files label + root-level `+ file`) over [PadFileTree.tsx](../../src/pad/PadFileTree.tsx). It does **not** call `sandpack.addFile` / `sandpack.deleteFile` directly — it receives `addFile` and `deleteFile` from [`usePadSave`](../../src/pad/usePadSave.ts) (via `PadWorkspace`) so the snapshot stays in sync as a side effect of the action, not after-the-fact via a files watcher.
+[PadFilesPanel.tsx](../../src/pad/PadFilesPanel.tsx) is a [`CollapsiblePane`](#collapsible-panes) (Files label as the `header`, the root-level `+ file` / `+ folder` buttons as its `actions`) over [PadFileTree.tsx](../../src/pad/PadFileTree.tsx). It takes the pane's [`CollapsiblePaneLayout`](../../src/components/CollapsiblePane.tsx) from `PadWorkspace`, which sets the axis per mode (horizontal column in the scratchpad, vertical in the build rail). It does **not** call `sandpack.addFile` / `sandpack.deleteFile` directly — it receives `addFile` and `deleteFile` from [`usePadSave`](../../src/pad/usePadSave.ts) (via `PadWorkspace`) so the snapshot stays in sync as a side effect of the action, not after-the-fact via a files watcher.
 
 The props are typed off the hook's return so the prop shape tracks the source:
 
@@ -220,6 +240,4 @@ Two tabs (**Server** | **Client**) with a `bg-primary` underline on the active t
 
 **Client view** renders JS-runtime console messages from the running app. Each entry gets a row with a divider (`border-b border-border/40`) and a severity-based tint (`bg-danger/8` for `error`, `bg-warn/8` for `warn`, `bg-link/8` for `info`, plain for `log`). Non-string args go through `JSON.stringify(arg, null, 2)`. Same URL highlighting as Server.
 
-**Collapse.** The Panel uses `panelRef={consolePanelRef}` (imperative handle from `react-resizable-panels` v4) with both `minSize` and `collapsedSize` set to `"6%"` — enough to keep the tab header reachable when the body is collapsed, so the user always sees a chevron to expand. The wired `onResize` callback derives `consoleCollapsed = size.asPercentage <= 7`; that state drives the chevron icon (`LuChevronDown` vs. `LuChevronUp`) and applies a `hidden` class to the body so a 6%-tall Sandpack pane doesn't render an ugly slice.
-
-The `collapsed` prop on `<PadConsolePanel>` is named `isCollapsed` to follow the "boolean props named for action" rule — see [CLAUDE.md](../../CLAUDE.md#file--symbol-naming).
+**Collapse.** `PadConsolePanel` is a [`CollapsiblePane`](#collapsible-panes) (`expandToward="up"`, `collapsedSize="6%"`) — the tabs are its `header`, **Restart server** is an `action`, and the two views are its children. Collapsing leaves the 6% tab strip reachable so the chevron stays clickable; the shared primitive owns the `panelRef`, the `onResize` threshold, and the slide animation, so `PadWorkspace` no longer threads any console state.
