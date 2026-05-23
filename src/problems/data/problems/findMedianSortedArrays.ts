@@ -17,10 +17,20 @@ The median is the middle value once every element from both arrays is merged int
     "Both nums1 and nums2 are sorted in non-decreasing order.",
   ],
   starterCode: {
-    javascript: `function findMedianSortedArrays(nums1, nums2) {
+    javascript: `/**
+ * @param {number[]} nums1
+ * @param {number[]} nums2
+ * @return {number}
+ */
+function findMedianSortedArrays(nums1, nums2) {
   // your code here
 }`,
-    typescript: `function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
+    typescript: `/**
+ * @param {number[]} nums1
+ * @param {number[]} nums2
+ * @return {number}
+ */
+function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
   // your code here
 }`,
   },

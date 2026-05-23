@@ -15,10 +15,18 @@ A substring is a run of consecutive characters from \`s\` (not a subsequence). T
     "`s` consists of English letters, digits, symbols, and spaces.",
   ],
   starterCode: {
-    javascript: `function lengthOfLongestSubstring(s) {
+    javascript: `/**
+ * @param {string} s
+ * @return {number}
+ */
+function lengthOfLongestSubstring(s) {
   // your code here
 }`,
-    typescript: `function lengthOfLongestSubstring(s: string): number {
+    typescript: `/**
+ * @param {string} s
+ * @return {number}
+ */
+function lengthOfLongestSubstring(s: string): number {
   // your code here
 }`,
   },

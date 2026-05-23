@@ -12,10 +12,18 @@ export const isPalindrome = defineAlgoProblem<[string], boolean>({
 An empty string (after cleaning) counts as a palindrome.`,
   constraints: ["1 <= s.length <= 2 * 10^5", "s consists only of printable ASCII characters."],
   starterCode: {
-    javascript: `function isPalindrome(s) {
+    javascript: `/**
+ * @param {string} s
+ * @return {boolean}
+ */
+function isPalindrome(s) {
   // your code here
 }`,
-    typescript: `function isPalindrome(s: string): boolean {
+    typescript: `/**
+ * @param {string} s
+ * @return {boolean}
+ */
+function isPalindrome(s: string): boolean {
   // your code here
 }`,
   },

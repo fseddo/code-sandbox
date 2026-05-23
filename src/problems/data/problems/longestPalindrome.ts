@@ -22,10 +22,18 @@ A substring reads the same forwards and backwards. If several substrings tie for
   return true;
 }`,
   starterCode: {
-    javascript: `function longestPalindrome(s) {
+    javascript: `/**
+ * @param {string} s
+ * @return {string}
+ */
+function longestPalindrome(s) {
   // your code here
 }`,
-    typescript: `function longestPalindrome(s: string): string {
+    typescript: `/**
+ * @param {string} s
+ * @return {string}
+ */
+function longestPalindrome(s: string): string {
   // your code here
 }`,
   },

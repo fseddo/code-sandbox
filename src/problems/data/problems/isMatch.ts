@@ -23,10 +23,20 @@ A \`*\` always follows a valid preceding character or \`.\`; it never appears fi
     "Each '*' is preceded by a valid character or '.', so the pattern is always well-formed.",
   ],
   starterCode: {
-    javascript: `function isMatch(s, p) {
+    javascript: `/**
+ * @param {string} s
+ * @param {string} p
+ * @return {boolean}
+ */
+function isMatch(s, p) {
   // your code here
 }`,
-    typescript: `function isMatch(s: string, p: string): boolean {
+    typescript: `/**
+ * @param {string} s
+ * @param {string} p
+ * @return {boolean}
+ */
+function isMatch(s: string, p: string): boolean {
   // your code here
 }`,
   },

@@ -16,10 +16,18 @@ Two intervals overlap when one starts at or before the other ends (touching endp
     "0 <= start <= end <= 10^4",
   ],
   starterCode: {
-    javascript: `function merge(intervals) {
+    javascript: `/**
+ * @param {number[][]} intervals
+ * @return {number[][]}
+ */
+function merge(intervals) {
   // your code here
 }`,
-    typescript: `function merge(intervals: number[][]): number[][] {
+    typescript: `/**
+ * @param {number[][]} intervals
+ * @return {number[][]}
+ */
+function merge(intervals: number[][]): number[][] {
   // your code here
 }`,
   },

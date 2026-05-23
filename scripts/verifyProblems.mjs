@@ -38,14 +38,30 @@ const runOnWorker = (problem, source) =>
     worker.on("error", (error) => { clearTimeout(timer); resolve({ status: "crashed", message: error.message }); });
   });
 
-const files = fs.readdirSync(problemsDir).filter((f) => f.endsWith(".ts") && f !== "index.ts" && f !== "problem.ts");
+const files = fs.readdirSync(problemsDir).filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts") && f !== "index.ts" && f !== "problem.ts");
+
+// Optional slug filter: `node verifyProblems.mjs <slug>` runs the solution check for just that problem
+// (number-integrity still scans everything). Lets parallel imports verify their own module in isolation.
+const onlySlug = process.argv[2] ?? null;
+
+// Tolerant load: a sibling module being half-written (parallel import) shouldn't crash the whole run.
+const tryLoad = (file) => {
+  try {
+    return loadProblem(file);
+  } catch (error) {
+    console.log(`SKIP ${file}: failed to load (${error instanceof Error ? error.message : error})`);
+    return null;
+  }
+};
 
 let allGood = true;
 
 // Number integrity: every problem must carry a unique positive-integer `number` (the stable `#NN`).
 const numbers = new Map();
 for (const file of files) {
-  const { id, number } = loadProblem(file);
+  const loaded = tryLoad(file);
+  if (!loaded) continue;
+  const { id, number } = loaded;
   if (!Number.isInteger(number) || number < 1) {
     allGood = false;
     console.log(`FAIL ${id}: number must be a positive integer (got ${JSON.stringify(number)})`);
@@ -61,7 +77,9 @@ if (numbers.size > 0) {
 }
 
 for (const file of files) {
-  const problem = loadProblem(file);
+  const problem = tryLoad(file);
+  if (!problem) { if (!onlySlug) allGood = false; continue; }
+  if (onlySlug && problem.id !== onlySlug) continue;
   if (problem.kind === "build") { console.log(`SKIP ${problem.id}: build problem (human-evaluated, no automated tests)`); continue; }
   const solution = problem.solutions?.[0]?.code?.javascript;
   if (!solution) { console.log(`SKIP ${file}: no JS reference solution`); continue; }

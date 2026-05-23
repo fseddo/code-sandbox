@@ -22,6 +22,7 @@ export const companyProblems: Partial<Record<CompanyTag, readonly ProblemId[]>> 
     "group-anagrams",
     "make-string-a-subsequence-using-cyclic-increments",
     "build-debounced-autocomplete",
+    "generate-parentheses",
   ],
 };
 

@@ -12,10 +12,18 @@ export const reverseInteger = defineAlgoProblem<[number], number>({
 If reversing \`x\` produces a value that falls outside the signed 32-bit range \`[-2^31, 2^31 - 1]\`, return \`0\` instead. Solve it without relying on 64-bit integer support.`,
   constraints: ["-2^31 <= x <= 2^31 - 1"],
   starterCode: {
-    javascript: `function reverse(x) {
+    javascript: `/**
+ * @param {number} x
+ * @return {number}
+ */
+function reverse(x) {
   // your code here
 }`,
-    typescript: `function reverse(x: number): number {
+    typescript: `/**
+ * @param {number} x
+ * @return {number}
+ */
+function reverse(x: number): number {
   // your code here
 }`,
   },

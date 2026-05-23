@@ -65,11 +65,16 @@ export type Example<Args extends unknown[], Result> = TestCase<Args, Result> & {
 };
 
 /**
- * How a param/result is materialized before/after the call. `"value"` (the default) passes the
- * test arg straight through; `"linked-list"` hydrates an array into a `ListNode` chain on the way
- * in and flattens the returned chain back to an array on the way out, so tests stay plain arrays.
+ * How a param/result is materialized before/after the call, so test data stays plain arrays while the
+ * solution sees the real reference type:
+ * - `"value"` (default) — passed straight through.
+ * - `"linked-list"` — an array hydrates into a `ListNode` chain in; the returned chain flattens back out.
+ * - `"binary-tree"` — a LeetCode level-order array (with `null` gaps) hydrates into a `TreeNode` in; the
+ *   returned tree serializes back to the same level-order array (trailing `null`s trimmed).
+ * - `"linked-list[]"` / `"binary-tree[]"` — the array variants: an array *of* arrays maps element-wise
+ *   (e.g. merge-k-sorted-lists takes a `ListNode[]`; "generate all BSTs" returns a `TreeNode[]`).
  */
-export type IoShape = "value" | "linked-list";
+export type IoShape = "value" | "linked-list" | "linked-list[]" | "binary-tree" | "binary-tree[]";
 
 export type ProblemIo = {
   params?: IoShape[];
@@ -147,7 +152,10 @@ export type AlgoProblem<Args extends unknown[] = unknown[], Result = unknown> = 
   io?: ProblemIo;
   /**
    * JS arrow-function source `(actual, args, expected) => boolean`, run in the worker to validate
-   * answers that aren't a single fixed value (e.g. "any longest palindrome"). Omit for exact match.
+   * answers that aren't a single fixed value. `args` is the argument list **as the function received
+   * it, after the call returns** — so it carries any in-place mutation, letting a checker score the
+   * mutated input (`sort-colors`) or assert the result is the same instance (`actual === args[0]`).
+   * Omit for exact deep-equal match.
    */
   checker?: string;
   solutions?: ProblemSolution[];

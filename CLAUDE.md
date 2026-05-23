@@ -2,7 +2,9 @@
 
 # Repo orientation
 
-noodle — a CoderPad + LeetCode hybrid. Single Next.js 16 (App Router) app, React 19, no separate backend yet. The CoderPad pane is built; a first cut of the algo problems feature (typed problem bank + server-side test runner via a worker thread) is in [src/problems/](src/problems/) — see [docs/features/algo.md](docs/features/algo.md).
+noodle — a CoderPad + LeetCode hybrid. Single Next.js 16 (App Router) app, React 19, no separate backend yet. The CoderPad pane is built; the algo problems feature (a typed bank of 100+ problems + a server-side judge running each submission in a terminable worker thread) is in [src/problems/](src/problems/) — see [docs/features/algo.md](docs/features/algo.md). Reference-type problems (linked lists, binary trees) and in-place problems are supported via the `io` / `checker` harness extensions documented in [problem-authoring.md](docs/features/problem-authoring.md).
+
+**Tests:** `npm test` (vitest) runs the io-converter unit tests plus every problem's reference solution through the real judge worker; `node scripts/verifyProblems.mjs [slug]` is the standalone equivalent. Run one of these after touching the tester, the problem bank, or `problem.ts`.
 
 ## Stack notes
 

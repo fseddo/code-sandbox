@@ -26,6 +26,11 @@ Assume the two numbers do not contain leading zeros, except the number 0 itself.
  *   this.next = (next === undefined ? null : next)
  * }
  */
+/**
+ * @param {ListNode} l1
+ * @param {ListNode} l2
+ * @return {ListNode}
+ */
 function addTwoNumbers(l1, l2) {
   // your code here
 }`,
@@ -39,6 +44,11 @@ function addTwoNumbers(l1, l2) {
  *     this.next = (next === undefined ? null : next)
  *   }
  * }
+ */
+/**
+ * @param {ListNode} l1
+ * @param {ListNode} l2
+ * @return {ListNode}
  */
 function addTwoNumbers(l1: ListNode | null, l2: ListNode | null): ListNode | null {
   // your code here

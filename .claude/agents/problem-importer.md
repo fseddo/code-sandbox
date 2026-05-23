@@ -43,17 +43,29 @@ tag otherwise.
 
 ## Eligibility — stop early if the harness can't express it
 
-The judge runs `(...args) => result`, deep-equals one `expected` (or runs a `checker`), and
-hydrates only `"value"` and `"linked-list"` I/O. Before authoring, classify the problem:
+The judge runs `(...args) => result`, deep-equals one `expected` (or runs a `checker`), and hydrates
+`"value"`, `"linked-list"`, `"binary-tree"`, and the `"[]"` array variants of each. Before authoring,
+classify the problem:
 
 - **Plain value I/O, single correct answer** → straightforward; author it.
-- **Multiple valid answers** (e.g. "return any longest…") → use a `checker` (see
-  [longestPalindrome.ts](../../src/problems/data/problems/longestPalindrome.ts)).
-- **Linked-list I/O** → use `io: { params: […], result: … }` with array test data (see
-  [addTwoNumbers.ts](../../src/problems/data/problems/addTwoNumbers.ts)). `ListNode` is injected as a global.
-- **Tree / graph / other reference types, in-place mutation scored on the mutated arg, or
-  interactive/design problems** → **not supported.** Do not fake it. Write a one-paragraph summary
-  of what's missing, set confidence to 0, and stop without creating a module.
+- **Multiple valid answers** (e.g. "return any longest…", "return all subsets in any order") → use a
+  `checker` (see [longestPalindrome.ts](../../src/problems/data/problems/longestPalindrome.ts)). For
+  order-independent collections, sort both sides inside the checker before comparing.
+- **Linked-list I/O** → `io: { params: […], result: … }` with array test data (see
+  [addTwoNumbers.ts](../../src/problems/data/problems/addTwoNumbers.ts)); `ListNode` is a global. An
+  array *of* lists (merge-k-sorted-lists) uses `"linked-list[]"` (see
+  [mergeKLists.ts](../../src/problems/data/problems/mergeKLists.ts)).
+- **Binary-tree I/O** → `"binary-tree"` with LeetCode level-order array data (`null` = absent child);
+  `TreeNode` is a global (see [inorderTraversal.ts](../../src/problems/data/problems/inorderTraversal.ts)).
+  Returning a list of trees uses `"binary-tree[]"`. The `Args`/`Result` generics describe the **array**
+  form, e.g. `defineAlgoProblem<[(number | null)[]], number[]>`.
+- **In-place mutation scored on the mutated arg** (sort-colors, rotate-image, set-matrix-zeroes,
+  next-permutation, the remove-* family) → have the solution mutate and `return` the same array, and use
+  a `checker` that asserts `actual === args[0]` plus correctness (see
+  [sortColors.ts](../../src/problems/data/problems/sortColors.ts) and problem-authoring.md → In-place).
+- **Graphs, other reference types, or interactive/design problems** → **not supported.** Do not fake
+  it. Write a one-paragraph summary of what's missing, set confidence to 0, and stop without creating a
+  module.
 
 ## Authoring procedure
 
@@ -66,11 +78,17 @@ hydrates only `"value"` and `"linked-list"` I/O. Before authoring, classify the 
 4. **`constraints`** — the input bounds, as strings. These tell you how to size scale tests.
 5. **`examples`** (2–4) — `{ name, args, expected, explanation }`, type-checked against the
    signature. These are the visible cases; add an `explanation` where the output isn't obvious.
-6. **`starterCode`** for both `javascript` and `typescript`, function named `functionName`. For
-   reference-type I/O (e.g. linked lists), open the starter with a LeetCode-style multi-line JSDoc
-   block defining the type — the readable `/** Definition for singly-linked list. … */` form, not a
-   crammed one-liner. See [addTwoNumbers.ts](../../src/problems/data/problems/addTwoNumbers.ts). (This is
-   editor content the solver reads, so the repo's "no multi-line comment" rule does not apply to it.)
+6. **`starterCode`** for both `javascript` and `typescript`, function named `functionName`, in the
+   **LeetCode editor style** (editor content the solver reads — the repo's "no multi-line comment" rule
+   does not apply here):
+   - **JS**: a JSDoc block with `@param {type} name` per param and `@return {type}`, above
+     `function name(params) { }`.
+   - **TS**: inline types in the signature; no `@param` block.
+   - For **reference-type I/O**, precede the `@param` block with the readable multi-line type
+     definition (`/** Definition for singly-linked list. … */` / `/** Definition for a binary tree
+     node. … */`), and use the node type in `@param` (`{ListNode}`, `{TreeNode}`). See
+     [addTwoNumbers.ts](../../src/problems/data/problems/addTwoNumbers.ts) and
+     [inorderTraversal.ts](../../src/problems/data/problems/inorderTraversal.ts).
 7. **`hiddenTests`** — meet the policy below.
 8. **`solutions`** (≥1) — name, explanation (with complexity), per-language `code`. The first
    solution's JS is the **oracle** the verifier runs, so it must be genuinely correct.

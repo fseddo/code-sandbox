@@ -15,10 +15,18 @@ export const fizzBuzz = defineAlgoProblem<[number], string[]>({
 - \`answer[i - 1] === String(i)\` otherwise.`,
   constraints: ["1 <= n <= 10^4"],
   starterCode: {
-    javascript: `function fizzBuzz(n) {
+    javascript: `/**
+ * @param {number} n
+ * @return {string[]}
+ */
+function fizzBuzz(n) {
   // your code here
 }`,
-    typescript: `function fizzBuzz(n: number): string[] {
+    typescript: `/**
+ * @param {number} n
+ * @return {string[]}
+ */
+function fizzBuzz(n: number): string[] {
   // your code here
 }`,
   },

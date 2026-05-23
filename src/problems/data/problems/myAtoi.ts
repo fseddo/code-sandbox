@@ -25,10 +25,18 @@ Return the resulting integer.`,
     "s consists of English letters (lower-case and upper-case), digits (0-9), ' ', '+', '-', and '.'.",
   ],
   starterCode: {
-    javascript: `function myAtoi(s) {
+    javascript: `/**
+ * @param {string} s
+ * @return {number}
+ */
+function myAtoi(s) {
   // your code here
 }`,
-    typescript: `function myAtoi(s: string): number {
+    typescript: `/**
+ * @param {string} s
+ * @return {number}
+ */
+function myAtoi(s: string): number {
   // your code here
 }`,
   },

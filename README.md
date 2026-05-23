@@ -4,7 +4,7 @@ Noodle is a coding playground with two modes: solve leetcode-style algorithm pro
 
 A live code playground in the browser — a CoderPad + LeetCode hybrid for personal use. Write React + TypeScript in the editor, watch [Vite](https://vite.dev) build it inside a [Sandpack](https://sandpack.codesandbox.io/) container, and see the live preview alongside the console.
 
-Each pad has its own URL (`/pad/<id>`) and autosaves to localStorage in this browser. Persistence and a server-side LeetCode-style judge are planned next.
+Each pad has its own URL (`/pad/<id>`) and autosaves to localStorage in this browser. The algorithm side ships a **server-side judge** (a terminable worker thread running `node:vm`) and a typed problem bank of **100+ problems** spanning arrays, strings, linked lists, binary trees, DP, and backtracking. Server-side persistence is planned next.
 
 ## Quick start
 
@@ -14,6 +14,16 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) — `New pad` mints a fresh id and drops you into the workspace.
+
+## Testing
+
+```bash
+npm test           # vitest: io converters + every reference solution through the real judge worker
+npm run test:watch # watch mode
+node scripts/verifyProblems.mjs [slug]   # standalone problem verifier (optional slug filter)
+```
+
+The suite runs each problem's reference solution against its full example + hidden set (submit mode), so a broken problem or harness regression fails CI. See [docs/features/problem-authoring.md](docs/features/problem-authoring.md).
 
 ## Stack
 

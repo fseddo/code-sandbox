@@ -17,10 +17,20 @@ Each input has exactly one solution, and you may not use the same element twice.
     "Exactly one valid answer exists.",
   ],
   starterCode: {
-    javascript: `function twoSum(nums, target) {
+    javascript: `/**
+ * @param {number[]} nums
+ * @param {number} target
+ * @return {number[]}
+ */
+function twoSum(nums, target) {
   // your code here
 }`,
-    typescript: `function twoSum(nums: number[], target: number): number[] {
+    typescript: `/**
+ * @param {number[]} nums
+ * @param {number} target
+ * @return {number[]}
+ */
+function twoSum(nums: number[], target: number): number[] {
   // your code here
 }`,
   },

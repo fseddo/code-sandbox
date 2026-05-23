@@ -1,15 +1,18 @@
 # Problem authoring & sourcing
 
 > **Status: implemented.** The data model below (`examples`, `constraints`, `tags`, `source`, plus
-> the `io` / `checker` harness extensions) is live in [problem.ts](../../src/problems/data/problem.ts), and
-> the first 10 catalog problems are authored. This doc is now the standing **authoring guide** — the
+> the `io` / `checker` harness extensions) is live in [problem.ts](../../src/problems/data/problem.ts).
+> **All 100 catalog rows are imported** (numbered #1–#105, including a few off-catalog/build problems),
+> each verified against the real worker. This doc is now the standing **authoring guide** — the
 > data-model wiring lives in [algo.md → Problem model](algo.md#problem-model--the-typed-core); the
-> rubric and test-case policy here are what you follow when adding a problem.
+> rubric and test-case policy here are what you follow when adding a *new* problem.
 >
 > Authoring is automatable: the [`problem-importer`](../../.claude/agents/problem-importer.md) agent
 > takes one catalog row and produces a verified module, reporting a confidence score. Every problem
-> is checked end-to-end by [`scripts/verifyProblems.mjs`](../../scripts/verifyProblems.mjs), which
-> runs each reference solution through the real tester worker.
+> is checked end-to-end by [`scripts/verifyProblems.mjs`](../../scripts/verifyProblems.mjs) and by the
+> `npm test` (vitest) integration suite, both of which run each reference solution through the real
+> tester worker. The io converters have their own unit tests
+> ([io.test.mjs](../../src/problems/algo/tester/io.test.mjs)).
 
 ## What `leetcodeProblemSet.json` actually is
 
@@ -185,7 +188,19 @@ For each problem promoted from the catalog:
 4. **Author `examples`** (2–4): each an `{ args, expected, explanation }`, type-checked against the
    signature. These double as the visible tests.
 5. **Author `constraints`** — the input bounds. These also tell you how to _size the scale tests_.
-6. **Write `starterCode`** for both JS and TS, function named `functionName`.
+6. **Write `starterCode`** for both JS and TS, function named `functionName`, in the **LeetCode
+   editor style** (this is content the solver reads, so the repo's "no multi-line comment" rule does
+   not apply here):
+   - **Both languages** open with a JSDoc block annotating each param and the return —
+     `@param {number[]} nums` … `@return {number}` — directly above the function. JS:
+     `function name(params) { }`; TS keeps the inline types as well
+     (`function name(nums: number[]): number {}`). The JSDoc `{type}` is JS/Closure notation
+     (`{number[]}`, `{ListNode}`) in both languages.
+   - For **reference-type I/O**, precede the `@param` block (in both languages) with the readable multi-line type
+     definition — `/** Definition for singly-linked list. … */` or `/** Definition for a binary tree
+     node. … */` — matching [addTwoNumbers](../../src/problems/data/problems/addTwoNumbers.ts) /
+     [inorderTraversal](../../src/problems/data/problems/inorderTraversal.ts). The `@param` type is the
+     node type (`{ListNode}`, `{TreeNode}`, `{ListNode[]}`).
 7. **Write the hidden set** to the [test-case policy](#test-case-policy--coverage-not-a-flat-count):
    hit every category, meet the difficulty floor.
 8. **Author ≥1 `solution`** with explanation + per-language code. The reference solution is also the
@@ -195,9 +210,45 @@ For each problem promoted from the catalog:
     the reference solution through the real worker against every example + hidden case, so a wrong
     `expected` (or a wrong solution) shows up here. `npx tsc --noEmit` and `eslint` must be clean too.
 
-For reference-type I/O use `io` and array test data ([addTwoNumbers](../../src/problems/data/problems/addTwoNumbers.ts));
-for multiple-valid-answer problems use a `checker` ([longestPalindrome](../../src/problems/data/problems/longestPalindrome.ts)).
+For reference-type I/O use `io` and array test data — linked lists ([addTwoNumbers](../../src/problems/data/problems/addTwoNumbers.ts)),
+binary trees ([inorderTraversal](../../src/problems/data/problems/inorderTraversal.ts)), or an array *of* either
+via the `"linked-list[]"` / `"binary-tree[]"` shapes ([mergeKLists](../../src/problems/data/problems/mergeKLists.ts));
+for multiple-valid-answer or in-place problems use a `checker` (see [I/O shapes](#io-shapes--reference-types-as-array-data) and [in-place](#in-place-problems--judge-the-mutated-arg) below).
 The [`problem-importer`](../../.claude/agents/problem-importer.md) agent runs this whole rubric for one row.
+
+## I/O shapes — reference types as array data
+
+Test data is always plain JSON arrays; `io` tells the worker how to materialize the real reference
+type around the call (and flatten it back), so authored cases stay serializable. The generics on
+`defineAlgoProblem<Args, Result>` describe the **array** form, not the runtime node form.
+
+| Shape            | Test data           | Solution sees / returns           | Example                         |
+| ---------------- | ------------------- | --------------------------------- | ------------------------------- |
+| `"value"`        | anything            | passed straight through           | most problems                   |
+| `"linked-list"`  | `number[]`          | a `ListNode` chain                | [addTwoNumbers](../../src/problems/data/problems/addTwoNumbers.ts) |
+| `"binary-tree"`  | level-order `(number\|null)[]` | a `TreeNode`             | [inorderTraversal](../../src/problems/data/problems/inorderTraversal.ts) |
+| `"linked-list[]"`| `number[][]`        | a `ListNode[]`                    | [mergeKLists](../../src/problems/data/problems/mergeKLists.ts) |
+| `"binary-tree[]"`| `(number\|null)[][]`| a `TreeNode[]`                    | "generate all unique BSTs"      |
+
+`ListNode` and `TreeNode` are injected as worker globals (the solver references them; the starter's
+JSDoc block documents them). **Binary-tree serialization** is LeetCode's level-order array where `null`
+marks an absent child and a null node contributes no slots: `[1, null, 2, 3]` is root `1`, right child
+`2`, and `2`'s left child `3`. Trailing `null`s are trimmed on the way out.
+
+## In-place problems — judge the mutated arg
+
+LeetCode's in-place problems (`sort-colors`, `rotate-image`, `set-matrix-zeroes`, `next-permutation`,
+the `remove-*` family) are scored on the **input array after the call**, not the return value. The
+worker hands the `checker` the args **as the function received them, post-call**, so:
+
+- **Have the solution mutate in place and `return` that same array** (`Result` carries the expected
+  final array). Set `Result` accordingly — don't type it `void`, or there's nowhere to put `expected`.
+- **In the `checker`, assert `actual === args[0]`** (the returned value *is* the mutated input — proves
+  in-place, fails a solution that sorts a copy) **and** that `args[0]` equals `expected`. See
+  [sortColors.ts](../../src/problems/data/problems/sortColors.ts).
+
+For the `remove-*` problems that return a count `k` and judge only the first `k` elements, the checker
+reads `actual` (the `k`) and compares `args[0].slice(0, k)` to `expected`.
 
 **Quality gate (a problem isn't done until all hold):**
 
@@ -219,7 +270,8 @@ The [`problem-importer`](../../.claude/agents/problem-importer.md) agent runs th
 3. ~~**Render** — [`ProblemPanel`](../../src/problems/algo/ProblemPanel.tsx) shows `examples` (with
    explanations), a `constraints` list, and `tags` chips.~~ **Done.**
 4. ~~**Backfill** — the three original problems migrated to the new shape.~~ **Done.**
-5. ~~**Author** — first 10 catalog problems imported (ids 1–10) via the importer agent.~~ **Done.**
+5. ~~**Author** — all 100 catalog problems imported via the importer agent (numbered #1–#105 incl. a
+   few off-catalog/build problems); reference-type & in-place problems use the `io`/`checker` paths.~~ **Done.**
 6. **Tags index (open)** — the `TopicTag` union is hand-maintained from the catalog today. A small
    script could regenerate it and emit a `catalogIndex` of unauthored rows for a "coming soon" list.
 7. **Budget revisit (open)** — if scale tests start brushing the limit, split Run vs. Submit timeouts

@@ -18,10 +18,20 @@ Return \`true\` if, after performing this operation **at most once**, \`str2\` c
     "str1 and str2 consist of lowercase English letters.",
   ],
   starterCode: {
-    javascript: `function canMakeSubsequence(str1, str2) {
+    javascript: `/**
+ * @param {string} str1
+ * @param {string} str2
+ * @return {boolean}
+ */
+function canMakeSubsequence(str1, str2) {
   // your code here
 }`,
-    typescript: `function canMakeSubsequence(str1: string, str2: string): boolean {
+    typescript: `/**
+ * @param {string} str1
+ * @param {string} str2
+ * @return {boolean}
+ */
+function canMakeSubsequence(str1: string, str2: string): boolean {
   // your code here
 }`,
   },

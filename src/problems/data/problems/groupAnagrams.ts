@@ -29,10 +29,18 @@ Return a list of groups. The groups, and the strings within each group, may be r
   return canon(actual) === canon(expected);
 }`,
   starterCode: {
-    javascript: `function groupAnagrams(strs) {
+    javascript: `/**
+ * @param {string[]} strs
+ * @return {string[][]}
+ */
+function groupAnagrams(strs) {
   // your code here
 }`,
-    typescript: `function groupAnagrams(strs: string[]): string[][] {
+    typescript: `/**
+ * @param {string[]} strs
+ * @return {string[][]}
+ */
+function groupAnagrams(strs: string[]): string[][] {
   // your code here
 }`,
   },

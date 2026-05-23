@@ -12,10 +12,18 @@ export const palindromeNumber = defineAlgoProblem<[number], boolean>({
 A negative number is never a palindrome: the leading minus sign has no trailing counterpart (e.g. \`-121\` reversed is \`121-\`). A number ending in \`0\` is a palindrome only if the number itself is \`0\`, since the reversed form would have a leading zero.`,
   constraints: ["-2^31 <= x <= 2^31 - 1"],
   starterCode: {
-    javascript: `function isPalindrome(x) {
+    javascript: `/**
+ * @param {number} x
+ * @return {boolean}
+ */
+function isPalindrome(x) {
   // your code here
 }`,
-    typescript: `function isPalindrome(x: number): boolean {
+    typescript: `/**
+ * @param {number} x
+ * @return {boolean}
+ */
+function isPalindrome(x: number): boolean {
   // your code here
 }`,
   },

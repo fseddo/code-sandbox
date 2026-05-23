@@ -1,6 +1,7 @@
 import { parentPort, workerData } from "node:worker_threads";
 import vm from "node:vm";
 import { transform } from "sucrase";
+import { ListNode, TreeNode, hydrate, dehydrate } from "./io.mjs";
 
 /** Structural equality for judge output: handles primitives (incl. NaN), arrays, and plain objects. */
 const deepEqual = (a, b) => {
@@ -23,29 +24,6 @@ const format = (value) =>
     }
   })();
 
-/** Singly-linked node, injected as a sandbox global so linked-list solutions can reference `ListNode`. */
-class ListNode {
-  constructor(val, next) {
-    this.val = val === undefined ? 0 : val;
-    this.next = next === undefined ? null : next;
-  }
-}
-
-const arrayToList = (values) => {
-  let head = null;
-  for (let i = values.length - 1; i >= 0; i--) head = new ListNode(values[i], head);
-  return head;
-};
-
-const listToArray = (node) => {
-  const values = [];
-  for (let current = node; current !== null && current !== undefined; current = current.next) values.push(current.val);
-  return values;
-};
-
-const hydrate = (value, shape) => (shape === "linked-list" ? arrayToList(value) : value);
-const dehydrate = (value, shape) => (shape === "linked-list" ? listToArray(value) : value);
-
 const run = () => {
   const { source, language, functionName, tests, io, checker } = workerData;
 
@@ -58,6 +36,7 @@ const run = () => {
   const logs = [];
   const sandbox = {
     ListNode,
+    TreeNode,
     console: {
       log: (...args) => logs.push(args.map(format).join(" ")),
       error: (...args) => logs.push(args.map(format).join(" ")),
@@ -96,7 +75,8 @@ const run = () => {
     try {
       const actual = io?.result ? dehydrate(fn(...args), io.result) : fn(...args);
       const ms = performance.now() - startedAt;
-      const passed = checkerFn ? Boolean(checkerFn(actual, test.args, test.expected)) : deepEqual(actual, test.expected);
+      // Checker gets `args` post-call (mutations visible) so it can judge in-place answers; deep-equal uses the return value.
+      const passed = checkerFn ? Boolean(checkerFn(actual, args, test.expected)) : deepEqual(actual, test.expected);
       // Hidden cases report only pass/fail + timing — expected/actual/logs would leak the probing inputs.
       return {
         name,

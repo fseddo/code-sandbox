@@ -30,10 +30,20 @@ Return the string read off the zigzag. When \`numRows\` is \`1\` there is no zig
     "1 <= numRows <= 1000",
   ],
   starterCode: {
-    javascript: `function convert(s, numRows) {
+    javascript: `/**
+ * @param {string} s
+ * @param {number} numRows
+ * @return {string}
+ */
+function convert(s, numRows) {
   // your code here
 }`,
-    typescript: `function convert(s: string, numRows: number): string {
+    typescript: `/**
+ * @param {string} s
+ * @param {number} numRows
+ * @return {string}
+ */
+function convert(s: string, numRows: number): string {
   // your code here
 }`,
   },
