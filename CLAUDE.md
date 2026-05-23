@@ -10,7 +10,7 @@ These have breaking changes vs. older versions an agent may have memorized. Read
 
 - **Next.js 16 App Router** — see [AGENTS.md](AGENTS.md). Read the relevant guide in `node_modules/next/dist/docs/` before writing routes, layouts, server components, or `dynamic`/`use client` boundaries.
 - **React 19**.
-- **shadcn/ui — Base UI variant.** Triggers and slot-like surfaces use the `render` prop, NOT `asChild`. Example: `<AlertDialogTrigger render={<Button variant="outline" />}>…</AlertDialogTrigger>`. See [PadToolbar.tsx](src/pad/PadToolbar.tsx).
+- **shadcn/ui — Base UI variant.** Triggers and slot-like surfaces use the `render` prop, NOT `asChild`. Example: `<AlertDialogTrigger render={<Button variant="outline" />}>…</AlertDialogTrigger>`. See [PadToolbar.tsx](src/pad/PadToolbar.tsx). Base UI primitives can differ from Radix (e.g. `AlertDialogAction` is a plain button — it does **not** auto-close). Need different behavior from a `ui/` primitive? **Wrap it in a component under `components/`; don't edit the generated `components/ui/` file — the CLI can overwrite it.** See [ConfirmDialog.tsx](src/components/ConfirmDialog.tsx).
 - **react-resizable-panels v4** — `Group` / `Panel` / `Separator` (not the v1 `PanelGroup` / `PanelResizeHandle`). Sizes are percentage strings (`"40%"`, `"22%"`), not numbers. See [PadWorkspace.tsx](src/pad/PadWorkspace.tsx).
 - **Sandpack** (`@codesandbox/sandpack-react`) — in-browser bundler. Touches the DOM on import, so wrap in `dynamic(..., { ssr: false })`. See [PadLoader.tsx](src/app/pad/[id]/PadLoader.tsx).
 

@@ -168,4 +168,10 @@
   ::-webkit-scrollbar-thumb:hover {
     background: var(--muted-foreground);
   }
+  /* Sandpack hardcodes a white preview background (stitches, injected at runtime), which flashes before
+     the iframe paints; match our dark canvas. !important + the wrapper scope beats the runtime rule. */
+  .sp-wrapper .sp-preview-container,
+  .sp-wrapper .sp-preview-iframe {
+    background: var(--background) !important;
+  }
 }

@@ -1,13 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { LuLink2, LuPlus } from "react-icons/lu";
+import { LuLink2, LuTrash2 } from "react-icons/lu";
 import { toast } from "sonner";
-import { resetPad } from "@/pad/pad";
+import { clearPad, resetPad } from "@/pad/pad";
 import { EditablePadTitle } from "@/pad/EditablePadTitle";
 import { PadSettingsMenu } from "@/pad/PadSettingsMenu";
 import type { PadToolbarState } from "@/pad/PadWorkspace";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ResetAction } from "@/components/ResetAction";
 import { DetailHeader } from "@/components/DetailHeader";
 
@@ -24,6 +25,11 @@ export const PadToolbar = ({ padId, autosave, onAutosaveChange }: PadToolbarStat
     }
   };
 
+  const deletePad = () => {
+    clearPad(padId);
+    router.push("/");
+  };
+
   return (
     <DetailHeader crumb={{ label: "Pads" }} title={<EditablePadTitle padId={padId} />}>
       <Button variant="outline" size="sm" onClick={copyLink}>
@@ -36,10 +42,18 @@ export const PadToolbar = ({ padId, autosave, onAutosaveChange }: PadToolbarStat
         confirmLabel="Reset pad"
         onConfirm={() => resetPad(padId)}
       />
-      <Button variant="outline" size="sm" onClick={() => router.push("/pad")}>
-        <LuPlus className="size-3.5" />
-        New pad
-      </Button>
+      <ConfirmDialog
+        trigger={
+          <Button variant="destructive" size="sm">
+            <LuTrash2 className="size-3.5" />
+            Delete
+          </Button>
+        }
+        title="Delete this pad?"
+        description="This permanently removes the pad and its code from this browser. This can't be undone."
+        confirmLabel="Delete pad"
+        onConfirm={deletePad}
+      />
       <PadSettingsMenu autosave={autosave} onAutosaveChange={onAutosaveChange} />
     </DetailHeader>
   );
