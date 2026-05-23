@@ -2,6 +2,7 @@
 
 import { LuHistory, LuSave, LuSparkles } from "react-icons/lu";
 import type { SupportedLanguage } from "@/problems/data/problem";
+import { LANGUAGE_LABELS } from "@/problems/data/problem";
 import { CodeEditor } from "@/components/CodeEditor";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { EditorToolbar } from "@/components/EditorToolbar";
@@ -22,11 +23,6 @@ type SolutionEditorProps = {
   isDirty: boolean;
   autosave: boolean;
   isAutocompleteEnabled: boolean;
-};
-
-const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
-  typescript: "TypeScript",
-  javascript: "JavaScript",
 };
 
 export const SolutionEditor = ({

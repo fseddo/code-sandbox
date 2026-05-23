@@ -19,6 +19,28 @@ Severity legend: **🔴 high** (will bite the DB migration or is a correctness/s
 > findings the second pass missed: the registry-order problem number (§5.1) and the source-of-truth
 > decision table (§5.2). Read both; they're complementary.
 
+> **Progress (2026-05-22).** ✅ Done: **§1 file structure** + **§2 naming** (combined — `src/judge/` →
+> `src/problems/{data,algo,build,catalog,shared,progress}`, `judge→algo` / `runner→tester` /
+> `Problem→AlgoProblem` renames, docs reframed; `tsc`/`eslint` clean, all 15 algo problems re-verified
+> through the relocated worker). Also fixed one **§5.7** instance — the SSR/hydration mismatch on
+> `localStorage`-seeded button attributes — via [`useIsHydrated`](../../src/components/useIsHydrated.ts).
+> The §1/§2 finding bodies below are kept as the *historical* analysis (they describe the old `src/judge/`
+> layout); the §1 "recommended target tree" is now the real structure. Remaining, by [§7](#7-suggested-sequencing):
+> §3 effect fix, §5.1 stable number, §4.1 `createLocalStore`, §4 dedup, §5 DB.
+
+> **Progress (2026-05-22, cont.).** ✅ Done: **all of §4 (the dedup pass)**. §4.1 `createLocalStore`
+> (`src/lib/localStore.ts`: `createSingletonStore` + `createKeyedStore` over shared SSR/parse-safe
+> primitives — the four storage modules are now thin wrappers); §4.2 `UnderlineTabs`
+> (`src/components/UnderlineTabs.tsx`, interactive when `onSelect` is given, static otherwise — folds in
+> all four tab rows including the console's); §4.3 `Tag` + `CompanyChip` (`src/problems/shared/`); §4.4
+> `useLatestRef` + `useDirtyTracker` + `useDebouncedCallback` (`src/components/`), algo autosave moved
+> into its `onChange` handlers (deleted `useAlgoAutosave` + the `lastSeen` ref), pad autosave kept
+> effect-driven; §4.5 `ArgsList`; §4.6 `Badge` base; §4.7 `useCachedExternalStore`
+> (`src/lib/`); §4.8 generic `SettingsMenu` (`src/components/`, both menus now registry-driven); §4.9
+> `LANGUAGE_LABELS` moved to `problem.ts`, `ResetAction` (`src/components/`), the three `DEBOUNCE_MS=600`
+> collapsed onto `AUTOSAVE_DEBOUNCE_MS`. `tsc`/`eslint`/`next build` clean. Remaining: §5.1 stable
+> number, §5 DB.
+
 ---
 
 ## 0. Snapshot
@@ -38,7 +60,7 @@ unions, the facet registry) is strong and the docs are unusually complete. The d
 
 ---
 
-## 1. File structure 🟡
+## 1. File structure 🟡 — ✅ Done (2026-05-22)
 
 ### What's there now
 
@@ -103,7 +125,7 @@ naming rename (§2) so files only move once.
 
 ---
 
-## 2. The "judge" naming 🟡 — *propose & recommend*
+## 2. The "judge" naming 🟡 — *propose & recommend* — ✅ Done (2026-05-22)
 
 You're right that "judge" is dated, but the deeper issue is **"judge" names two different things**
 that have drifted apart:
@@ -147,7 +169,12 @@ landmine. `defineProblem` → `defineAlgoProblem` for symmetry with `defineBuild
 
 ---
 
-## 3. `useEffect` audit — every site catalogued
+## 3. `useEffect` audit — every site catalogued — ✅ Done (2026-05-22)
+
+> The one real offender (#1, `useAlgoSettings` persist-in-effect) is fixed — the write moved into the
+> `setSetting` handler ([useAlgoSettings.ts](../../src/problems/progress/useAlgoSettings.ts)). Every
+> other effect was confirmed legitimate and left as-is. The autosave-effect dedup is tracked under
+> §4.4, not here.
 
 Eight effect sites total. Most are legitimate (subscriptions / external-store sync / the React-19 ref
 rule). Two are genuine "reacting to state" smells, and the autosave pair is duplicated (§4).
@@ -463,6 +490,12 @@ selection — good groundwork already laid.
 
 ### 5.7 🔴 Synchronous reads → async DB — the deepest migration cost
 
+> **Partially surfaced (2026-05-22).** The first concrete *symptom* of this — a hydration mismatch
+> where `localStorage`-seeded values (`submittedSolution`, `settings.autosave`) reached the SSR'd DOM
+> as a button's `disabled` / a status label — was fixed with [`useIsHydrated`](../../src/components/useIsHydrated.ts)
+> (gate client-only values until after hydration). That's a band-aid on the symptom, **not** the
+> structural fix below; the sync→async rewrite still stands for the DB phase.
+
 This is the migration's highest-severity structural risk and deserves top billing. Today *every*
 persisted read is **synchronous**, and several React patterns depend on that:
 
@@ -542,14 +575,15 @@ Ordered to isolate the DB seam first and keep each step a reviewable, behavior-p
    removes the order-fragility before anything else moves. 🔴
 2. **`createLocalStore` factory (§4.1)** — collapse the 4 storage modules onto one generic store. This
    *is* the persistence adapter the DB will replace. 🔴
-3. **Naming rename (§2)** — `judge → algo` / `runner → tester`, `Problem → AlgoProblem`. Pure rename,
-   no behavior change; do it before the folder move so files rename once. 🟡
-4. **Folder reorg (§1)** — move into `src/problems/{data,algo,build,catalog,shared,progress}`. One
-   mechanical commit + doc-path updates. 🟡
-5. **UI dedup (§4.2, §4.3, §4.5)** — `UnderlineTabs`, `Tag`/`CompanyChip`, `ArgsList`. Independent,
-   low-risk. 🟢
-6. **State dedup (§4.4) + the §3 effect fix (#1)** — unified `useDirtyTracker`/`useAutosave`; fold the
-   settings-persist effect into its handler. 🟡
+3. ✅ **Naming rename (§2)** — `judge → algo` / `runner → tester`, `Problem → AlgoProblem`. **Done** —
+   merged with step 4 into one combined pass. 🟡
+4. ✅ **Folder reorg (§1)** — moved into `src/problems/{data,algo,build,catalog,shared,progress}`.
+   **Done** (2026-05-22) + doc-path updates. 🟡
+5. ✅ **UI dedup (§4.2, §4.3, §4.5)** — `UnderlineTabs`, `Tag`/`CompanyChip`, `ArgsList` (+ §4.6 `Badge`,
+   §4.7 `useCachedExternalStore`, §4.8 `SettingsMenu`, §4.9). **Done** (2026-05-22). 🟢
+6. ✅ **State dedup (§4.4)** + ~~the §3 effect fix (#1)~~ — **Done** (2026-05-22): settings-persist moved
+   into its handler; `useLatestRef` + `useDirtyTracker` + `useDebouncedCallback` extracted, algo autosave
+   now event-driven, pad autosave kept effect-driven. 🟡
 7. **DB decision (§5.2) + sync→async rewrite (§5.7) + ORM pick (§5.9)** — decide source-of-truth (recommend Option A), pick
    Drizzle+Postgres, design the schema against the `data/` read API. Then auth → migrate per-user
    stores (§5.4). 🔴

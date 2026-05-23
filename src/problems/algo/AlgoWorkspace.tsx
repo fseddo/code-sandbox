@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { LuPlay, LuRotateCcw, LuSend } from "react-icons/lu";
+import { LuPlay, LuSend } from "react-icons/lu";
 import { Group, Panel } from "react-resizable-panels";
 import type { ClientProblem, RunMode } from "@/problems/data/problem";
 import { ProblemDetailHeader } from "@/problems/shared/ProblemDetailHeader";
@@ -14,7 +14,7 @@ import { useAlgo } from "@/problems/algo/useAlgo";
 import { useIsHydrated } from "@/components/useIsHydrated";
 import { ResizeBar } from "@/components/ResizeBar";
 import { Button } from "@/components/ui/button";
-import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { ResetAction } from "@/components/ResetAction";
 
 type AlgoWorkspaceProps = {
   problem: ClientProblem;
@@ -83,16 +83,9 @@ export const AlgoWorkspace = ({ problem, number, companies }: AlgoWorkspaceProps
           <LuSend className="size-3.5" />
           {runningMode === "submit" ? "Submitting…" : "Submit"}
         </Button>
-        <ConfirmDialog
-          trigger={
-            <Button size="sm" variant="outline">
-              <LuRotateCcw className="size-3.5" />
-              Reset
-            </Button>
-          }
+        <ResetAction
           title="Reset to starter code?"
           description="This restores the starter code and clears your test results for this problem. This can't be undone."
-          confirmLabel="Reset"
           onConfirm={resetProblem}
         />
         <SolutionSettingsMenu settings={settings} onSettingChange={setSetting} />

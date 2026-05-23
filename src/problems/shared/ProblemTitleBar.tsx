@@ -1,7 +1,8 @@
 import type { Difficulty, ProblemKind } from "@/problems/data/problem";
-import { CompanyAvatar } from "@/problems/shared/CompanyAvatar";
+import { CompanyChip } from "@/problems/shared/CompanyChip";
 import { DifficultyBadge } from "@/problems/shared/DifficultyBadge";
 import { KindBadge } from "@/problems/shared/KindBadge";
+import { Tag } from "@/problems/shared/Tag";
 import { titleizeSlug } from "@/problems/shared/format";
 
 type ProblemTitleBarProps = {
@@ -12,12 +13,6 @@ type ProblemTitleBarProps = {
   tags: readonly string[];
   companies: readonly string[];
 };
-
-const Tag = ({ children }: { children: React.ReactNode }) => (
-  <span className="inline-flex items-center gap-1.5 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
-    {children}
-  </span>
-);
 
 /**
  * Full-width problem identity banner spanning the workspace, between the top bar and the panels:
@@ -45,10 +40,7 @@ export const ProblemTitleBar = ({
     {companies.length > 0 ? (
       <div className="ml-auto flex flex-wrap items-center gap-2 pl-3">
         {companies.map((company) => (
-          <Tag key={company}>
-            <CompanyAvatar company={company} className="size-4 text-[0.55rem]" />
-            {titleizeSlug(company)}
-          </Tag>
+          <CompanyChip key={company} company={company} filled />
         ))}
       </div>
     ) : null}

@@ -1,4 +1,5 @@
 import type { Difficulty } from "@/problems/data/problem";
+import { Badge } from "@/problems/shared/Badge";
 import { cn } from "@/lib/utils";
 
 const tint: Record<Difficulty, string> = {
@@ -8,12 +9,5 @@ const tint: Record<Difficulty, string> = {
 };
 
 export const DifficultyBadge = ({ difficulty }: { difficulty: Difficulty }) => (
-  <span
-    className={cn(
-      "inline-flex h-5 items-center rounded-full px-2 text-xs font-medium capitalize",
-      tint[difficulty],
-    )}
-  >
-    {difficulty}
-  </span>
+  <Badge className={cn("capitalize", tint[difficulty])}>{difficulty}</Badge>
 );

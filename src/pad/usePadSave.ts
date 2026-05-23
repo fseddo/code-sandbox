@@ -1,14 +1,10 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useSandpack } from "@codesandbox/sandpack-react";
+import { useLatestRef } from "@/components/useLatestRef";
+import { useDirtyTracker } from "@/components/useDirtyTracker";
+import { AUTOSAVE_DEBOUNCE_MS, useDebouncedCallback } from "@/components/useDebouncedCallback";
 
 type Snapshot = Record<string, string>;
 
@@ -26,13 +22,9 @@ const snapshotOf = (files: SandpackBundlerFiles): Snapshot => {
 export const usePadSave = () => {
   const { sandpack } = useSandpack();
 
-  // React 19 forbids ref writes during render — sync in a layout effect instead.
-  const sandpackRef = useRef(sandpack);
-  useLayoutEffect(() => {
-    sandpackRef.current = sandpack;
-  });
+  const sandpackRef = useLatestRef(sandpack);
 
-  const [savedSnapshot, setSavedSnapshot] = useState<Snapshot>(() =>
+  const { setSavedSnapshot, isDirty } = useDirtyTracker(snapshotOf(sandpack.files), () =>
     snapshotOf(sandpack.files),
   );
 
@@ -42,7 +34,7 @@ export const usePadSave = () => {
     if (startedRef.current) return;
     startedRef.current = true;
     sandpackRef.current.runSandpack();
-  }, []);
+  }, [sandpackRef]);
 
   // updateFile HMR-pushes through the live bundler; runSandpack would cold-restart it.
   const save = useCallback(() => {
@@ -52,41 +44,43 @@ export const usePadSave = () => {
     if (code === undefined) return;
     sp.updateFile(path, code, true);
     setSavedSnapshot((prev) => ({ ...prev, [path]: code }));
-  }, []);
+  }, [sandpackRef, setSavedSnapshot]);
 
-  const addFile = useCallback((path: string, code: string) => {
-    const sp = sandpackRef.current;
-    sp.addFile(path, code);
-    sp.openFile(path);
-    setSavedSnapshot((prev) => ({ ...prev, [path]: code }));
-  }, []);
+  const addFile = useCallback(
+    (path: string, code: string) => {
+      const sp = sandpackRef.current;
+      sp.addFile(path, code);
+      sp.openFile(path);
+      setSavedSnapshot((prev) => ({ ...prev, [path]: code }));
+    },
+    [sandpackRef, setSavedSnapshot],
+  );
 
-  const deleteFile = useCallback((path: string) => {
-    sandpackRef.current.deleteFile(path);
-    setSavedSnapshot((prev) => {
-      const next = { ...prev };
-      delete next[path];
-      return next;
-    });
-  }, []);
-
-  const isDirty = useMemo(() => {
-    for (const path of Object.keys(savedSnapshot)) {
-      if (savedSnapshot[path] !== sandpack.files[path]?.code) return true;
-    }
-    return false;
-  }, [savedSnapshot, sandpack.files]);
+  const deleteFile = useCallback(
+    (path: string) => {
+      sandpackRef.current.deleteFile(path);
+      setSavedSnapshot((prev) => {
+        const next = { ...prev };
+        delete next[path];
+        return next;
+      });
+    },
+    [sandpackRef, setSavedSnapshot],
+  );
 
   return { isDirty, save, addFile, deleteFile };
 };
 
-const AUTOSAVE_DEBOUNCE_MS = 600;
-
-/** Debounced save on content change. Skips file switches and unchanged toggles. */
+/**
+ * Debounced save on content change. Stays effect-driven: the pad edits through Sandpack's own editor,
+ * which exposes no change event — the live value is observed as `sandpack.files`. The `lastSeen` ref
+ * skips file switches (a new active file isn't an edit).
+ */
 export const useAutosave = (enabled: boolean, save: () => void): void => {
   const { sandpack } = useSandpack();
   const activeFile = sandpack.activeFile;
   const activeCode = sandpack.files[activeFile]?.code;
+  const trigger = useDebouncedCallback(save, AUTOSAVE_DEBOUNCE_MS);
   const lastSeen = useRef<{ path: string; code: string | undefined }>({
     path: activeFile,
     code: activeCode,
@@ -94,11 +88,8 @@ export const useAutosave = (enabled: boolean, save: () => void): void => {
 
   useEffect(() => {
     const changedSameFile =
-      lastSeen.current.path === activeFile &&
-      lastSeen.current.code !== activeCode;
+      lastSeen.current.path === activeFile && lastSeen.current.code !== activeCode;
     lastSeen.current = { path: activeFile, code: activeCode };
-    if (!enabled || !changedSameFile) return;
-    const timer = setTimeout(save, AUTOSAVE_DEBOUNCE_MS);
-    return () => clearTimeout(timer);
-  }, [enabled, activeFile, activeCode, save]);
+    if (enabled && changedSameFile) trigger();
+  }, [enabled, activeFile, activeCode, trigger]);
 };

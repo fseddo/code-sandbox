@@ -9,6 +9,7 @@ import {
 } from "@codesandbox/sandpack-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { UnderlineTabs } from "@/components/UnderlineTabs";
 
 const TABS = ["server", "client"] as const;
 type ConsoleTab = (typeof TABS)[number];
@@ -230,33 +231,14 @@ export const PadConsolePanel = ({
   return (
     <div className="flex h-full flex-col bg-card">
       <div className="flex h-9 shrink-0 items-center border-b pr-1.5">
-        <div role="tablist" className="flex h-full items-stretch">
-          {TABS.map((id) => {
-            const active = tab === id;
-            return (
-              <button
-                key={id}
-                role="tab"
-                aria-selected={active}
-                onClick={() => setTab(id)}
-                className={cn(
-                  "relative px-3 text-xs font-medium tracking-wide uppercase transition-colors",
-                  active
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {TAB_LABEL[id]}
-                {active ? (
-                  <span
-                    aria-hidden
-                    className="absolute right-0 bottom-0 left-0 h-0.5 bg-primary"
-                  />
-                ) : null}
-              </button>
-            );
-          })}
-        </div>
+        <UnderlineTabs
+          tabs={TABS}
+          labelOf={TAB_LABEL}
+          active={tab}
+          onSelect={setTab}
+          className="h-full"
+          tabClassName="px-3 text-xs tracking-wide uppercase"
+        />
         <div className="ml-auto flex items-center gap-1">
           <Button
             variant="outline"

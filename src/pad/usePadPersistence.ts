@@ -3,8 +3,7 @@
 import { useEffect } from "react";
 import { useSandpack } from "@codesandbox/sandpack-react";
 import { savePad } from "@/pad/pad";
-
-const DEBOUNCE_MS = 600;
+import { AUTOSAVE_DEBOUNCE_MS } from "@/components/useDebouncedCallback";
 
 /**
  * Debounced writeback of pad files to localStorage on every change. A `title` (passed by a build
@@ -15,7 +14,7 @@ export const usePadPersistence = (padId: string, title?: string): void => {
   const { files } = sandpack;
 
   useEffect(() => {
-    const timer = setTimeout(() => savePad(padId, files, title), DEBOUNCE_MS);
+    const timer = setTimeout(() => savePad(padId, files, title), AUTOSAVE_DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [files, padId, title]);
 };

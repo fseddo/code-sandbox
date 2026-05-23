@@ -1,4 +1,5 @@
 import { typedEntries } from "@/lib/utils";
+import { createSingletonStore } from "@/lib/localStore";
 
 const STORAGE_KEY = "noodle:judge-settings";
 
@@ -30,25 +31,10 @@ const entries = typedEntries<AlgoSettingKey, SettingDef>(ALGO_SETTINGS);
 const defaultSettings = (): AlgoSettings =>
   Object.fromEntries(entries.map(([key, def]) => [key, def.default])) as AlgoSettings;
 
+const store = createSingletonStore<Partial<AlgoSettings>>(STORAGE_KEY);
+
 /** Reads editor settings from this browser, merged over defaults so a newly-added key gets its default. */
-export const loadSettings = (): AlgoSettings => {
-  const defaults = defaultSettings();
-  if (typeof window === "undefined") return defaults;
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return defaults;
-    return { ...defaults, ...(JSON.parse(raw) as Partial<AlgoSettings>) };
-  } catch {
-    return defaults;
-  }
-};
+export const loadSettings = (): AlgoSettings => ({ ...defaultSettings(), ...store.read() });
 
 /** Persists editor settings to this browser. */
-export const saveSettings = (settings: AlgoSettings): void => {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-  } catch {
-    // ignore
-  }
-};
+export const saveSettings = (settings: AlgoSettings): void => store.write(settings);

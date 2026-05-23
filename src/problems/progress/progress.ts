@@ -1,6 +1,5 @@
 import type { SupportedLanguage } from "@/problems/data/problem";
-
-const KEY = "noodle:progress";
+import { createSingletonStore } from "@/lib/localStore";
 
 /**
  * Per-problem progress, single state per problem. `not-started` is the *absence* of a record, so the
@@ -28,22 +27,12 @@ export type ProgressEntry = {
 
 type ProgressMap = Partial<Record<string, ProgressEntry>>;
 
-const read = (): ProgressMap => {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = window.localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as ProgressMap) : {};
-  } catch {
-    return {};
-  }
-};
+const store = createSingletonStore<ProgressMap>("noodle:progress");
+
+const read = (): ProgressMap => store.read() ?? {};
 
 const write = (map: ProgressMap): void => {
-  try {
-    window.localStorage.setItem(KEY, JSON.stringify(map));
-  } catch {
-    // localStorage may be full or unavailable — ignore.
-  }
+  store.write(map);
   notify();
 };
 

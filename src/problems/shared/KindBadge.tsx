@@ -1,5 +1,5 @@
 import type { ProblemKind } from "@/problems/data/problem";
-import { cn } from "@/lib/utils";
+import { Badge } from "@/problems/shared/Badge";
 
 const tint: Record<ProblemKind, string> = {
   algo: "text-muted-foreground bg-muted",
@@ -13,12 +13,5 @@ const label: Record<ProblemKind, string> = {
 
 /** Pill marking a problem as a worker-graded algorithm or an open-ended build task. */
 export const KindBadge = ({ kind }: { kind: ProblemKind }) => (
-  <span
-    className={cn(
-      "inline-flex h-5 items-center rounded-full px-2 text-xs font-medium",
-      tint[kind],
-    )}
-  >
-    {label[kind]}
-  </span>
+  <Badge className={tint[kind]}>{label[kind]}</Badge>
 );

@@ -3,6 +3,12 @@ import type { SandpackFiles, SandpackPredefinedTemplate } from "@codesandbox/san
 /** The two languages a submission can be written in; transpiled to JS server-side before running. */
 export type SupportedLanguage = "javascript" | "typescript";
 
+/** Display names for each language — the language toggle and "shown in X" fallback notice. */
+export const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
+  typescript: "TypeScript",
+  javascript: "JavaScript",
+};
+
 export type Difficulty = "easy" | "medium" | "hard";
 
 /** Which test set a submission runs against: Run hits the exposed examples, Submit adds the hidden set. */

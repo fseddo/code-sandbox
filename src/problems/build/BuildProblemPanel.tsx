@@ -1,18 +1,19 @@
 import type { BuildProblem } from "@/problems/data/problem";
 import { Prose } from "@/problems/shared/Prose";
+import { UnderlineTabs } from "@/components/UnderlineTabs";
 
 type BuildProblemPanelProps = {
   problem: BuildProblem;
 };
 
+const TABS = ["description"] as const;
+const TAB_LABEL = { description: "Description" } as const;
+
 /** Left column of a build problem: the prompt and the (human-judged) evaluation rubric. Identity lives in the title bar. */
 export const BuildProblemPanel = ({ problem }: BuildProblemPanelProps) => (
   <div className="flex h-full flex-col bg-card">
     <header className="flex shrink-0 border-b border-sidebar-border px-5 pt-3">
-      <span className="relative px-3 pb-2 text-sm font-medium text-foreground">
-        Description
-        <span aria-hidden className="absolute right-0 bottom-0 left-0 h-0.5 bg-primary" />
-      </span>
+      <UnderlineTabs tabs={TABS} labelOf={TAB_LABEL} active="description" />
     </header>
 
     <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-auto p-5">

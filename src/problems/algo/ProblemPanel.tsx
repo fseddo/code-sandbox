@@ -3,7 +3,7 @@ import type { ClientProblem, SupportedLanguage } from "@/problems/data/problem";
 import { Prose } from "@/problems/shared/Prose";
 import { SolutionsTab } from "@/problems/algo/SolutionsTab";
 import { stringify } from "@/problems/shared/format";
-import { cn } from "@/lib/utils";
+import { UnderlineTabs } from "@/components/UnderlineTabs";
 
 const TABS = ["description", "solutions"] as const;
 type ProblemTab = (typeof TABS)[number];
@@ -67,28 +67,7 @@ export const ProblemPanel = ({
   return (
     <div className="flex h-full flex-col bg-card">
       <header className="flex shrink-0 border-b border-sidebar-border px-5 pt-3">
-        <div role="tablist" className="flex items-stretch">
-          {TABS.map((id) => {
-            const active = tab === id;
-            return (
-              <button
-                key={id}
-                role="tab"
-                aria-selected={active}
-                onClick={() => setTab(id)}
-                className={cn(
-                  "relative px-3 pb-2 text-sm font-medium transition-colors",
-                  active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {TAB_LABEL[id]}
-                {active ? (
-                  <span aria-hidden className="absolute right-0 bottom-0 left-0 h-0.5 bg-primary" />
-                ) : null}
-              </button>
-            );
-          })}
-        </div>
+        <UnderlineTabs tabs={TABS} labelOf={TAB_LABEL} active={tab} onSelect={setTab} />
       </header>
 
       <div className="min-h-0 flex-1 overflow-auto p-5">

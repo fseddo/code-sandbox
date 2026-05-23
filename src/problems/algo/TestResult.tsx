@@ -1,8 +1,8 @@
 import { useState } from "react";
 import type { ClientProblem, RunMode, SubmissionOutcome, TestResult as TestResultData } from "@/problems/data/problem";
-import { deriveParamNames } from "@/problems/data/problem";
 import { CaseTabs } from "@/problems/algo/CaseTabs";
 import { ValueBlock } from "@/problems/algo/ValueBlock";
+import { ArgsList } from "@/problems/algo/ArgsList";
 import { stringify } from "@/problems/shared/format";
 import { cn } from "@/lib/utils";
 
@@ -35,15 +35,10 @@ const CaseDetail = ({ result, problem, index }: { result: TestResultData; proble
   }
 
   const args = problem.examples[index]?.args ?? [];
-  const paramNames = deriveParamNames(problem.starterCode.javascript, problem.functionName, args.length);
 
   return (
     <div className="flex flex-col gap-3">
-      {args.map((arg, argIndex) => (
-        <ValueBlock key={argIndex} label={`${paramNames[argIndex]} =`}>
-          {stringify(arg)}
-        </ValueBlock>
-      ))}
+      <ArgsList problem={problem} args={args} />
       <ValueBlock label="Stdout">{result.logs.length > 0 ? result.logs.join("\n") : "(no output)"}</ValueBlock>
       {result.error ? (
         <ValueBlock label="Runtime Error" tone="danger">

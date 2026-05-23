@@ -1,7 +1,7 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
 import { listPads, type PadSummary } from "./pad";
+import { useCachedExternalStore } from "@/lib/useCachedExternalStore";
 
 /** A short relative-time label (`2m ago`, `3d ago`) for a pad's last-edited timestamp. */
 export const relativeTime = (ts: number): string => {
@@ -19,25 +19,10 @@ const subscribe = (notify: () => void) => {
   return () => window.removeEventListener("storage", notify);
 };
 
-// useSyncExternalStore re-renders whenever getSnapshot returns a new ref — cache by content hash.
-let cachedSnapshot: PadSummary[] = [];
-let cachedKey = "";
+const hashOf = (pads: PadSummary[]): string => pads.map((pad) => `${pad.id}:${pad.updatedAt}`).join(",");
 
-const getSnapshot = (): PadSummary[] => {
-  const pads = listPads();
-  const key = pads.map((pad) => `${pad.id}:${pad.updatedAt}`).join(",");
-  if (key !== cachedKey) {
-    cachedSnapshot = pads;
-    cachedKey = key;
-  }
-  return cachedSnapshot;
-};
-
-// Empty on the server so the SSR markup matches the client's first paint before hydration. Must be a
-// stable ref — useSyncExternalStore loops if getServerSnapshot returns a fresh value each call.
 const EMPTY: PadSummary[] = [];
-const getServerSnapshot = (): PadSummary[] => EMPTY;
 
 /** Pads saved in this browser, most recently edited first. Subscribes to cross-tab localStorage writes. */
 export const useRecentPads = (): PadSummary[] =>
-  useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  useCachedExternalStore(subscribe, listPads, hashOf, EMPTY);

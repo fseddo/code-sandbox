@@ -1,10 +1,6 @@
 import type { ProblemSolution, SupportedLanguage } from "@/problems/data/problem";
+import { LANGUAGE_LABELS } from "@/problems/data/problem";
 import { Prose } from "@/problems/shared/Prose";
-
-const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
-  typescript: "TypeScript",
-  javascript: "JavaScript",
-};
 
 /** One published approach: title, write-up, and code in the editor's language (falling back if absent). */
 const SolutionApproach = ({

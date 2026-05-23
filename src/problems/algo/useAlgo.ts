@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import type { ClientProblem, RunMode, SubmissionOutcome, SupportedLanguage } from "@/problems/data/problem";
 import { loadSolution, saveSolution } from "@/problems/progress/solution";
@@ -8,10 +8,11 @@ import { type CompletedSolution, getEntry, markComplete, markInProgress } from "
 import { useAlgoSettings } from "@/problems/progress/useAlgoSettings";
 import { formatCode } from "@/lib/prettier";
 import { useSaveShortcut } from "@/components/useSaveShortcut";
+import { useLatestRef } from "@/components/useLatestRef";
+import { useDirtyTracker } from "@/components/useDirtyTracker";
+import { AUTOSAVE_DEBOUNCE_MS, useDebouncedCallback } from "@/components/useDebouncedCallback";
 
 type Sources = Record<SupportedLanguage, string>;
-
-const AUTOSAVE_DEBOUNCE_MS = 600;
 
 /**
  * Buffers (one per language), the run request, and the save model.
@@ -29,7 +30,7 @@ export const useAlgo = (problem: ClientProblem) => {
   const { settings, setSetting } = useAlgoSettings();
   const [language, setLanguage] = useState<SupportedLanguage>("typescript");
   const [sources, setSources] = useState<Sources>(seed);
-  const [savedSnapshot, setSavedSnapshot] = useState<Sources>(seed);
+  const { setSavedSnapshot, isDirty } = useDirtyTracker(sources, seed);
   // The buffer that last passed Submit (seeded from the progress store, refreshed on each pass) — drives
   // the "Last submission" restore button. Same lazy-localStorage-read rationale as `seed`.
   const [submittedSolution, setSubmittedSolution] = useState<CompletedSolution | null>(
@@ -40,20 +41,33 @@ export const useAlgo = (problem: ClientProblem) => {
   // Which mode is in flight (null = idle). Lets the toolbar label Run vs Submit independently while sharing one request path.
   const [runningMode, setRunningMode] = useState<RunMode | null>(null);
 
-  // React 19 forbids ref writes during render — sync in a layout effect so the
-  // stable save() reads the latest buffers without re-creating on every keystroke.
-  const sourcesRef = useRef(sources);
-  useLayoutEffect(() => {
-    sourcesRef.current = sources;
-  });
+  // Stable save() reads the latest buffers through a ref so it doesn't re-create on every keystroke.
+  const sourcesRef = useLatestRef(sources);
 
-  const setSource = (next: string) => setSources((prev) => ({ ...prev, [language]: next }));
+  const save = useCallback(() => {
+    const current = sourcesRef.current;
+    saveSolution(problem.id, current);
+    setSavedSnapshot(current);
+  }, [problem.id, sourcesRef, setSavedSnapshot]);
+
+  // Autosave is event-driven: edits flow through these handlers, so the debounce rides the change
+  // rather than a useEffect watching `sources` (no need to tell edits apart from language switches).
+  const scheduleAutosave = useDebouncedCallback(save, AUTOSAVE_DEBOUNCE_MS);
+  const autosave = () => {
+    if (settings.autosave) scheduleAutosave();
+  };
+
+  const setSource = (next: string) => {
+    setSources((prev) => ({ ...prev, [language]: next }));
+    autosave();
+  };
 
   // Reset is problem-level: it restores the starter buffer AND clears the last run's results (which
   // live outside the editor), so the panel doesn't show stale output for code that no longer exists.
   const resetSolution = () => {
     setSources((prev) => ({ ...prev, [language]: problem.starterCode[language] }));
     setOutcome(null);
+    autosave();
   };
 
   /** Load the last passing submission back into its language's buffer (no-op if there isn't one). */
@@ -61,6 +75,7 @@ export const useAlgo = (problem: ClientProblem) => {
     if (!submittedSolution) return;
     setLanguage(submittedSolution.language);
     setSources((prev) => ({ ...prev, [submittedSolution.language]: submittedSolution.source }));
+    autosave();
   };
 
   /** Prettier-format the current buffer in place; a syntax error surfaces as a toast, not a thrown render. */
@@ -69,6 +84,7 @@ export const useAlgo = (problem: ClientProblem) => {
     try {
       const formatted = await formatCode(sourcesRef.current[language], language === "typescript" ? "typescript" : "babel");
       setSources((prev) => ({ ...prev, [language]: formatted }));
+      autosave();
     } catch {
       toast.error("Couldn't format — check for syntax errors.");
     } finally {
@@ -76,22 +92,7 @@ export const useAlgo = (problem: ClientProblem) => {
     }
   };
 
-  const save = useCallback(() => {
-    const current = sourcesRef.current;
-    saveSolution(problem.id, current);
-    setSavedSnapshot(current);
-  }, [problem.id]);
-
   useSaveShortcut(save);
-  useAlgoAutosave(settings.autosave, save, sources[language], language);
-
-  const isDirty = useMemo(
-    () =>
-      (Object.keys(sources) as SupportedLanguage[]).some(
-        (lang) => sources[lang] !== savedSnapshot[lang],
-      ),
-    [sources, savedSnapshot],
-  );
 
   const run = async (mode: RunMode) => {
     setRunningMode(mode);
@@ -135,23 +136,4 @@ export const useAlgo = (problem: ClientProblem) => {
     runningMode,
     run,
   };
-};
-
-/** Debounced save on content change. Skips language switches and unchanged toggles. */
-const useAlgoAutosave = (
-  enabled: boolean,
-  save: () => void,
-  code: string,
-  language: SupportedLanguage,
-): void => {
-  const lastSeen = useRef({ language, code });
-
-  useEffect(() => {
-    const changedSameLanguage =
-      lastSeen.current.language === language && lastSeen.current.code !== code;
-    lastSeen.current = { language, code };
-    if (!enabled || !changedSameLanguage) return;
-    const timer = setTimeout(save, AUTOSAVE_DEBOUNCE_MS);
-    return () => clearTimeout(timer);
-  }, [enabled, language, code, save]);
 };

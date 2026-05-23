@@ -1,11 +1,11 @@
 "use client";
 
-import { LuRotateCcw, LuSend } from "react-icons/lu";
+import { LuSend } from "react-icons/lu";
 import { resetPad } from "@/pad/pad";
 import { PadSettingsMenu } from "@/pad/PadSettingsMenu";
 import type { PadToolbarState } from "@/pad/PadWorkspace";
 import { Button } from "@/components/ui/button";
-import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { ResetAction } from "@/components/ResetAction";
 import { ProblemDetailHeader } from "@/problems/shared/ProblemDetailHeader";
 import { toggleComplete } from "@/problems/progress/progress";
 import { useProgress } from "@/problems/progress/useProgress";
@@ -30,16 +30,9 @@ export const BuildToolbar = ({
         <LuSend className="size-3.5" />
         {isComplete ? "Completed" : "Mark as done"}
       </Button>
-      <ConfirmDialog
-        trigger={
-          <Button variant="outline" size="sm">
-            <LuRotateCcw className="size-3.5" />
-            Reset
-          </Button>
-        }
+      <ResetAction
         title="Reset to starter?"
         description="This restores the starter sandbox and permanently discards your changes to this problem."
-        confirmLabel="Reset"
         onConfirm={() => resetPad(padId)}
       />
       <PadSettingsMenu autosave={autosave} onAutosaveChange={onAutosaveChange} />
