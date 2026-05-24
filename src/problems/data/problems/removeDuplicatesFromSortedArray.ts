@@ -74,26 +74,36 @@ function removeDuplicates(nums: number[]): number {
 \`O(n)\` time, \`O(1)\` extra space.`,
       code: {
         javascript: `function removeDuplicates(nums) {
+  // No elements means no distinct values: k = 0.
   if (nums.length === 0) return 0;
+  // k is the write position AND the count so far; the first element is always kept.
   let k = 1;
+  // i is the read pointer scanning ahead for the next new value.
   for (let i = 1; i < nums.length; i++) {
+    // Sorted input keeps duplicates adjacent, so a value is new only when it
+    // differs from the last one we kept (nums[k - 1]).
     if (nums[i] !== nums[k - 1]) {
-      nums[k] = nums[i];
-      k++;
+      nums[k] = nums[i]; // compact the new value into the unique prefix
+      k++;               // and grow the prefix
     }
   }
-  return k;
+  return k; // number of distinct values, now sitting in nums[0..k-1]
 }`,
         typescript: `function removeDuplicates(nums: number[]): number {
+  // No elements means no distinct values: k = 0.
   if (nums.length === 0) return 0;
+  // k is the write position AND the count so far; the first element is always kept.
   let k = 1;
+  // i is the read pointer scanning ahead for the next new value.
   for (let i = 1; i < nums.length; i++) {
+    // Sorted input keeps duplicates adjacent, so a value is new only when it
+    // differs from the last one we kept (nums[k - 1]).
     if (nums[i] !== nums[k - 1]) {
-      nums[k] = nums[i];
-      k++;
+      nums[k] = nums[i]; // compact the new value into the unique prefix
+      k++;               // and grow the prefix
     }
   }
-  return k;
+  return k; // number of distinct values, now sitting in nums[0..k-1]
 }`,
       },
     },

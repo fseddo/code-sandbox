@@ -61,14 +61,20 @@ function trap(height: number[]): number {
 \`O(n)\` time, \`O(1)\` space.`,
       code: {
         javascript: `function trap(height) {
+  // Two pointers converging from both ends.
   let left = 0;
   let right = height.length - 1;
+  // Tallest bar seen so far on each side; these are the candidate walls.
   let leftMax = 0;
   let rightMax = 0;
   let total = 0;
   while (left < right) {
+    // Settle the side with the shorter bar: a taller bar beyond the far
+    // pointer can only raise the other side's wall, so this side's running
+    // max is already its true bounding wall.
     if (height[left] < height[right]) {
       leftMax = Math.max(leftMax, height[left]);
+      // Water above this bar is its left wall minus its own height.
       total += leftMax - height[left];
       left++;
     } else {
@@ -80,14 +86,20 @@ function trap(height: number[]): number {
   return total;
 }`,
         typescript: `function trap(height: number[]): number {
+  // Two pointers converging from both ends.
   let left = 0;
   let right = height.length - 1;
+  // Tallest bar seen so far on each side; these are the candidate walls.
   let leftMax = 0;
   let rightMax = 0;
   let total = 0;
   while (left < right) {
+    // Settle the side with the shorter bar: a taller bar beyond the far
+    // pointer can only raise the other side's wall, so this side's running
+    // max is already its true bounding wall.
     if (height[left] < height[right]) {
       leftMax = Math.max(leftMax, height[left]);
+      // Water above this bar is its left wall minus its own height.
       total += leftMax - height[left];
       left++;
     } else {

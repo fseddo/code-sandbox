@@ -97,15 +97,21 @@ function threeSumClosest(nums: number[], target: number): number {
 \`O(n²)\` time (one pointer sweep per fixed \`i\`), \`O(1)\` extra space beyond the sort.`,
       code: {
         javascript: `function threeSumClosest(nums, target) {
+  // Sorting lets two pointers converge: a small sum means move right, a large sum means move left.
   nums.sort((a, b) => a - b);
+  // Seed the answer with any valid triple so the first distance comparison has something to beat.
   let best = nums[0] + nums[1] + nums[2];
+  // Fix the first element; the suffix after it is the pair we still have to choose.
   for (let i = 0; i < nums.length - 2; i++) {
-    let lo = i + 1;
-    let hi = nums.length - 1;
+    let lo = i + 1;            // smallest remaining value
+    let hi = nums.length - 1;  // largest remaining value
     while (lo < hi) {
       const sum = nums[i] + nums[lo] + nums[hi];
+      // Keep the sum nearest the target on the number line.
       if (Math.abs(sum - target) < Math.abs(best - target)) best = sum;
+      // An exact match can never be beaten, so stop early.
       if (sum === target) return sum;
+      // Too small: only a bigger value can help, so raise the low pointer; otherwise lower the high one.
       if (sum < target) lo++;
       else hi--;
     }
@@ -113,15 +119,21 @@ function threeSumClosest(nums: number[], target: number): number {
   return best;
 }`,
         typescript: `function threeSumClosest(nums: number[], target: number): number {
+  // Sorting lets two pointers converge: a small sum means move right, a large sum means move left.
   nums.sort((a, b) => a - b);
+  // Seed the answer with any valid triple so the first distance comparison has something to beat.
   let best = nums[0] + nums[1] + nums[2];
+  // Fix the first element; the suffix after it is the pair we still have to choose.
   for (let i = 0; i < nums.length - 2; i++) {
-    let lo = i + 1;
-    let hi = nums.length - 1;
+    let lo = i + 1;            // smallest remaining value
+    let hi = nums.length - 1;  // largest remaining value
     while (lo < hi) {
       const sum = nums[i] + nums[lo] + nums[hi];
+      // Keep the sum nearest the target on the number line.
       if (Math.abs(sum - target) < Math.abs(best - target)) best = sum;
+      // An exact match can never be beaten, so stop early.
       if (sum === target) return sum;
+      // Too small: only a bigger value can help, so raise the low pointer; otherwise lower the high one.
       if (sum < target) lo++;
       else hi--;
     }

@@ -50,25 +50,33 @@ function isPalindrome(s: string): boolean {
 \`O(n)\` time, \`O(n)\` for the cleaned copy.`,
       code: {
         javascript: `function isPalindrome(s) {
+  // Normalize so case and punctuation can't affect the comparison.
   const cleaned = s.toLowerCase().replace(/[^a-z0-9]/g, "");
+  // Two pointers converging from the ends compare mirror-image positions.
   let i = 0;
   let j = cleaned.length - 1;
   while (i < j) {
+    // First disagreeing pair means it can't be a palindrome — stop early.
     if (cleaned[i] !== cleaned[j]) return false;
     i++;
     j--;
   }
+  // Pointers met (or the cleaned string was empty) with no mismatch.
   return true;
 }`,
         typescript: `function isPalindrome(s: string): boolean {
+  // Normalize so case and punctuation can't affect the comparison.
   const cleaned = s.toLowerCase().replace(/[^a-z0-9]/g, "");
+  // Two pointers converging from the ends compare mirror-image positions.
   let i = 0;
   let j = cleaned.length - 1;
   while (i < j) {
+    // First disagreeing pair means it can't be a palindrome — stop early.
     if (cleaned[i] !== cleaned[j]) return false;
     i++;
     j--;
   }
+  // Pointers met (or the cleaned string was empty) with no mismatch.
   return true;
 }`,
       },

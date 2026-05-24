@@ -87,24 +87,32 @@ Any move inward shrinks the width, so it's only worth moving if the new line can
 \`O(n)\` time, \`O(1)\` space.`,
       code: {
         javascript: `function maxArea(height) {
+  // Start with the widest possible container: one wall at each end.
   let left = 0;
   let right = height.length - 1;
   let best = 0;
   while (left < right) {
+    // Water level is set by the shorter wall, spread over the gap between them.
     const area = Math.min(height[left], height[right]) * (right - left);
     if (area > best) best = area;
+    // Moving the taller wall can't lift the cap, so always advance the shorter one,
+    // hoping to trade a little width for a taller wall.
     if (height[left] < height[right]) left++;
     else right--;
   }
   return best;
 }`,
         typescript: `function maxArea(height: number[]): number {
+  // Start with the widest possible container: one wall at each end.
   let left = 0;
   let right = height.length - 1;
   let best = 0;
   while (left < right) {
+    // Water level is set by the shorter wall, spread over the gap between them.
     const area = Math.min(height[left], height[right]) * (right - left);
     if (area > best) best = area;
+    // Moving the taller wall can't lift the cap, so always advance the shorter one,
+    // hoping to trade a little width for a taller wall.
     if (height[left] < height[right]) left++;
     else right--;
   }
