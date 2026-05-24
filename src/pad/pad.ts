@@ -71,3 +71,13 @@ export const listPads = (): PadSummary[] =>
     .entries()
     .map(({ id, value }) => ({ id, updatedAt: value.updatedAt ?? 0, title: value.title }))
     .sort((a, b) => b.updatedAt - a.updatedAt);
+
+/**
+ * A scratchpad's id is a 12-char hex string from `newPadId`; problem-backed pads (build problems) key the
+ * same store by their problem *slug*. This distinguishes the two without a stored flag or registry lookup.
+ */
+export const isScratchPadId = (id: string): boolean => /^[0-9a-f]{12}$/.test(id);
+
+/** Scratchpads only — excludes problem-backed pads, which belong to the problems feature, not the Pads list. */
+export const listScratchPads = (): PadSummary[] => listPads().filter((pad) => isScratchPadId(pad.id));
+

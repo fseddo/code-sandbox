@@ -1,6 +1,6 @@
 "use client";
 
-import { listPads, type PadSummary } from "./pad";
+import { listScratchPads, type PadSummary } from "./pad";
 import { useCachedExternalStore } from "@/lib/useCachedExternalStore";
 
 /** A short relative-time label (`2m ago`, `3d ago`) for a pad's last-edited timestamp. */
@@ -23,6 +23,6 @@ const hashOf = (pads: PadSummary[]): string => pads.map((pad) => `${pad.id}:${pa
 
 const EMPTY: PadSummary[] = [];
 
-/** Pads saved in this browser, most recently edited first. Subscribes to cross-tab localStorage writes. */
-export const useRecentPads = (): PadSummary[] =>
-  useCachedExternalStore(subscribe, listPads, hashOf, EMPTY);
+/** Scratchpads saved in this browser, most recently edited first. Subscribes to cross-tab localStorage writes. */
+export const useScratchPads = (): PadSummary[] =>
+  useCachedExternalStore(subscribe, listScratchPads, hashOf, EMPTY);

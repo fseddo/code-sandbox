@@ -105,6 +105,7 @@ import { recoverTree } from "./recoverTree";
 import { isSameTree } from "./isSameTree";
 import { buildStarRating } from "./buildStarRating";
 import { buildDebouncedAutocomplete } from "./buildDebouncedAutocomplete";
+import { numberOfProvinces } from "./numberOfProvinces";
 
 /**
  * The problem bank, keyed by id. Authored modules keep their precise generics for
@@ -217,6 +218,7 @@ export const problems = {
   "same-tree": isSameTree,
   "build-star-rating": buildStarRating,
   "build-debounced-autocomplete": buildDebouncedAutocomplete,
+  "number-of-provinces": numberOfProvinces,
 } satisfies Record<string, AnyProblem>;
 
 export type ProblemId = keyof typeof problems;

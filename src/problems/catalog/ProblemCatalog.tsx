@@ -1,18 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { ProblemSummary } from "@/problems/data/problems";
 import {
   activeSelections,
   buildFacetViews,
+  FACET_KEYS,
   filterCatalog,
   searchCatalog,
   type CatalogItem,
   type FacetKey,
   type FacetSelection,
 } from "@/problems/catalog/catalogFilters";
-import { DEFAULT_SORT, sortItems, type SortKey } from "@/problems/catalog/catalogSort";
+import { DEFAULT_SORT, sortItems, sortOptions, type SortKey } from "@/problems/catalog/catalogSort";
+import { FILTER_CACHE_KEY, parseFacetParams, syncFilterUrl } from "@/lib/filterParams";
 import { CatalogSidebar } from "@/problems/catalog/CatalogSidebar";
 import { CatalogToolbar } from "@/problems/catalog/CatalogToolbar";
 import { ActiveFilters } from "@/problems/catalog/ActiveFilters";
@@ -31,10 +33,19 @@ const toggleValue = (selection: FacetSelection, key: FacetKey, value: string): F
 /** The filterable problem catalog: faceted sidebar, search/sort toolbar, and progress-aware rows. */
 export const ProblemCatalog = ({ problems }: { problems: ProblemSummary[] }) => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const statusOf = useProgress();
-  const [selection, setSelection] = useState<FacetSelection>({});
-  const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<SortKey>(DEFAULT_SORT);
+  const [selection, setSelection] = useState<FacetSelection>(() => parseFacetParams(searchParams, FACET_KEYS));
+  const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
+  const [sort, setSort] = useState<SortKey>(() => {
+    const raw = searchParams.get("sort");
+    return sortOptions.some((option) => option.key === raw) ? (raw as SortKey) : DEFAULT_SORT;
+  });
+
+  // Mirror filters to the URL (no navigation) so browser-back restores them and the view is shareable.
+  useEffect(() => {
+    syncFilterUrl(selection, { q: query.trim(), sort: sort === DEFAULT_SORT ? "" : sort }, FILTER_CACHE_KEY.problems);
+  }, [selection, query, sort]);
 
   // Status comes from the client-side progress store, so items are derived per render, not synced.
   // `number` is the problem's stored catalog number — stable across sorts and shown in the "#" column.

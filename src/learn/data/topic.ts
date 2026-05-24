@@ -1,0 +1,158 @@
+import type { SupportedLanguage, TopicTag } from "@/problems/data/problem";
+
+/** Top-level shelf a topic sits on — the landing page's primary grouping and a catalog facet. */
+export type LearnCategory =
+  | "data-structures"
+  | "algorithms"
+  | "complexity"
+  | "databases"
+  | "web"
+  | "systems";
+
+export const CATEGORY_LABELS: Record<LearnCategory, string> = {
+  "data-structures": "Data structures",
+  algorithms: "Algorithms",
+  complexity: "Complexity",
+  databases: "Databases",
+  web: "Web & rendering",
+  systems: "Systems",
+};
+
+/** The Big-O vocabulary a complexity row may cite — a closed set so a typo can't invent a class. */
+export type ComplexityClass =
+  | "O(1)"
+  | "amortized O(1)"
+  | "O(log n)"
+  | "O(n)"
+  | "O(n log n)"
+  | "O(n²)"
+  | "O(V + E)"
+  | "O(V²)"
+  | "O(2ⁿ)";
+
+/** One row of a complexity table: an operation and its average/worst cost, with an optional caveat. */
+export type ComplexityRow = {
+  operation: string;
+  average: ComplexityClass;
+  worst: ComplexityClass;
+  note?: string;
+};
+
+/** A graph edge as a `[from, to]` pair of node ids — labeled tuple so authoring reads `["A", "B"]`. */
+export type GraphEdge = [from: string, to: string];
+
+/** Fields shared by every section, regardless of kind — the spine of the discriminated union. */
+type SectionBase = {
+  /** Optional sub-heading rendered above the section body. */
+  heading?: string;
+};
+
+/**
+ * One block of a topic article. The `kind` discriminant drives the renderer: each kind maps to exactly
+ * one component, so the render dispatcher (`Record<Section["kind"], …>`) stays exhaustive by construction
+ * — add a kind here and the dispatcher won't type-check until it handles it. Grow the union as a topic
+ * demands a new primitive (a `diagram` kind for trees/heaps is the obvious next one).
+ */
+export type Section = SectionBase &
+  (
+    | { kind: "prose"; body: string }
+    | { kind: "code"; lang: SupportedLanguage; source: string; caption?: string }
+    | { kind: "complexity"; rows: ComplexityRow[] }
+    | {
+        kind: "graph";
+        /** Node ids; also used as the rendered labels. The renderer auto-lays them on a circle (no coordinates). */
+        nodes: string[];
+        edges: GraphEdge[];
+        /** Draw arrowheads (directed graph). Omit/false for an undirected graph. */
+        directed?: boolean;
+        caption?: string;
+      }
+    | {
+        kind: "matrix";
+        rowLabels: string[];
+        colLabels: string[];
+        /** `cells[i][j]` is the entry for row `i`, col `j`. Must be `rowLabels.length × colLabels.length`. */
+        cells: (number | boolean)[][];
+        caption?: string;
+      }
+    | {
+        kind: "exampleProblem";
+        /** A problem `id` from the bank; resolved to a summary + deep-linked to `/problems/[id]`. */
+        problemId: string;
+        note?: string;
+      }
+    /** Layout primitive: render child blocks in a row (side by side on wide screens, stacked when narrow). */
+    | { kind: "row"; blocks: Section[] }
+  );
+
+/** Every section kind, derived from the union so the render dispatcher and any per-kind map stay in sync. */
+export type SectionKind = Section["kind"];
+
+/**
+ * The canonical parts every topic article is built from. Declared as a union (so `parent` can reference a
+ * sibling key) and pinned to the registry below via `satisfies`, which makes the layout exhaustive — every
+ * part has exactly one label and nesting rule, defined once rather than re-typed as headings per topic.
+ */
+export type ArticlePartKey =
+  | "definition"
+  | "operations"
+  | "whenToUse"
+  | "relatedStructures"
+  | "implementation"
+  | "example";
+
+export type ArticlePartDetail = {
+  label: string;
+  /** When set, this part renders as a subsection nested under the named parent (which precedes it here). */
+  parent?: ArticlePartKey;
+};
+
+/**
+ * The article layout, in render order. A part's position + `parent` drive how the renderer lays it out, so
+ * a topic supplies only *content* per part — never headings or ordering. Mirrors the `FACETS` registry posture.
+ */
+export const ARTICLE_PARTS = {
+  definition: { label: "Definition" },
+  operations: { label: "Operations", parent: "definition" },
+  whenToUse: { label: "When to use" },
+  relatedStructures: { label: "Related structures", parent: "whenToUse" },
+  implementation: { label: "Implementation" },
+  example: { label: "Example" },
+} as const satisfies Record<ArticlePartKey, ArticlePartDetail>;
+
+/**
+ * Catalog tags. DSA topics reuse the problem taxonomy (`TopicTag`) so a topic tagged `hash-table` shares a
+ * vocabulary with the problems it links; technology topics use coarser cross-cutting domain tags (a topic
+ * like Redis is tagged `caching` / `backend`, not an algorithmic tag).
+ */
+export type LearnTag =
+  | TopicTag
+  | "database"
+  | "caching"
+  | "backend"
+  | "frontend"
+  | "rendering"
+  | "scalability"
+  | "networking"
+  | "api";
+
+/** A reference link, rendered in the article's Sources footer. */
+export type Source = { label: string; url: string };
+
+/**
+ * A learning article. `parts` is keyed content: omit a part that doesn't apply; render order and nesting
+ * come from `ARTICLE_PARTS`, not the key order here. `sources` renders as a small footer on the article.
+ */
+export type LearnTopic = {
+  slug: string;
+  title: string;
+  category: LearnCategory;
+  /** One-liner for the landing card and search index. */
+  summary: string;
+  tags?: LearnTag[];
+  parts: Partial<Record<ArticlePartKey, Section[]>>;
+  sources?: Source[];
+};
+
+/** Client-safe projection for the landing grid + search — the body sections stay out of the list payload. */
+export type TopicSummary = Pick<LearnTopic, "slug" | "title" | "category" | "summary" | "tags">;

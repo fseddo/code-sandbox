@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { CommandPaletteProvider } from "@/components/CommandPaletteProvider";
 import { Toaster } from "@/components/ui/sonner";
 import { listProblemSummaries } from "@/problems/data/problems";
+import { listTopicSummaries } from "@/learn/data/topics";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,7 +40,9 @@ const RootLayout = ({
           enableSystem={false}
           forcedTheme="dark"
         >
-          <CommandPaletteProvider problems={listProblemSummaries()}>{children}</CommandPaletteProvider>
+          <CommandPaletteProvider problems={listProblemSummaries()} topics={listTopicSummaries()}>
+            {children}
+          </CommandPaletteProvider>
           <Toaster />
         </ThemeProvider>
       </body>

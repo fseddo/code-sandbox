@@ -106,6 +106,7 @@ Auto-loaded CLAUDE files are not enough for area-specific work — read the rele
 | [src/problems/data/problems/](src/problems/data/problems/) — authoring/sourcing problems | [docs/features/problem-authoring.md](docs/features/problem-authoring.md) |
 | [companies.ts](src/problems/data/companies.ts) / build problems / the `company-sourcer` agent | [docs/features/company-sourcing.md](docs/features/company-sourcing.md) |
 | The home page / problem catalog / routing / progress tracking | [docs/features/navigation.md](docs/features/navigation.md) |
+| [src/learn/](src/learn/) — study topics, articles, section renderers | [docs/features/learn.md](docs/features/learn.md) |
 
 Touching an area not listed here? That's a doc gap — flag it before writing.
 

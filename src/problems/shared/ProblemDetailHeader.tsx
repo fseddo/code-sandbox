@@ -1,4 +1,5 @@
 import { DetailHeader } from "@/components/DetailHeader";
+import { FILTER_CACHE_KEY } from "@/lib/filterParams";
 
 type ProblemDetailHeaderProps = {
   title: string;
@@ -13,7 +14,7 @@ type ProblemDetailHeaderProps = {
  */
 export const ProblemDetailHeader = ({ title, children }: ProblemDetailHeaderProps) => (
   <DetailHeader
-    crumb={{ label: "Problems", href: "/" }}
+    crumb={{ label: "Problems", href: "/problems", cacheKey: FILTER_CACHE_KEY.problems }}
     title={<span className="truncate text-sm text-muted-foreground/50">{title}</span>}
   >
     {children}

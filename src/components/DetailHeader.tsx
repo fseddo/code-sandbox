@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { LuChevronRight, LuWaves } from "react-icons/lu";
+import { FilteredBackLink } from "@/components/FilteredBackLink";
 
-type Crumb = { label: string; href?: string };
+/** A `cacheKey` makes the crumb restore the listing's cached filters (see FilteredBackLink). */
+type Crumb = { label: string; href?: string; cacheKey?: string };
 
 type DetailHeaderProps = {
   /** The middle breadcrumb segment ("Problems" / "Pads"); a link when `href` is set, plain text otherwise. */
@@ -20,7 +22,15 @@ export const DetailHeader = ({ crumb, title, children }: DetailHeaderProps) => (
       noodle
     </Link>
     <LuChevronRight className="size-4 text-muted-foreground" />
-    {crumb.href ? (
+    {crumb.href && crumb.cacheKey ? (
+      <FilteredBackLink
+        base={crumb.href}
+        cacheKey={crumb.cacheKey}
+        className="text-sm text-muted-foreground hover:text-foreground"
+      >
+        {crumb.label}
+      </FilteredBackLink>
+    ) : crumb.href ? (
       <Link href={crumb.href} className="text-sm text-muted-foreground hover:text-foreground">
         {crumb.label}
       </Link>

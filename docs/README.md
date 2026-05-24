@@ -21,6 +21,7 @@ docs/
 - **Touching the CoderPad pane** (`src/pad/`) → [features/pad.md](features/pad.md).
 - **Touching the algo problems** (editor + tester, `src/problems/algo/`) → [features/algo.md](features/algo.md).
 - **Touching the home page, problem catalog, routing, or progress tracking** → [features/navigation.md](features/navigation.md).
+- **Touching the Learn feature** (study topics, articles, `src/learn/`) → [features/learn.md](features/learn.md).
 - **Authoring or sourcing problems** (the problem bank, the catalog) → [features/problem-authoring.md](features/problem-authoring.md).
 - **Adding a new feature area** → write a new `features/<area>.md` as a side effect; link it from the table in [`CLAUDE.md`](../CLAUDE.md).
 

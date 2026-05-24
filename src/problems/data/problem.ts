@@ -50,7 +50,12 @@ export type TopicTag =
   | "string-matching"
   | "combinatorics"
   | "memoization"
-  | "breadth-first-search";
+  | "breadth-first-search"
+  | "graph"
+  | "union-find"
+  | "queue"
+  | "interval"
+  | "prefix-sum";
 
 /** One test case, generic over the solution's argument tuple and its return type. */
 export type TestCase<Args extends unknown[], Result> = {

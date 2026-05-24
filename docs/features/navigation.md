@@ -1,15 +1,19 @@
 # Navigation & catalog
 
-The app's front door. The home page (`/`) **is** the problem catalog — a single filterable list over both
-problem kinds — and the CoderPad scratchpad is demoted to a secondary action rather than a coequal
-destination. Code lives under [`src/problems/`](../../src/problems/) (catalog UI + filter/progress logic) and
-[`src/app/page.tsx`](../../src/app/page.tsx) (the home route).
+The app's front door is a **simple landing page** at `/` ([src/app/page.tsx](../../src/app/page.tsx)) — three
+cards routing to the app's areas (**Learn**, **Problems**, **Pad**/free-coding). The brand mark everywhere
+returns here. The **problem catalog** — the filterable list over both problem kinds — now lives at its own
+route `/problems` ([src/app/problems/page.tsx](../../src/app/problems/page.tsx)); catalog UI + filter/progress
+logic stay under [`src/problems/`](../../src/problems/).
 
 ## Routes
 
 ```
-/                 src/app/page.tsx — home = AppHeader + the catalog (server; lists summaries, renders <ProblemCatalog>)
+/                 src/app/page.tsx — landing: three cards → /learn, /problems, /pad
+/problems         src/app/problems/page.tsx — the catalog = AppHeader + <ProblemCatalog> (server; lists summaries)
 /problems/[id]    src/app/problems/[id]/page.tsx — one problem (algo → AlgoWorkspace, build → BuildLoader)
+/learn            src/app/learn/page.tsx — searchable topic list; /learn/[slug] — one topic. See learn.md
+/pads             src/app/pads/page.tsx — searchable scratchpad list (<PadsCatalog>) + New pad action
 /pad              src/app/pad/page.tsx — force-dynamic; mints a fresh pad id and redirects to /pad/[id]
 /pad/[id]         src/app/pad/[id]/page.tsx — a blank scratchpad (redirects to /problems/[id] if the id is a problem)
 /api/judge        src/app/api/judge/route.ts — the judge engine (unchanged; named for the engine, not the catalog)
@@ -17,26 +21,25 @@ destination. Code lives under [`src/problems/`](../../src/problems/) (catalog UI
 
 ## App shell — [AppHeader](../../src/components/AppHeader.tsx)
 
-Browse pages render a persistent top bar: the **noodle** brand, a `Problems` link, the [`PadsMenu`](../../src/components/PadsMenu.tsx)
-control, and the ⌘K search trigger. It's a reusable component (not a root layout), so the full-height workspaces
-(`AlgoWorkspace` / `BuildWorkspace`) keep their own chrome and opt out.
+Browse pages (`/problems`, `/learn`) render a slim top bar: a **breadcrumb** (the **noodle** brand → landing `/`,
+then the current area passed as `crumb` — "Problems" / "Learn") and the ⌘K search trigger. There are no nav links
+or pads menu — the landing is the front door and ⌘K is the navigator. It's a reusable component (not a root
+layout), so the full-height workspaces (`AlgoWorkspace` / `BuildWorkspace`) keep their own chrome and opt out.
 
-- **`PadsMenu`** is the `Pads` nav, a **two-segment control** `[ Pads ▾ | + ]`: the left segment opens a dropdown of
-  recent pads (most-recent first) to revisit; the `+` segment mints a fresh pad (`/pad` redirects to a new id). One
-  control means there's no separate `New pad` button to duplicate it. Pads live in localStorage; the recency list
-  comes from [`useRecentPads`](../../src/pad/useRecentPads.ts) (the `useSyncExternalStore` snapshot shared with
-  [`RecentPads`](../../src/components/RecentPads.tsx)).
 - **⌘K command palette** ([CommandPalette](../../src/components/CommandPalette.tsx)) is mounted **once** in the root
   layout by [`CommandPaletteProvider`](../../src/components/CommandPaletteProvider.tsx), which owns the open state and
-  the global ⌘K/Ctrl-K shortcut and exposes `useCommandPalette().open()` to the header. Problem **summaries** are
-  passed in from the server layout so the client never imports the problem registry (answers + hidden tests). It
-  fuzzy-matches title/topic/company via the shared `searchCatalog`, with arrow-key navigation and Enter to open.
+  the global ⌘K/Ctrl-K shortcut and exposes `useCommandPalette().open()` to the header. It's a **cross-app search**
+  over three groups — **Pages** (Home/Problems/Learn/New pad), **Topics** (learn articles), and **Problems** — so a
+  topic like "hash maps" is reachable from anywhere, not just the learn pages. Problem **and topic summaries** are
+  passed in from the server layout so the client imports neither registry (problems carry answers + hidden tests;
+  topics carry article bodies). An empty query shows just Pages (a launcher); typing matches title + keywords
+  (tags/companies) across all groups, with arrow-key navigation and Enter to open.
 
 The detail route was renamed `/judge/[id]` → `/problems/[id]` so the URL stops leaking the "judge"
 implementation name. The **API** route stays `/api/judge` deliberately: it's the worker-backed grader, not
-the catalog, so renaming it would push the rename into worker code for no gain. Back-links from both
-workspaces ([AlgoWorkspace](../../src/problems/algo/AlgoWorkspace.tsx), [BuildToolbar](../../src/problems/build/BuildToolbar.tsx))
-point at `/`.
+the catalog, so renaming it would push the rename into worker code for no gain. In the workspace breadcrumb
+([DetailHeader](../../src/components/DetailHeader.tsx) via [ProblemDetailHeader](../../src/problems/shared/ProblemDetailHeader.tsx)),
+the brand returns to the landing `/` and the `Problems` crumb returns to the catalog at `/problems`.
 
 ## The catalog
 

@@ -27,11 +27,11 @@ export const PadToolbar = ({ padId, autosave, onAutosaveChange }: PadToolbarStat
 
   const deletePad = () => {
     clearPad(padId);
-    router.push("/");
+    router.push("/pads");
   };
 
   return (
-    <DetailHeader crumb={{ label: "Pads" }} title={<EditablePadTitle padId={padId} />}>
+    <DetailHeader crumb={{ label: "Pads", href: "/pads" }} title={<EditablePadTitle padId={padId} />}>
       <Button variant="outline" size="sm" onClick={copyLink}>
         <LuLink2 className="size-3.5" />
         Copy link

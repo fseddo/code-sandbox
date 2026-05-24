@@ -68,6 +68,9 @@ const FACETS = {
 /** The filterable dimensions, derived from the registry's keys. */
 export type FacetKey = keyof typeof FACETS;
 
+/** The facet keys as a runtime list (e.g. for serializing a selection to URL params). */
+export const FACET_KEYS = Object.keys(FACETS) as FacetKey[];
+
 // Passing FacetDetail as the value type widens entries past their precise `as const` literals (so the
 // optional `order` reads uniformly), while keys stay FacetKey. The lone cast lives inside the helper.
 const facetEntries = typedEntries<FacetKey, FacetDetail>(FACETS);
@@ -137,7 +140,9 @@ export const activeSelections = (selection: FacetSelection): ActiveSelection[] =
   );
 
 /** The fields a free-text search reads — any problem-summary-shaped value qualifies. */
-type Searchable = Pick<ProblemSummary, "title" | "tags" | "companies">;
+// Structural (not a Pick of ProblemSummary) so any feature's rows can reuse the matcher — the learn
+// catalog passes topics (tags, no companies). `ProblemSummary` still satisfies it.
+type Searchable = { title: string; tags: readonly string[]; companies: readonly string[] };
 
 /**
  * Free-text filter over title, topic, and company labels. Generic over the row shape so both the

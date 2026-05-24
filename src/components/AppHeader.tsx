@@ -1,48 +1,35 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { LuSearch, LuWaves } from "react-icons/lu";
+import { LuSearch } from "react-icons/lu";
 import { useCommandPalette } from "./CommandPaletteProvider";
-import { PadsMenu } from "./PadsMenu";
-import { cn } from "@/lib/utils";
+import { BrandMenu } from "./BrandMenu";
 
-/** The shared app shell header: brand, primary nav, the ⌘K search trigger, and global actions. */
-export const AppHeader = () => {
-  const pathname = usePathname();
+/** The shared app shell header: the brand area-switcher → current-area crumb, and the ⌘K search trigger. */
+export const AppHeader = ({ crumb }: { crumb?: string }) => {
   const { open } = useCommandPalette();
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-4 border-b border-sidebar-border bg-card px-4">
-      <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
-        <LuWaves className="size-5 text-primary" />
-        noodle
-      </Link>
+    <header className="flex h-14 shrink-0 items-center gap-3 border-b border-sidebar-border bg-card px-4">
+      <BrandMenu />
 
-      <nav className="flex items-center gap-1">
-        <Link
-          href="/"
-          className={cn(
-            "rounded-md px-2.5 py-1 text-sm transition-colors",
-            pathname === "/"
-              ? "bg-muted font-medium text-foreground"
-              : "text-muted-foreground hover:text-foreground",
-          )}
+      {crumb && (
+        <>
+          <span className="shrink-0 text-muted-foreground/40">/</span>
+          <span className="shrink-0 text-sm font-medium">{crumb}</span>
+        </>
+      )}
+
+      <div className="flex flex-1 justify-center">
+        <button
+          type="button"
+          onClick={open}
+          className="flex h-10 w-full max-w-xl items-center gap-2 rounded-lg border border-border bg-background px-3.5 text-sm text-muted-foreground transition-colors hover:border-primary/50"
         >
-          Problems
-        </Link>
-        <PadsMenu />
-      </nav>
-
-      <button
-        type="button"
-        onClick={open}
-        className="flex h-9 w-full flex-1 items-center gap-2 rounded-lg border border-border bg-background px-3 text-sm text-muted-foreground transition-colors hover:border-primary/50"
-      >
-        <LuSearch className="size-4" />
-        Jump to problem, topic, or company…
-        <kbd className="ml-auto rounded border border-border px-1.5 py-0.5 text-[0.7rem]">⌘K</kbd>
-      </button>
+          <LuSearch className="size-4 shrink-0" />
+          Search site-wide — pages, topics, problems…
+          <kbd className="ml-auto shrink-0 rounded border border-border px-1.5 py-0.5 text-[0.7rem]">⌘K</kbd>
+        </button>
+      </div>
     </header>
   );
 };
