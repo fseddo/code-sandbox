@@ -13,7 +13,7 @@ export const rotateRight = defineAlgoProblem<[number[], number], number[]>({
 
 Each rotation moves the last node to the front. Because rotating by the list's length restores the original order, only \`k mod length\` rotations have any effect — \`k\` may be much larger than the list.
 
-In this judge the list is written and checked as a plain array — \`[1, 2, 3, 4, 5]\` is the chain \`1 -> 2 -> 3 -> 4 -> 5\`, and the empty list is \`[]\`.`,
+Lists are shown in array notation for readability — \`[1, 2, 3, 4, 5]\` is the chain \`1 -> 2 -> 3 -> 4 -> 5\`, and the empty list is \`[]\`.`,
   constraints: [
     "The number of nodes in the list is in the range [0, 500].",
     "-100 <= Node.val <= 100",

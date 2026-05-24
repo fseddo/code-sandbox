@@ -11,7 +11,7 @@ export const inorderTraversal = defineAlgoProblem<[(number | null)[]], number[]>
   functionName: "inorderTraversal",
   prompt: `Given the \`root\` of a binary tree, return the **inorder** traversal of its nodes' values — left subtree, then node, then right subtree.
 
-The tree is given to the judge as a level-order array where \`null\` marks a missing child: \`[1, null, 2, 3]\` is a root \`1\` whose right child is \`2\`, and \`2\`'s left child is \`3\`.`,
+The tree is given as a level-order array where \`null\` marks a missing child: \`[1, null, 2, 3]\` is a root \`1\` whose right child is \`2\`, and \`2\`'s left child is \`3\`.`,
   constraints: [
     "The number of nodes in the tree is in the range [0, 100].",
     "-100 <= Node.val <= 100",

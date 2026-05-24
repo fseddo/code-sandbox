@@ -13,7 +13,7 @@ export const removeNthNodeFromEndOfList = defineAlgoProblem<[number[], number], 
 
 \`n\` is 1-indexed from the end: \`n = 1\` removes the last node, \`n = 2\` removes the second-to-last, and so on. \`n\` is always a valid position, so \`1 <= n <= length\`. If the list had a single node, removing it leaves the empty list.
 
-In this judge the list is written and checked as a plain array — \`[1, 2, 3, 4, 5]\` is the chain \`1 -> 2 -> 3 -> 4 -> 5\`, and the empty list is \`[]\`.`,
+Lists are shown in array notation for readability — \`[1, 2, 3, 4, 5]\` is the chain \`1 -> 2 -> 3 -> 4 -> 5\`, and the empty list is \`[]\`.`,
   constraints: [
     "The number of nodes in the list is in the range [1, 30].",
     "0 <= Node.val <= 100",

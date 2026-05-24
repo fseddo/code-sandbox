@@ -13,7 +13,7 @@ export const mergeTwoSortedLists = defineAlgoProblem<[number[], number[]], numbe
 
 Splice the two lists together into a single sorted linked list and return its head. The merged list should be assembled from the nodes of the two input lists, preserving non-decreasing order.
 
-Either list may be empty. In this judge the lists are written and checked as plain arrays — \`[1, 2, 4]\` is the list \`1 -> 2 -> 4\`, and \`[]\` is an empty list.`,
+Either list may be empty. Lists are shown in array notation for readability — \`[1, 2, 4]\` is the chain \`1 -> 2 -> 4\`, and \`[]\` is an empty list.`,
   constraints: [
     "The number of nodes in each list is in the range [0, 50].",
     "-100 <= Node.val <= 100",

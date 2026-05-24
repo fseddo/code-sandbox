@@ -12,7 +12,7 @@ export const longestPalindrome = defineAlgoProblem<[string], string>({
   functionName: "longestPalindrome",
   prompt: `Given a string \`s\`, return the longest palindromic substring in \`s\`.
 
-A substring reads the same forwards and backwards. If several substrings tie for the longest, return any one of them — the judge accepts any valid longest palindrome, not one specific string.`,
+A substring reads the same forwards and backwards. If several substrings tie for the longest, return any one of them — any valid longest palindrome is accepted, not one specific string.`,
   constraints: ["1 <= s.length <= 1000", "s consists of digits and English letters."],
   checker: `(actual, args, expected) => {
   const s = args[0];

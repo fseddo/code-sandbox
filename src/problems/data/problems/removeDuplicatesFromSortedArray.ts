@@ -17,7 +17,7 @@ Because the array can't be resized in place, you don't delete anything — inste
 - Place the first \`k\` distinct values, in order, in \`nums[0]\` through \`nums[k - 1]\`.
 - **Return \`k\`.** Whatever ends up beyond index \`k - 1\` doesn't matter.
 
-The judge checks the value you return and the first \`k\` elements of the mutated array; the tail is ignored. Aim for \`O(n)\` time and \`O(1)\` extra space.`,
+Both the value you return and the first \`k\` elements of the mutated array are checked; the tail is ignored. Aim for \`O(n)\` time and \`O(1)\` extra space.`,
   constraints: [
     "0 <= nums.length <= 3 * 10^4",
     "-100 <= nums[i] <= 100",

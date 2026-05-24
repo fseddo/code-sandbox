@@ -11,7 +11,7 @@ export const myPow = defineAlgoProblem<[number, number], number>({
   functionName: "myPow",
   prompt: `Implement \`pow(x, n)\`, which raises \`x\` (a floating-point number) to the integer power \`n\` — that is, compute \`x^n\`.
 
-\`n\` may be negative, in which case \`x^n = 1 / x^(-n)\`. The judge accepts any answer within \`1e-6\` of the true value, so small floating-point error is fine.`,
+\`n\` may be negative, in which case \`x^n = 1 / x^(-n)\`. Any answer within \`1e-6\` of the true value is accepted, so small floating-point error is fine.`,
   constraints: [
     "-100.0 < x < 100.0",
     "-2^31 <= n <= 2^31 - 1",

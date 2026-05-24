@@ -11,7 +11,7 @@ export const addTwoNumbers = defineAlgoProblem<[number[], number[]], number[]>({
   functionName: "addTwoNumbers",
   prompt: `You are given two non-empty linked lists representing two non-negative integers. The digits are stored in **reverse order**, and each node holds a single digit. Add the two numbers and return the sum as a linked list, in the same reverse-order form.
 
-Assume the two numbers do not contain leading zeros, except the number 0 itself. In this judge the lists are written and checked as plain arrays — \`[2, 4, 3]\` is the number 342.`,
+Assume the two numbers do not contain leading zeros, except the number 0 itself. Your function receives and returns \`ListNode\` chains; the examples below show each list in array notation for readability — \`[2, 4, 3]\` is the chain \`2 -> 4 -> 3\`, the number 342.`,
   constraints: [
     "The number of nodes in each list is in the range [1, 100].",
     "0 <= Node.val <= 9",

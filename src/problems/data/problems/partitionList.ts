@@ -10,7 +10,7 @@ export const partitionList = defineAlgoProblem<[number[], number], number[]>({
   functionName: "partition",
   prompt: `Given the head of a linked list and a value \`x\`, partition the list so that all nodes with value **less than** \`x\` come before all nodes with value **greater than or equal to** \`x\`.
 
-You must preserve the original relative order of the nodes within each of the two groups (a stable partition). In this judge the list is written and checked as a plain array.`,
+You must preserve the original relative order of the nodes within each of the two groups (a stable partition). Lists are shown in array notation for readability.`,
   constraints: [
     "The number of nodes in the list is in the range [0, 200].",
     "-100 <= Node.val <= 100",

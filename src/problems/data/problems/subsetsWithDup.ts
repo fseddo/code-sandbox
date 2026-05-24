@@ -12,7 +12,7 @@ export const subsetsWithDup = defineAlgoProblem<[number[]], number[][]>({
   functionName: "subsetsWithDup",
   prompt: `Given an integer array \`nums\` that may contain duplicates, return all possible subsets (the power set). The solution set must **not** contain duplicate subsets.
 
-The subsets, and the elements within each subset, may be returned in any order — the judge normalizes ordering before comparing, but it does reject any repeated subset.`,
+The subsets, and the elements within each subset, may be returned in any order — ordering is normalized before comparing, but repeated subsets are rejected.`,
   constraints: [
     "1 <= nums.length <= 10",
     "-10 <= nums[i] <= 10",

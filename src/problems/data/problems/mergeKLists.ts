@@ -11,7 +11,7 @@ export const mergeKLists = defineAlgoProblem<[number[][]], number[]>({
   functionName: "mergeKLists",
   prompt: `You are given an array of \`k\` linked lists, each sorted in **non-decreasing** order. Merge them into one sorted linked list and return its head.
 
-In this judge each list is written and checked as a plain array — \`[[1, 4, 5], [1, 3, 4], [2, 6]]\` is three sorted lists, and the answer is the single merged list \`[1, 1, 2, 3, 4, 4, 5, 6]\`. The outer array may be empty, and individual lists may be empty.`,
+Each list is shown in array notation for readability — \`[[1, 4, 5], [1, 3, 4], [2, 6]]\` is three sorted lists, and the answer is the single merged list \`[1, 1, 2, 3, 4, 4, 5, 6]\`. The outer array may be empty, and individual lists may be empty.`,
   constraints: [
     "k == lists.length",
     "0 <= k <= 10^4",

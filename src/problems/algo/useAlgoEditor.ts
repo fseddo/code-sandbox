@@ -23,7 +23,7 @@ export const useAlgoEditor = (problem: ClientProblem, autosaveEnabled: boolean) 
   // buffers merge over starterCode so a never-edited language keeps its starter.
   const seed = (): Sources => ({ ...problem.starterCode, ...(loadSolution(problem.id) ?? {}) });
 
-  const [language, setLanguage] = useState<SupportedLanguage>("typescript");
+  const [language, setLanguage] = useState<SupportedLanguage>("javascript");
   const [sources, setSources] = useState<Sources>(seed);
   const { setSavedSnapshot, isDirty } = useDirtyTracker(sources, seed);
   const [isFormatting, setIsFormatting] = useState(false);

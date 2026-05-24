@@ -14,7 +14,7 @@ export const reverseNodesInKGroup = defineAlgoProblem<[number[], number], number
 
 Walk the list in consecutive blocks of \`k\` nodes and reverse each block. If the number of nodes remaining at the end is **fewer than \`k\`**, leave that trailing group in its original order. Only the links between nodes may change — do not alter any node's value.
 
-In this judge the list is written and checked as a plain array — with \`head = [1, 2, 3, 4, 5]\` and \`k = 2\` the answer is \`[2, 1, 4, 3, 5]\`: the first two and next two are reversed, and the lone trailing \`5\` stays put.`,
+Lists are shown in array notation for readability — with \`head = [1, 2, 3, 4, 5]\` and \`k = 2\` the answer is \`[2, 1, 4, 3, 5]\`: the first two and next two are reversed, and the lone trailing \`5\` stays put.`,
   constraints: [
     "The number of nodes in the list is in the range [1, 5000].",
     "0 <= Node.val <= 1000",

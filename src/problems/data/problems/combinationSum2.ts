@@ -13,7 +13,7 @@ export const combinationSum2 = defineAlgoProblem<[number[], number], number[][]>
 
 Each candidate may be used **at most once** within a combination — its position in the array, not just its value, is what gets consumed. Two combinations are the same if one is a reordering of the other, so the returned list must not contain duplicate multisets.
 
-You may return the combinations in any order, and the numbers within each combination in any order. The judge accepts any valid arrangement.`,
+You may return the combinations in any order, and the numbers within each combination in any order — any valid arrangement is accepted.`,
   constraints: [
     "1 <= candidates.length <= 100",
     "1 <= candidates[i] <= 50",

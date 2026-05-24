@@ -13,6 +13,7 @@ type SortDetail = { label: string; compare: (a: CatalogItem, b: CatalogItem) => 
  * order) is the newest/oldest axis and the tiebreaker everywhere else.
  */
 const SORTS = {
+  number: { label: "Problem #", compare: (a, b) => a.number - b.number },
   newest: { label: "Newest first", compare: (a, b) => b.number - a.number },
   oldest: { label: "Oldest first", compare: (a, b) => a.number - b.number },
   difficulty: {
@@ -24,7 +25,7 @@ const SORTS = {
 
 export type SortKey = keyof typeof SORTS;
 
-export const DEFAULT_SORT: SortKey = "newest";
+export const DEFAULT_SORT: SortKey = "number";
 
 /** The sort options as `{ key, label }`, for rendering the sort menu in declared order. */
 export const sortOptions = (Object.keys(SORTS) as SortKey[]).map((key) => ({ key, label: SORTS[key].label }));

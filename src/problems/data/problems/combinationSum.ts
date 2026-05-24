@@ -14,7 +14,7 @@ export const combinationSum = defineAlgoProblem<[number[], number], number[][]>(
 
 The **same** candidate may be chosen an unlimited number of times. Two combinations are the same if one is a reordering of the other, so each distinct multiset of numbers must appear at most once.
 
-You may return the combinations in any order, and the numbers within each combination in any order. The judge accepts any valid arrangement.`,
+You may return the combinations in any order, and the numbers within each combination in any order — any valid arrangement is accepted.`,
   constraints: [
     "1 <= candidates.length <= 30",
     "2 <= candidates[i] <= 40",

@@ -11,7 +11,7 @@ export const reverseBetween = defineAlgoProblem<[number[], number, number], numb
   functionName: "reverseBetween",
   prompt: `Given the head of a singly linked list and two 1-based positions \`left <= right\`, reverse the nodes from position \`left\` to position \`right\` inclusive, and return the head of the modified list. Nodes outside that range keep their order.
 
-In this judge the list is written and checked as a plain array — \`reverseBetween([1,2,3,4,5], 2, 4)\` reverses the middle three to give \`[1,4,3,2,5]\`.`,
+Lists are shown in array notation for readability — \`reverseBetween([1,2,3,4,5], 2, 4)\` reverses the middle three to give \`[1,4,3,2,5]\`.`,
   constraints: [
     "The number of nodes in the list is in the range [1, 500].",
     "-500 <= Node.val <= 500",

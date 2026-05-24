@@ -13,7 +13,7 @@ export const swapNodesInPairs = defineAlgoProblem<[number[]], number[]>({
 
 You must solve the problem by rearranging the nodes themselves — you may not simply change the values stored inside them. If the list has an odd number of nodes, the final lone node keeps its position.
 
-In this judge the list is written and checked as a plain array, so \`[1, 2, 3, 4]\` becomes \`[2, 1, 4, 3]\`.`,
+Lists are shown in array notation for readability, so \`[1, 2, 3, 4]\` becomes \`[2, 1, 4, 3]\`.`,
   constraints: [
     "The number of nodes in the list is in the range [0, 100].",
     "0 <= Node.val <= 100",

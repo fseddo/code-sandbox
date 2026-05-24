@@ -16,7 +16,7 @@ export const grayCode = defineAlgoProblem<[number], number[]>({
 - adjacent integers differ in exactly one bit, and
 - the first and last integers also differ in exactly one bit (it's cyclic).
 
-Given \`n\`, return any valid \`n\`-bit Gray code sequence. The judge accepts **any** sequence satisfying all four properties, not one specific ordering.`,
+Given \`n\`, return any valid \`n\`-bit Gray code sequence. **Any** sequence satisfying all four properties is accepted, not one specific ordering.`,
   constraints: ["1 <= n <= 16"],
   checker: `(actual, args, expected) => {
     const n = args[0];

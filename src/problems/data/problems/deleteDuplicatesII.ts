@@ -11,7 +11,7 @@ export const deleteDuplicatesII = defineAlgoProblem<[number[]], number[]>({
   functionName: "deleteDuplicates",
   prompt: `Given the head of a sorted linked list, delete **all** nodes that have a duplicate value, leaving only the values that appear exactly once in the original list. Return the head of the resulting still-sorted list.
 
-This differs from the "keep one of each" variant: here a value that appears more than once is removed entirely, not collapsed to a single node. In this judge the list is written and checked as a plain array — \`[1, 2, 3, 3, 4, 4, 5]\` becomes \`[1, 2, 5]\`.`,
+This differs from the "keep one of each" variant: here a value that appears more than once is removed entirely, not collapsed to a single node. Lists are shown in array notation for readability — \`[1, 2, 3, 3, 4, 4, 5]\` becomes \`[1, 2, 5]\`.`,
   constraints: [
     "The number of nodes in the list is in the range [0, 300].",
     "-100 <= Node.val <= 100",

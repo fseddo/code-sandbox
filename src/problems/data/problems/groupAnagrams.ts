@@ -12,7 +12,7 @@ export const groupAnagrams = defineAlgoProblem<[string[]], string[][]>({
   functionName: "groupAnagrams",
   prompt: `Given an array of strings \`strs\`, group the anagrams together. Two strings are anagrams when one is a rearrangement of the other's letters.
 
-Return a list of groups. The groups, and the strings within each group, may be returned in **any order** — the judge accepts any valid grouping.`,
+Return a list of groups. The groups, and the strings within each group, may be returned in **any order** — any valid grouping is accepted.`,
   constraints: [
     "1 <= strs.length <= 10^4",
     "0 <= strs[i].length <= 100",
