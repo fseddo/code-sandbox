@@ -6,11 +6,9 @@ import { LearnCatalog } from "@/learn/catalog/LearnCatalog";
 const LearnHome = () => (
   <div className="flex h-screen flex-col">
     <AppHeader crumb="Learn" />
-    <div className="flex min-h-0 flex-1">
-      <Suspense fallback={null}>
-        <LearnCatalog topics={listTopicSummaries()} />
-      </Suspense>
-    </div>
+    <Suspense fallback={null}>
+      <LearnCatalog topics={listTopicSummaries()} />
+    </Suspense>
   </div>
 );
 

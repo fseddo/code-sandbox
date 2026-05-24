@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Learn — catalog (mockup)</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="mockup-banner">Mockup — proposed Learn catalog, grouped &amp; sequenced (not an orderless list). <a href="index.html">All mockups</a></div>
+<div class="appbar"><div class="appbar-inner">
+  <span class="brand">noodle</span>
+  <span class="crumb">/ Learn</span>
+</div></div>
+
+<main class="page page-wide">
+  <header class="catalog-head">
+    <h1>Learn</h1>
+    <p class="summary" style="color:var(--muted);margin:0">Work top to bottom — topics are sequenced in study order within each shelf. Filter to refine; switch to Plan view to break them into weeks.</p>
+    <div class="toolbar">
+      <span class="search">Search topics…</span>
+      <span class="filter">Category ▾</span>
+      <span class="filter">Priority ▾</span>
+      <span class="filter">Tag ▾</span>
+      <span class="filter">☐ Unread</span>
+      <a class="viewtoggle" href="study-plan.html">⚙ Study plan view →</a>
+    </div>
+  </header>
+
+  <div class="cat-group">
+    <div class="cat-head"><span class="seq">1</span><h2>Data structures</h2><span class="count">11 topics</span></div>
+
+    <div class="topic-row"><span class="idx">1</span><span class="tname">Arrays</span><span class="tsum">Contiguous indexed storage; the baseline everything else builds on.</span>
+      <span class="right"><span class="badge high"><span class="dot"></span>High</span><span class="badge time">~30m</span><span class="badge read">✓ read</span></span></div>
+    <div class="topic-row"><span class="idx">2</span><span class="tname">Strings</span><span class="tsum">Immutable char sequences; the substring/pattern workhorse.</span>
+      <span class="right"><span class="badge high"><span class="dot"></span>High</span><span class="badge time">~30m</span></span></div>
+    <div class="topic-row"><a class="tname" href="detail-dsa.html" style="color:inherit"><span class="idx" style="margin-right:14px">3</span>Hash maps &amp; sets</a><span class="tsum">Average O(1) lookup by key — collapses O(n²) scans to one pass.</span>
+      <span class="right"><span class="badge high"><span class="dot"></span>High</span><span class="badge time">~45m</span><span class="badge read">✓ read</span></span></div>
+    <div class="topic-row"><span class="idx">4</span><span class="tname">Linked lists</span><span class="tsum">Node-and-pointer chains; O(1) splice, no random access.</span>
+      <span class="right"><span class="badge mid"><span class="dot"></span>Mid</span><span class="badge time">~45m</span></span></div>
+    <div class="topic-row child"><span class="idx">5</span><span class="tname">Stacks</span><span class="tsum">LIFO — matching, undo, DFS frames.</span>
+      <span class="right"><span class="badge mid"><span class="dot"></span>Mid</span><span class="badge time">~30m</span></span></div>
+    <div class="topic-row child"><span class="idx">6</span><span class="tname">Queues</span><span class="tsum">FIFO — BFS frontier, buffering.</span>
+      <span class="right"><span class="badge mid"><span class="dot"></span>Mid</span><span class="badge time">~30m</span></span></div>
+    <div class="topic-row"><span class="idx">7</span><span class="tname">Trees</span><span class="tsum">Hierarchical nodes; recursion's natural home.</span>
+      <span class="right"><span class="badge high"><span class="dot"></span>High</span><span class="badge time">~60m</span></span></div>
+    <div class="topic-row child"><span class="idx">8</span><span class="tname">Binary search trees</span><span class="tsum">Ordered tree; O(log n) search when balanced.</span>
+      <span class="right"><span class="badge mid"><span class="dot"></span>Mid</span><span class="badge time">~45m</span></span></div>
+    <div class="topic-row"><span class="idx">9</span><span class="tname">Heaps</span><span class="tsum">Partial order; O(1) peek-min, O(log n) push/pop.</span>
+      <span class="right"><span class="badge mid"><span class="dot"></span>Mid</span><span class="badge time">~45m</span></span></div>
+    <div class="topic-row"><span class="idx">10</span><span class="tname">Tries</span><span class="tsum">Prefix tree for string keys.</span>
+      <span class="right"><span class="badge low"><span class="dot"></span>Low</span><span class="badge time">~30m</span></span></div>
+    <div class="topic-row"><span class="idx">11</span><span class="tname">Graphs</span><span class="tsum">Nodes + edges; the most general structure.</span>
+      <span class="right"><span class="badge high"><span class="dot"></span>High</span><span class="badge time">~75m</span></span></div>
+  </div>
+
+  <div class="cat-group">
+    <div class="cat-head"><span class="seq">2</span><h2>Algorithms &amp; techniques</h2><span class="count">14 topics</span></div>
+    <div class="topic-row"><span class="idx">12</span><span class="tname">Two pointers</span><span class="tsum">Converging/parallel cursors over a sequence.</span>
+      <span class="right"><span class="badge high"><span class="dot"></span>High</span><span class="badge time">~60m</span></span></div>
+    <div class="topic-row"><a class="tname" href="detail-dsa.html" style="color:inherit"><span class="idx" style="margin-right:14px">13</span>Sliding window</a><span class="tsum">Moving sub-range; longest/shortest contiguous range in O(n).</span>
+      <span class="right"><span class="badge high"><span class="dot"></span>High</span><span class="badge time">~90m</span></span></div>
+    <div class="topic-row child"><span class="idx">14</span><span class="tname">Fast &amp; slow pointers</span><span class="tsum">Cycle detection, middle-finding.</span>
+      <span class="right"><span class="badge mid"><span class="dot"></span>Mid</span><span class="badge time">~30m</span></span></div>
+    <div class="topic-row"><span class="idx">15</span><span class="tname">Binary search</span><span class="tsum">Halve the search space each step.</span>
+      <span class="right"><span class="badge high"><span class="dot"></span>High</span><span class="badge time">~60m</span></span></div>
+    <div class="topic-row"><span class="idx">16</span><span class="tname">Dynamic programming</span><span class="tsum">Overlapping subproblems + optimal substructure.</span>
+      <span class="right"><span class="badge high"><span class="dot"></span>High</span><span class="badge time">~120m</span></span></div>
+    <div class="topic-row"><span class="idx">17</span><span class="tname">Backtracking</span><span class="tsum">Build candidates, abandon dead ends.</span>
+      <span class="right"><span class="badge mid"><span class="dot"></span>Mid</span><span class="badge time">~75m</span></span></div>
+    <div class="topic-row" style="opacity:.55"><span class="idx">…</span><span class="tname">Prefix sums · Greedy · Sorting · Recursion · BFS · DFS · Intervals · Union-find</span><span class="tsum"></span></div>
+  </div>
+
+  <div class="cat-group">
+    <div class="cat-head"><span class="seq">6</span><h2>System design</h2><span class="count">proposed shelf</span></div>
+    <div class="topic-row"><a class="tname" href="detail-system-design.html" style="color:inherit"><span class="idx" style="margin-right:14px">1</span>Design a rate limiter</a><span class="tsum">Cap request rate per client; where to put it and how it goes distributed.</span>
+      <span class="right"><span class="badge mid"><span class="dot"></span>Mid</span><span class="badge time">~120m</span></span></div>
+    <div class="topic-row" style="opacity:.55"><span class="idx">…</span><span class="tname">URL shortener · News feed · Chat system · Search autocomplete · Key-value store</span><span class="tsum"></span></div>
+  </div>
+</main>
+</body>
+</html>

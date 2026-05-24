@@ -164,20 +164,26 @@ function threeSum(nums: number[]): number[][] {
 \`O(n²)\` time, \`O(1)\` extra space (ignoring the sort and output).`,
       code: {
         javascript: `function threeSum(nums) {
+  // Sort so equal values sit together and pairs can be found by converging pointers.
   const sorted = [...nums].sort((a, b) => a - b);
   const result = [];
+  // Fix each value as the smallest of the triplet.
   for (let i = 0; i < sorted.length - 2; i++) {
+    // Skip a repeated pivot — it would only re-find the same triplets.
     if (i > 0 && sorted[i] === sorted[i - 1]) continue;
+    // Look for a pair in the suffix summing to -sorted[i].
     let lo = i + 1;
     let hi = sorted.length - 1;
     while (lo < hi) {
       const sum = sorted[i] + sorted[lo] + sorted[hi];
       if (sum < 0) {
-        lo++;
+        lo++; // sum too small — raise the low value
       } else if (sum > 0) {
-        hi--;
+        hi--; // sum too large — lower the high value
       } else {
+        // Exact hit: record the triplet.
         result.push([sorted[i], sorted[lo], sorted[hi]]);
+        // Skip duplicate values on both ends before continuing.
         while (lo < hi && sorted[lo] === sorted[lo + 1]) lo++;
         while (lo < hi && sorted[hi] === sorted[hi - 1]) hi--;
         lo++;
@@ -188,20 +194,26 @@ function threeSum(nums: number[]): number[][] {
   return result;
 }`,
         typescript: `function threeSum(nums: number[]): number[][] {
+  // Sort so equal values sit together and pairs can be found by converging pointers.
   const sorted = [...nums].sort((a, b) => a - b);
   const result: number[][] = [];
+  // Fix each value as the smallest of the triplet.
   for (let i = 0; i < sorted.length - 2; i++) {
+    // Skip a repeated pivot — it would only re-find the same triplets.
     if (i > 0 && sorted[i] === sorted[i - 1]) continue;
+    // Look for a pair in the suffix summing to -sorted[i].
     let lo = i + 1;
     let hi = sorted.length - 1;
     while (lo < hi) {
       const sum = sorted[i] + sorted[lo] + sorted[hi];
       if (sum < 0) {
-        lo++;
+        lo++; // sum too small — raise the low value
       } else if (sum > 0) {
-        hi--;
+        hi--; // sum too large — lower the high value
       } else {
+        // Exact hit: record the triplet.
         result.push([sorted[i], sorted[lo], sorted[hi]]);
+        // Skip duplicate values on both ends before continuing.
         while (lo < hi && sorted[lo] === sorted[lo + 1]) lo++;
         while (lo < hi && sorted[hi] === sorted[hi - 1]) hi--;
         lo++;

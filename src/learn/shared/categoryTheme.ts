@@ -1,9 +1,9 @@
-import type { LearnCategory } from "@/learn/data/topic";
+import type { LearnCategory, Priority } from "@/learn/data/topic";
 
 /**
- * Per-category accent classes — the single source for the catalog's colored bubbles and the article's
- * header underlines / nested-section borders. The app is forced-dark, so only dark-appropriate shades.
- * Classes are written out in full (not built dynamically) so Tailwind's scanner keeps them.
+ * Per-category and per-priority accent classes — the single source for the catalog's colored bubbles, the
+ * article header's badges / underlines, and nested-section borders. The app is forced-dark, so only
+ * dark-appropriate shades. Classes are written out in full (not built dynamically) so Tailwind keeps them.
  */
 export const CATEGORY_ACCENT: Record<
   LearnCategory,
@@ -15,4 +15,11 @@ export const CATEGORY_ACCENT: Record<
   databases: { badge: "bg-emerald-500/15 text-emerald-300", underline: "border-emerald-500/70", border: "border-emerald-500/40" },
   web: { badge: "bg-rose-500/15 text-rose-300", underline: "border-rose-500/70", border: "border-rose-500/40" },
   systems: { badge: "bg-orange-500/15 text-orange-300", underline: "border-orange-500/70", border: "border-orange-500/40" },
+};
+
+/** Priority pill classes (dark shades). High = warm/urgent, mid = amber, low = cool/neutral. */
+export const PRIORITY_ACCENT: Record<Priority, { badge: string; label: string }> = {
+  high: { badge: "bg-rose-500/15 text-rose-300", label: "High priority" },
+  mid: { badge: "bg-amber-500/15 text-amber-300", label: "Mid priority" },
+  low: { badge: "bg-slate-500/15 text-slate-300", label: "Low priority" },
 };

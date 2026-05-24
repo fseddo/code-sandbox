@@ -122,7 +122,7 @@ export const LearnSidebar = ({ facets, selection, total, onToggle, onClearFacet 
   const trackSelected = (selection.track?.length ?? 0) > 0;
 
   return (
-    <aside className="flex w-60 shrink-0 flex-col gap-6 border-r border-sidebar-border bg-sidebar px-3 py-6">
+    <aside className="flex w-60 shrink-0 flex-col gap-6 overflow-y-auto border-r border-sidebar-border bg-sidebar px-3 py-6">
       <div className="flex flex-col gap-1 px-2">
         <span className="text-[0.7rem] font-medium uppercase tracking-wider text-muted-foreground">noodle</span>
         <h1 className="text-2xl font-semibold tracking-tight">Learn</h1>

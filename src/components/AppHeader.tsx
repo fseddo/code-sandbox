@@ -1,23 +1,38 @@
 "use client";
 
+import { Fragment } from "react";
+import Link from "next/link";
 import { LuSearch } from "react-icons/lu";
 import { useCommandPalette } from "./CommandPaletteProvider";
 import { BrandMenu } from "./BrandMenu";
 
-/** The shared app shell header: the brand area-switcher → current-area crumb, and the ⌘K search trigger. */
-export const AppHeader = ({ crumb }: { crumb?: string }) => {
+/** One breadcrumb segment. A `href` makes it a link (an ancestor); the last/current segment omits it. */
+export type Crumb = { label: string; href?: string };
+
+/** The shared app shell header: the brand area-switcher → breadcrumb trail, and the ⌘K search trigger. */
+export const AppHeader = ({ crumb }: { crumb?: string | Crumb[] }) => {
   const { open } = useCommandPalette();
+  const trail: Crumb[] = crumb === undefined ? [] : typeof crumb === "string" ? [{ label: crumb }] : crumb;
 
   return (
     <header className="flex h-14 shrink-0 items-center gap-3 border-b border-sidebar-border bg-card px-4">
       <BrandMenu />
 
-      {crumb && (
-        <>
+      {trail.map((segment, index) => (
+        <Fragment key={index}>
           <span className="shrink-0 text-muted-foreground/40">/</span>
-          <span className="shrink-0 text-sm font-medium">{crumb}</span>
-        </>
-      )}
+          {segment.href ? (
+            <Link
+              href={segment.href}
+              className="shrink-0 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {segment.label}
+            </Link>
+          ) : (
+            <span className="min-w-0 truncate text-sm font-medium">{segment.label}</span>
+          )}
+        </Fragment>
+      ))}
 
       <div className="flex flex-1 justify-center">
         <button

@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design a rate limiter — Learn (mockup)</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="mockup-banner">Mockup — proposed Learn detail page (System Design, the 4-step skeleton). <a href="index.html">All mockups</a></div>
+<div class="appbar"><div class="appbar-inner">
+  <span class="brand">noodle</span>
+  <span class="crumb">/ <a href="catalog.html">Learn</a> / Design a rate limiter</span>
+  <span class="spacer"></span>
+  <span class="badge">◷ Mark read</span>
+</div></div>
+
+<main class="page">
+  <header class="article-head">
+    <div class="metarow">
+      <span class="badge cat">System Design</span>
+      <span class="badge mid"><span class="dot"></span>Mid priority</span>
+      <span class="badge time">~120 min</span>
+    </div>
+    <h1>Design a rate limiter</h1>
+    <p class="summary">Cap request rate per client — where to put it, which algorithm, and how it survives going distributed.</p>
+    <div class="metarow">
+      <span class="tag">scalability</span><span class="tag">backend</span>
+    </div>
+  </header>
+
+  <section class="section">
+    <h2>Step 1 · Understand the problem &amp; scope</h2>
+    <p>Clarify before designing — the interviewer is testing whether you nail down requirements:</p>
+    <div class="callout info"><ul>
+      <li>Client-side or server-side rate limiting? (Server-side — client-side is trivially bypassed.)</li>
+      <li>Per-user, per-IP, or per-API-key?</li>
+      <li>What's the response when throttled? (HTTP 429 + <code class="inl">Retry-After</code>.)</li>
+      <li>Accuracy vs. throughput — is an approximate limit acceptable for lower latency?</li>
+      <li>Scale: how many requests/sec, how many distinct clients?</li>
+    </ul></div>
+  </section>
+
+  <section class="section">
+    <h2>Step 2 · Back-of-the-envelope estimation</h2>
+    <p>5M daily users · ~10 req/s at peak → <strong>~50M req/s</strong> to evaluate. Each counter key ≈ 16 bytes; 5M active keys ⇒ <strong>~80 MB</strong> — fits comfortably in a single Redis node, so a centralized store is viable before sharding.</p>
+  </section>
+
+  <section class="section">
+    <h2>Step 3 · High-level design</h2>
+    <p>First decision: <em>where</em> the limiter lives. Middleware in front of the API servers is the usual answer.</p>
+    <table class="cmp">
+      <thead><tr><th>Placement</th><th>Pros</th><th>Cons</th></tr></thead>
+      <tbody>
+        <tr><td class="name">Client-side</td>
+          <td><ul><li class="pro">No server cost</li></ul></td>
+          <td><ul><li class="con">Trivially bypassed</li><li class="con">Not enforceable</li></ul></td></tr>
+        <tr><td class="name">Server-side</td>
+          <td><ul><li class="pro">Authoritative</li></ul></td>
+          <td><ul><li class="con">Adds latency to every call</li></ul></td></tr>
+        <tr><td class="name">Middleware / gateway</td>
+          <td><ul><li class="pro">Reusable across services</li><li class="pro">Centralized policy</li></ul></td>
+          <td><ul><li class="con">Extra network hop</li><li class="con">Must sync state across nodes</li></ul></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="section">
+    <h2>Step 4 · Design deep dive</h2>
+    <p>Which counting algorithm? Each trades memory, accuracy, and burst behavior differently.</p>
+    <table class="cmp">
+      <thead><tr><th>Algorithm</th><th>Pros</th><th>Cons</th></tr></thead>
+      <tbody>
+        <tr><td class="name">Token bucket</td>
+          <td><ul><li class="pro">Allows bursts</li><li class="pro">Simple, widely used</li></ul></td>
+          <td><ul><li class="con">Two params to tune</li></ul></td></tr>
+        <tr><td class="name">Leaking bucket</td>
+          <td><ul><li class="pro">Smooth, steady output</li></ul></td>
+          <td><ul><li class="con">No bursts</li><li class="con">Stale requests under load</li></ul></td></tr>
+        <tr><td class="name">Fixed window</td>
+          <td><ul><li class="pro">Cheap memory</li><li class="pro">Easy to reason about</li></ul></td>
+          <td><ul><li class="con">Edge-of-window spikes (up to 2×)</li></ul></td></tr>
+        <tr><td class="name">Sliding window log</td>
+          <td><ul><li class="pro">Exact</li></ul></td>
+          <td><ul><li class="con">Memory-heavy (stores every timestamp)</li></ul></td></tr>
+        <tr><td class="name">Sliding window counter</td>
+          <td><ul><li class="pro">Accurate and cheap</li></ul></td>
+          <td><ul><li class="con">Approximation at window boundary</li></ul></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Going distributed</h3>
+    <div class="steps">
+      <div class="step"><div class="num"></div><div>
+        <div class="st-title">Counter in Redis</div>
+        <div class="st-body"><code class="inl">INCR</code> per key with <code class="inl">TTL = window</code>. One round-trip per request.</div>
+      </div></div>
+      <div class="step"><div class="num"></div><div>
+        <div class="st-title">Race condition</div>
+        <div class="st-body">Concurrent <code class="inl">INCR</code>s can read-then-write stale counts and overshoot the limit. Fix with an atomic Lua script or a sorted-set window.</div>
+        <div class="code" style="margin-top:8px"><pre><span class="cm">-- atomic check-and-increment, evaluated server-side in Redis</span>
+<span class="kw">local</span> n = redis.<span class="fn">call</span>(<span class="st">'INCR'</span>, KEYS[<span class="nu">1</span>])
+<span class="kw">if</span> n == <span class="nu">1</span> <span class="kw">then</span> redis.<span class="fn">call</span>(<span class="st">'EXPIRE'</span>, KEYS[<span class="nu">1</span>], ARGV[<span class="nu">1</span>]) <span class="kw">end</span>
+<span class="kw">return</span> n &lt;= <span class="fn">tonumber</span>(ARGV[<span class="nu">2</span>])</pre></div>
+      </div></div>
+      <div class="step"><div class="num"></div><div>
+        <div class="st-title">Multi-node sync</div>
+        <div class="st-body">Centralize counters in Redis so every API node sees the same state; nodes stay stateless. Watch the added latency &amp; the Redis single-point-of-failure (replicate it).</div>
+      </div></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Wrap up</h2>
+    <p>Recap the trade-offs you made (token bucket on a shared Redis, 429 + Retry-After). Where you'd extend with more time: per-endpoint policies, soft vs. hard limits, and monitoring the 429 rate to catch misconfigured clients.</p>
+  </section>
+
+  <section class="section">
+    <h2>Learning resources</h2>
+    <div class="res"><span class="ricon video">▶</span><span>Rate limiting algorithms, animated</span><span class="rtype">video · 9 min</span></div>
+    <div class="res"><span class="ricon article">▤</span><span>ByteByteGo — Design a rate limiter</span><span class="rtype">article</span></div>
+  </section>
+
+  <p class="sources">Sources · ByteByteGo, System Design Interview Vol. 1</p>
+</main>
+</body>
+</html>

@@ -5,9 +5,12 @@ import { cn, typedEntries } from "@/lib/utils";
 import { FILTER_CACHE_KEY } from "@/lib/filterParams";
 import { FilteredBackLink } from "@/components/FilteredBackLink";
 import type { ProblemSummary } from "@/problems/data/problems";
-import { CATEGORY_ACCENT } from "@/learn/shared/categoryTheme";
+import { CATEGORY_ACCENT, PRIORITY_ACCENT } from "@/learn/shared/categoryTheme";
 import { CategoryBadge } from "@/learn/shared/CategoryBadge";
+import { ArticleSection } from "./ArticleSection";
 import { SectionRenderer } from "./SectionRenderer";
+
+const formatDuration = (minutes: number) => (minutes >= 60 ? `~${Math.round(minutes / 60 * 10) / 10} h` : `~${minutes} min`);
 
 export const LearnArticle = ({
   topic,
@@ -17,9 +20,14 @@ export const LearnArticle = ({
   problemsById: Record<string, ProblemSummary>;
 }) => {
   const accent = CATEGORY_ACCENT[topic.category];
+  // Top-level parts that have content — the "On this page" jump list (nested subsections are omitted).
+  const navParts = typedEntries<ArticlePartKey, ArticlePartDetail>(ARTICLE_PARTS).filter(
+    ([key, detail]) => !detail.parent && (topic.parts[key]?.length ?? 0) > 0,
+  );
 
   return (
-    <article className="mx-auto max-w-3xl space-y-8 px-6 py-10">
+    <div className="mx-auto flex max-w-5xl gap-10 px-6 py-10">
+      <article className="min-w-0 flex-1 space-y-8">
       <header className="space-y-3">
         <FilteredBackLink
           base="/learn"
@@ -29,9 +37,24 @@ export const LearnArticle = ({
           <LuArrowLeft className="size-3.5" />
           Learn
         </FilteredBackLink>
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight">{topic.title}</h1>
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="mr-1 text-2xl font-semibold tracking-tight">{topic.title}</h1>
           <CategoryBadge category={topic.category} />
+          {topic.priority && (
+            <span
+              className={cn(
+                "inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium",
+                PRIORITY_ACCENT[topic.priority].badge,
+              )}
+            >
+              {PRIORITY_ACCENT[topic.priority].label}
+            </span>
+          )}
+          {topic.estimatedMinutes && (
+            <span className="inline-flex shrink-0 items-center rounded-full bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
+              {formatDuration(topic.estimatedMinutes)}
+            </span>
+          )}
         </div>
         <p className="text-sm text-muted-foreground">{topic.summary}</p>
       </header>
@@ -41,24 +64,18 @@ export const LearnArticle = ({
           const blocks = topic.parts[key];
           if (!blocks?.length) return null;
           const nested = Boolean(detail.parent);
-          const Heading = nested ? "h3" : "h2";
           return (
-            <section key={key} className={cn("space-y-4", nested && cn("border-l-2 pl-4", accent.border))}>
-              <Heading
-                className={cn(
-                  nested
-                    ? "text-xs font-semibold uppercase tracking-wide text-muted-foreground"
-                    : cn("inline-block border-b-2 pb-1 text-lg font-semibold tracking-tight", accent.underline),
-                )}
-              >
-                {detail.label}
-              </Heading>
-              <div className="space-y-6">
-                {blocks.map((section, index) => (
-                  <SectionRenderer key={index} section={section} problemsById={problemsById} />
-                ))}
-              </div>
-            </section>
+            <ArticleSection
+              key={key}
+              label={detail.label}
+              accent={accent}
+              nested={nested}
+              id={nested ? undefined : key}
+            >
+              {blocks.map((section, index) => (
+                <SectionRenderer key={index} section={section} problemsById={problemsById} />
+              ))}
+            </ArticleSection>
           );
         })}
       </div>
@@ -82,6 +99,24 @@ export const LearnArticle = ({
           </ul>
         </footer>
       )}
-    </article>
+      </article>
+
+      <nav className="hidden w-44 shrink-0 lg:block">
+        <div className="sticky top-8 space-y-1">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground/70">
+            On this page
+          </p>
+          {navParts.map(([key, detail]) => (
+            <a
+              key={key}
+              href={`#${key}`}
+              className="block rounded px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              {detail.label}
+            </a>
+          ))}
+        </div>
+      </nav>
+    </div>
   );
 };

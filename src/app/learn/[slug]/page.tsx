@@ -17,7 +17,7 @@ const TopicPage = async ({ params }: { params: Promise<{ slug: string }> }) => {
 
   return (
     <div className="flex h-screen flex-col">
-      <AppHeader crumb="Learn" />
+      <AppHeader crumb={[{ label: "Learn", href: "/learn" }, { label: topic.title }]} />
       <div className="flex-1 overflow-auto">
         <LearnArticle topic={topic} problemsById={problemsById} />
       </div>

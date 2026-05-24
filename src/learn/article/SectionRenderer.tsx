@@ -5,6 +5,10 @@ import { CodeSection } from "./sections/CodeSection";
 import { ComplexityTable } from "./sections/ComplexityTable";
 import { MatrixGrid } from "./sections/MatrixGrid";
 import { GraphDiagram } from "./sections/GraphDiagram";
+import { WalkthroughDiagram } from "./sections/WalkthroughDiagram";
+import { CalloutSection } from "./sections/CalloutSection";
+import { PracticeList } from "./sections/PracticeList";
+import { ResourceList } from "./sections/ResourceList";
 import { ExampleProblemLink } from "./sections/ExampleProblemLink";
 
 type SectionRendererProps = {
@@ -25,6 +29,14 @@ const renderBody = ({ section, problemsById }: SectionRendererProps) => {
       return <GraphDiagram section={section} />;
     case "matrix":
       return <MatrixGrid section={section} />;
+    case "walkthrough":
+      return <WalkthroughDiagram section={section} />;
+    case "callout":
+      return <CalloutSection section={section} />;
+    case "practice":
+      return <PracticeList section={section} problemsById={problemsById} />;
+    case "resources":
+      return <ResourceList section={section} />;
     case "exampleProblem":
       return <ExampleProblemLink section={section} problem={problemsById[section.problemId]} />;
     case "row":

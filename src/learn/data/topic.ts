@@ -41,6 +41,29 @@ export type ComplexityRow = {
 /** A graph edge as a `[from, to]` pair of node ids — labeled tuple so authoring reads `["A", "B"]`. */
 export type GraphEdge = [from: string, to: string];
 
+/** Callout tone — drives the color/intent of a bulleted aside. */
+export type CalloutTone = "warn" | "info" | "tip";
+
+/** A linked study resource; `type` picks the icon and groups it visually. */
+export type ResourceItem = { label: string; url: string; type: "article" | "video" | "doc" };
+
+/** A named cursor over a walkthrough lane — rendered as a labeled arrow above cell `at`, colored by first-appearance order. */
+export type WalkthroughPointer = { name: string; at: number };
+
+/** One step of a walkthrough: where the pointers/window sit, what got dropped, and the decision that moves us on. */
+export type WalkthroughFrame = {
+  /** Cursors to draw above the lane this step. A pointer keeps its color across frames by `name`. */
+  pointers?: WalkthroughPointer[];
+  /** Inclusive `[start, end]` cells highlighted as the active window. */
+  range?: [start: number, end: number];
+  /** Cells dropped from consideration this step — dimmed and struck through. */
+  marked?: number[];
+  /** One-line narration shown under the frame. */
+  caption?: string;
+  /** The decision for this step, shown in a dashed callout beside the lane (e.g. `"sum = 1 < 7 → left += 1"`). */
+  action?: string;
+};
+
 /** Fields shared by every section, regardless of kind — the spine of the discriminated union. */
 type SectionBase = {
   /** Optional sub-heading rendered above the section body. */
@@ -76,6 +99,23 @@ export type Section = SectionBase &
         caption?: string;
       }
     | {
+        kind: "walkthrough";
+        /** The sequence being scanned — one cell per entry. */
+        lane: (string | number)[];
+        /** Draw a faint 0-based index under each cell (for index-returning problems like two-sum). */
+        showIndices?: boolean;
+        frames: WalkthroughFrame[];
+      }
+    /** A bulleted aside in one of three tones — pitfalls (warn), corner cases (info), interview tips (tip). */
+    | { kind: "callout"; tone: CalloutTone; items: string[] }
+    /**
+     * A two-tier practice list. `essential` problems render as full rows (title + difficulty); `recommended`
+     * render as compact chips. Both are problem ids resolved against the bank — unknown ids degrade gracefully.
+     */
+    | { kind: "practice"; essential: string[]; recommended?: string[] }
+    /** Linked learning resources, grouped visually by `type` (article / video / doc). */
+    | { kind: "resources"; items: ResourceItem[] }
+    | {
         kind: "exampleProblem";
         /** A problem `id` from the bank; resolved to a summary + deep-linked to `/problems/[id]`. */
         problemId: string;
@@ -97,9 +137,14 @@ export type ArticlePartKey =
   | "definition"
   | "operations"
   | "whenToUse"
+  | "techniques"
   | "relatedStructures"
   | "implementation"
-  | "example";
+  | "example"
+  | "pitfalls"
+  | "cornerCases"
+  | "practice"
+  | "resources";
 
 export type ArticlePartDetail = {
   label: string;
@@ -115,9 +160,14 @@ export const ARTICLE_PARTS = {
   definition: { label: "Definition" },
   operations: { label: "Operations", parent: "definition" },
   whenToUse: { label: "When to use" },
+  techniques: { label: "Techniques", parent: "whenToUse" },
   relatedStructures: { label: "Related structures", parent: "whenToUse" },
   implementation: { label: "Implementation" },
-  example: { label: "Example" },
+  example: { label: "Worked examples" },
+  pitfalls: { label: "Things to look out for" },
+  cornerCases: { label: "Corner cases" },
+  practice: { label: "Practice" },
+  resources: { label: "Learning resources" },
 } as const satisfies Record<ArticlePartKey, ArticlePartDetail>;
 
 /**
@@ -136,6 +186,13 @@ export type LearnTag =
   | "networking"
   | "api";
 
+/**
+ * How strongly an interview candidate should prioritize a topic — the study-plan ordering axis, *not* difficulty
+ * (difficulty is a property of the practice problems a topic links). Optional during rollout; promote to required
+ * once every topic is graded.
+ */
+export type Priority = "high" | "mid" | "low";
+
 /** A reference link, rendered in the article's Sources footer. */
 export type Source = { label: string; url: string };
 
@@ -150,6 +207,10 @@ export type LearnTopic = {
   /** One-liner for the landing card and search index. */
   summary: string;
   tags?: LearnTag[];
+  /** Study-plan priority (see {@link Priority}). Optional during rollout. */
+  priority?: Priority;
+  /** Rough time to study the topic, in minutes — feeds the study-plan time budget. */
+  estimatedMinutes?: number;
   parts: Partial<Record<ArticlePartKey, Section[]>>;
   sources?: Source[];
 };

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { LuArrowRight, LuSearch, LuX } from "react-icons/lu";
+import { LuArrowRight, LuListChecks, LuSearch, LuX } from "react-icons/lu";
 import type { TopicSummary } from "@/learn/data/topic";
 import { searchCatalog } from "@/problems/catalog/catalogFilters";
 import { FILTER_CACHE_KEY, parseFacetParams, syncFilterUrl } from "@/lib/filterParams";
@@ -71,14 +71,23 @@ export const LearnCatalog = ({ topics }: { topics: TopicSummary[] }) => {
       />
 
       <main className="flex min-w-0 flex-1 flex-col gap-4 overflow-auto px-6 py-6">
-        <div className="relative">
-          <LuSearch className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={`Search ${topics.length} topics…`}
-            className="h-9 pl-8"
-          />
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <LuSearch className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={`Search ${topics.length} topics…`}
+              className="h-9 pl-8"
+            />
+          </div>
+          <Link
+            href="/learn/guide/algos"
+            className="inline-flex h-9 shrink-0 items-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-3 text-sm font-medium text-primary transition-colors hover:bg-primary/20"
+          >
+            <LuListChecks className="size-4" />
+            Study guide
+          </Link>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -112,7 +121,7 @@ export const LearnCatalog = ({ topics }: { topics: TopicSummary[] }) => {
             No topics match.
           </div>
         ) : (
-          <div className="divide-y divide-border overflow-hidden rounded-lg border border-border">
+          <div className="shrink-0 divide-y divide-border overflow-hidden rounded-lg border border-border">
             {visible.map((topic) => (
               <Link
                 key={topic.slug}

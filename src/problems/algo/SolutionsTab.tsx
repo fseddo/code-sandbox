@@ -1,6 +1,7 @@
 import type { ProblemSolution, SupportedLanguage } from "@/problems/data/problem";
 import { LANGUAGE_LABELS } from "@/problems/data/problem";
 import { Prose } from "@/problems/shared/Prose";
+import { HighlightedCode } from "@/problems/shared/HighlightedCode";
 
 /** One published approach: title, write-up, and code in the editor's language (falling back if absent). */
 const SolutionApproach = ({
@@ -26,9 +27,7 @@ const SolutionApproach = ({
               Shown in {LANGUAGE_LABELS[shown]} — no {LANGUAGE_LABELS[language]} solution provided.
             </p>
           )}
-          <pre className="overflow-auto rounded-md border border-border bg-background p-3 font-mono text-xs text-foreground">
-            {code}
-          </pre>
+          <HighlightedCode code={code} language={shown} />
         </div>
       )}
     </article>
