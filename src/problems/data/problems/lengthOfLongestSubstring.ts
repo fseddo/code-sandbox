@@ -65,31 +65,35 @@ function lengthOfLongestSubstring(s: string): number {
 Each character is visited once and \`start\` only moves forward, so it's \`O(n)\` time and \`O(min(n, alphabet))\` space.`,
       code: {
         javascript: `function lengthOfLongestSubstring(s) {
+  // lastSeen[ch] = the most recent index where ch appeared.
   const lastSeen = new Map();
-  let start = 0;
+  let start = 0; // left edge of the window of distinct characters
   let best = 0;
   for (let i = 0; i < s.length; i++) {
     const ch = s[i];
+    // If ch's last copy is inside the window, jump start past it so the window stays distinct.
     if (lastSeen.has(ch) && lastSeen.get(ch) >= start) {
       start = lastSeen.get(ch) + 1;
     }
     lastSeen.set(ch, i);
-    best = Math.max(best, i - start + 1);
+    best = Math.max(best, i - start + 1); // width of the current valid window
   }
   return best;
 }`,
         typescript: `function lengthOfLongestSubstring(s: string): number {
+  // lastSeen[ch] = the most recent index where ch appeared.
   const lastSeen = new Map<string, number>();
-  let start = 0;
+  let start = 0; // left edge of the window of distinct characters
   let best = 0;
   for (let i = 0; i < s.length; i++) {
     const ch = s[i];
     const prev = lastSeen.get(ch);
+    // If ch's last copy is inside the window, jump start past it so the window stays distinct.
     if (prev !== undefined && prev >= start) {
       start = prev + 1;
     }
     lastSeen.set(ch, i);
-    best = Math.max(best, i - start + 1);
+    best = Math.max(best, i - start + 1); // width of the current valid window
   }
   return best;
 }`,

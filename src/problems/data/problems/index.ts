@@ -111,6 +111,8 @@ import { geometricTriplets } from "./geometricTriplets";
 import { reverseList } from "./reverseList";
 import { palindromeLinkedList } from "./palindromeLinkedList";
 import { intersectionOfTwoLinkedLists } from "./intersectionOfTwoLinkedLists";
+import { findAnagrams } from "./findAnagrams";
+import { characterReplacement } from "./characterReplacement";
 
 /**
  * The problem bank, keyed by id. Authored modules keep their precise generics for
@@ -229,6 +231,8 @@ export const problems = {
   "reverse-linked-list": reverseList,
   "palindrome-linked-list": palindromeLinkedList,
   "intersection-of-two-linked-lists": intersectionOfTwoLinkedLists,
+  "find-all-anagrams-in-a-string": findAnagrams,
+  "longest-repeating-character-replacement": characterReplacement,
 } satisfies Record<string, AnyProblem>;
 
 export type ProblemId = keyof typeof problems;

@@ -661,9 +661,9 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
     {
       kind: "prose",
       body:
-        "Checking every substring for uniqueness is O(n³). The optimization slides a window holding only distinct " +
-        "characters: extend `right` to grow it; the moment the new character is already inside, advance `left` " +
-        "(dropping characters) until the duplicate is gone. Each index enters and leaves once → O(n).",
+        "The most direct approach takes every substring and checks whether it has a repeated character, keeping " +
+        "the length of the longest one that doesn't. Comparing a substring against itself for uniqueness is what " +
+        "makes it slow.",
     },
     {
       kind: "code",
@@ -671,7 +671,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
       caption: "Brute force — test every substring for uniqueness: O(n³).",
       source:
         "function lengthOfLongestSubstring(s) {\n" +
-        "  // A substring has no repeat when its Set of chars is as big as the substring.\n" +
+        "  // A substring has no repeat when its set of chars is as big as the substring.\n" +
         "  const allUnique = (str) => new Set(str).size === str.length;\n" +
         "  let best = 0;\n" +
         "  // Try every substring s[i..j] and keep the longest distinct one.\n" +
@@ -684,37 +684,240 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "}",
     },
     {
+      kind: "prose",
+      body:
+        "This is O(n³) — there are O(n²) substrings and each uniqueness check is O(n). Can we do better?\n\n" +
+        "The key observation: as we extend a substring to the right, it stays valid until the *first* repeated " +
+        "character. Once a duplicate appears, every substring that keeps the earlier copy is also invalid — so " +
+        "instead of restarting, we can just move the left edge *past* that earlier copy. That's a " +
+        "[sliding window](/learn/guide/algos/topic/sliding-window): a window `[start, i]` that always holds " +
+        "distinct characters.\n\n" +
+        "To know *where* the earlier copy was, store each character's most recent index in a map. When `s[i]` was " +
+        "last seen at some index `>= start`, that copy is inside the window, so jump `start` to one past it. The " +
+        "answer is the widest `i - start + 1` seen.\n\n" +
+        "*(The walkthrough below frames the window as `left`/`right`; in the stored solution `right` is the loop " +
+        "index `i` and `left` is `start` — same window, different names.)*\n\n" +
+        "Walking it through:",
+    },
+    {
       kind: "walkthrough",
-      heading: 's = "abcabcbb" — the sliding-window idea',
+      heading: 's = "abcabcbb" — window [start, i], start jumps past the last duplicate',
       lane: ["a", "b", "c", "a", "b", "c", "b", "b"],
       showIndices: true,
       frames: [
         {
-          pointers: [{ name: "L", at: 0 }, { name: "R", at: 2 }],
+          pointers: [{ name: "left", at: 0 }, { name: "right", at: 2 }],
           range: [0, 2],
-          action: "best = 3",
-          caption: 'Window "abc" — all distinct.',
+          action: 'best = 3',
+          caption: 'Window "abc" — all distinct. lastSeen = {a:0, b:1, c:2}.',
         },
         {
-          pointers: [{ name: "L", at: 1 }, { name: "R", at: 3 }],
+          pointers: [{ name: "left", at: 1 }, { name: "right", at: 3 }],
           range: [1, 3],
           marked: [0],
-          action: '"a" repeats → left++',
-          caption: 'The new "a" duplicates index 0; drop from the left.',
+          action: '"a" last seen at 0 ≥ start → start = 1',
+          caption: 'right = 3 is "a", whose last index 0 sits in the window — jump start past it to 1.',
         },
         {
-          pointers: [{ name: "L", at: 2 }, { name: "R", at: 4 }],
+          pointers: [{ name: "left", at: 2 }, { name: "right", at: 4 }],
           range: [2, 4],
           marked: [0, 1],
-          action: '"b" repeats → left++',
-          caption: 'Window "cab" stays width 3; best is still 3.',
+          action: '"b" last seen at 1 ≥ start → start = 2',
+          caption: 'right = 4 is "b" (last at 1, in-window) → start jumps to 2. Window "cab", still width 3.',
         },
         {
-          pointers: [{ name: "L", at: 7 }, { name: "R", at: 7 }],
+          pointers: [{ name: "left", at: 6 }, { name: "right", at: 6 }],
+          range: [6, 6],
+          marked: [0, 1, 2, 3, 4, 5],
+          action: '"b" last seen at 4 ≥ start → start = 6',
+          caption: 'right = 6 is "b" again (last at 4) → start leaps to 6. The window collapses to one char.',
+        },
+        {
+          pointers: [{ name: "left", at: 7 }, { name: "right", at: 7 }],
           range: [7, 7],
           marked: [0, 1, 2, 3, 4, 5, 6],
-          action: '"b" repeats → shrink',
-          caption: "The trailing run of b's collapses the window. Final best = 3.",
+          action: '"b" last seen at 6 ≥ start → start = 7',
+          caption: "The trailing run of b's keeps width at 1. Nothing beat the early \"abc\". Final best = 3.",
+        },
+      ],
+    },
+  ],
+
+  "find-all-anagrams-in-a-string": [
+    {
+      kind: "prose",
+      body:
+        "An anagram of `p` is just a window of `s` with the same letter counts as `p`. The most direct approach " +
+        "slides a length-`p.length` window across `s` and, at each position, recomputes the window's counts from " +
+        "scratch and compares them to `p`'s.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — recount each window from scratch: O(n · k) with a fresh count per window.",
+      source:
+        "function findAnagrams(s, p) {\n" +
+        "  const result = [];\n" +
+        "  // Letter counts that p requires.\n" +
+        "  const need = {};\n" +
+        "  for (const c of p) need[c] = (need[c] ?? 0) + 1;\n" +
+        "  // Try every window of width p.length.\n" +
+        "  for (let i = 0; i + p.length <= s.length; i++) {\n" +
+        "    // Recount this whole window, then compare to need.\n" +
+        "    const have = {};\n" +
+        "    for (let j = i; j < i + p.length; j++) have[s[j]] = (have[s[j]] ?? 0) + 1;\n" +
+        "    const isAnagram = Object.keys(need).length === Object.keys(have).length &&\n" +
+        "      Object.keys(need).every((c) => need[c] === have[c]);\n" +
+        "    if (isAnagram) result.push(i);\n" +
+        "  }\n" +
+        "  return result;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "Rebuilding the window's counts every step throws away work — consecutive windows differ by only **one " +
+        "letter in and one letter out**. Can we do better?\n\n" +
+        "Keep a single `have` count and update it incrementally: as the window advances, increment the entering " +
+        "letter and decrement the leaving one. That's a fixed-size " +
+        "[sliding window](/learn/guide/algos/topic/sliding-window) of width `p.length`.\n\n" +
+        "Comparing all 26 counts each step would still cost O(26) per window. So track one number, `matches` — how " +
+        "many of the 26 letter-counts currently *agree* with `p`. Each letter that enters or leaves changes only " +
+        "its own slot, so `matches` is nudged up or down in O(1). The window is an anagram exactly when " +
+        "`matches === 26`.\n\n" +
+        "*(In the walkthrough `right` is the entering index and `left = right - p.length` is the leaving index — " +
+        "the same two edges the stored solution uses.)*\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: 's = "cbaebabacd", p = "abc" — width-3 window, need {a:1, b:1, c:1}',
+      lane: ["c", "b", "a", "e", "b", "a", "b", "a", "c", "d"],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "left", at: 0 }, { name: "right", at: 2 }],
+          range: [0, 2],
+          action: "have {c:1,b:1,a:1} → matches = 26 ✓ push 0",
+          caption: 'First full window "cba" — every count agrees with "abc". Record start index 0.',
+        },
+        {
+          pointers: [{ name: "left", at: 1 }, { name: "right", at: 3 }],
+          range: [1, 3],
+          marked: [0],
+          action: '"e" enters, "c" leaves → matches < 26',
+          caption: 'Window "bae" — the stray "e" (and missing "c") break the match. Not an anagram.',
+        },
+        {
+          pointers: [{ name: "left", at: 4 }, { name: "right", at: 6 }],
+          range: [4, 6],
+          marked: [0, 1, 2, 3],
+          action: 'have {b:2,a:1} → matches < 26',
+          caption: 'Window "bab" has two b\'s and no c — counts disagree, skip.',
+        },
+        {
+          pointers: [{ name: "left", at: 6 }, { name: "right", at: 8 }],
+          range: [6, 8],
+          marked: [0, 1, 2, 3, 4, 5],
+          action: "have {b:1,a:1,c:1} → matches = 26 ✓ push 6",
+          caption: 'Window "bac" matches again — record start index 6.',
+        },
+        {
+          pointers: [{ name: "left", at: 7 }, { name: "right", at: 9 }],
+          range: [7, 9],
+          marked: [0, 1, 2, 3, 4, 5, 6],
+          action: '"d" enters → matches < 26',
+          caption: 'Last window "acd" — "d" isn\'t in "abc". Result: [0, 6].',
+        },
+      ],
+    },
+  ],
+
+  "longest-repeating-character-replacement": [
+    {
+      kind: "prose",
+      body:
+        "We may rewrite up to `k` characters; we want the longest run we can turn into a single repeated letter. " +
+        "The most direct approach tries every substring and asks whether it can be made uniform: keep the most " +
+        "common letter in it and replace the rest, which is feasible when the count of *other* letters is `<= k`.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — test every substring's replaceability: O(n³).",
+      source:
+        "function characterReplacement(s, k) {\n" +
+        "  let best = 0;\n" +
+        "  // Try every substring s[i..j].\n" +
+        "  for (let i = 0; i < s.length; i++) {\n" +
+        "    for (let j = i; j < s.length; j++) {\n" +
+        "      // Count letters in this substring to find the most frequent one.\n" +
+        "      const count = {};\n" +
+        "      let maxFreq = 0;\n" +
+        "      for (let m = i; m <= j; m++) {\n" +
+        "        count[s[m]] = (count[s[m]] ?? 0) + 1;\n" +
+        "        maxFreq = Math.max(maxFreq, count[s[m]]);\n" +
+        "      }\n" +
+        "      const len = j - i + 1;\n" +
+        "      // Replaceable when the non-dominant letters fit within the k budget.\n" +
+        "      if (len - maxFreq <= k) best = Math.max(best, len);\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return best;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "Re-counting every substring is O(n³). Can we do better?\n\n" +
+        "The replaceability test for a window is `windowLength - maxFreq <= k`, where `maxFreq` is the count of " +
+        "its most frequent letter. That's a property of a contiguous run — so use a " +
+        "[sliding window](/learn/guide/algos/topic/sliding-window) and maintain the letter counts incrementally " +
+        "as the edges move, instead of rebuilding them.\n\n" +
+        "Grow `right` each step. When `windowLength - maxFreq > k` the window is too costly to make uniform, so " +
+        "advance `left` by **one** — and that's the elegant part: we never need to shrink more than one step, " +
+        "because we only care about the *largest* window ever seen. The width is monotonically non-decreasing, so " +
+        "the final `right - left + 1` is the answer. (We let `maxFreq` go stale when `left` moves; a bigger answer " +
+        "would require an even bigger `maxFreq`, so this never overcounts.)\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: 's = "AABABBA", k = 1 — grow right; left nudges forward when cost > k',
+      lane: ["A", "A", "B", "A", "B", "B", "A"],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "left", at: 0 }, { name: "right", at: 2 }],
+          range: [0, 2],
+          action: "len 3, maxFreq 2 (A) → 3−2 = 1 ≤ 1 ✓ best = 3",
+          caption: '"AAB": replace the single B → all A. Cost 1 fits the budget.',
+        },
+        {
+          pointers: [{ name: "left", at: 0 }, { name: "right", at: 3 }],
+          range: [0, 3],
+          action: "len 4, maxFreq 3 (A) → 4−3 = 1 ≤ 1 ✓ best = 4",
+          caption: '"AABA": three A\'s, one B to replace. Still within k = 1. best grows to 4.',
+        },
+        {
+          pointers: [{ name: "left", at: 0 }, { name: "right", at: 4 }],
+          range: [0, 4],
+          action: "len 5, maxFreq 3 → 5−3 = 2 > 1 ✗ left++",
+          caption: '"AABAB": now two B\'s must change — over budget. Slide left one step.',
+        },
+        {
+          pointers: [{ name: "left", at: 1 }, { name: "right", at: 4 }],
+          range: [1, 4],
+          marked: [0],
+          action: "len 4 ≤ best, keep scanning",
+          caption: "Window width holds at 4 (left moved once, right once). best stays 4.",
+        },
+        {
+          pointers: [{ name: "left", at: 3 }, { name: "right", at: 6 }],
+          range: [3, 6],
+          marked: [0, 1, 2],
+          action: "len 4, maxFreq stays 3 → 4−3 = 1 ≤ 1 ✓",
+          caption: 'left kept pace with right, holding width 4 (maxFreq is the stale 3, which never overcounts). Final best = 4.',
         },
       ],
     },
@@ -1546,6 +1749,97 @@ export const PROBLEM_EXTRAS: Record<string, { complexity?: Section[]; testCases?
         expected: 4,
         note: "Overlapping repeats: each of the two 4s pairs with one 2 on the left and two 8s on the right → 2 + 2.",
       },
+    ],
+  },
+
+  "longest-substring-without-repeating-characters": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- The loop visits each index `i` once, left to right.\n" +
+          "- Per step the work is O(1): one map lookup, one map write, and a constant comparison — `start` only " +
+          "ever moves forward, so it isn't a nested scan.\n\n" +
+          "The whole pass is **O(n)**, where `n` is the length of `s` — versus the O(n³) of the brute force.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(min(n, σ)). Here's why:\n\n" +
+          "- The `lastSeen` map holds at most one entry per *distinct* character.\n" +
+          "- That can't exceed the alphabet size σ, nor the string length n.\n\n" +
+          "So the extra space is **O(min(n, σ))** — bounded by the alphabet for a fixed character set.",
+      },
+    ],
+    testCases: [
+      { args: [""], expected: 0, note: "Empty string — the loop never runs." },
+      { args: ["z"], expected: 1, note: "Single character — window of width 1." },
+      { args: ["bbbb"], expected: 1, note: "All identical — start keeps jumping, width stays 1." },
+      { args: ["abcde"], expected: 5, note: "All distinct — the whole string is the window." },
+      { args: ["abccba"], expected: 3, note: "start must not rewind: after the \"cc\" repeat the leading \"ab\" sits outside the window." },
+      { args: ["tmmzuxt"], expected: 5, note: "Answer \"mzuxt\" is in the middle; the early \"t\" is correctly skipped." },
+    ],
+  },
+
+  "find-all-anagrams-in-a-string": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- Building `p`'s counts is O(p.length), and the one-time comparison of the 26 slots is O(1).\n" +
+          "- The window then slides across `s` once; each step adds one letter and removes one, updating `matches` " +
+          "in O(1) rather than re-scanning all 26 counts.\n\n" +
+          "So the scan is **O(n)** where `n = s.length` (the `p` pre-pass is dominated by it).",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1). Here's why:\n\n" +
+          "- `need` and `have` are fixed 26-slot arrays regardless of input size.\n" +
+          "- The `matches` counter is a single integer.\n\n" +
+          "The extra space is **O(1)** for a fixed alphabet. The output array isn't counted; it can hold up to " +
+          "O(n) indices in the worst case.",
+      },
+    ],
+    testCases: [
+      { args: ["xy", "xyz"], expected: [], note: "Pattern longer than the text — early return, no windows." },
+      { args: ["az", "za"], expected: [0], note: "Single window, reordered letters — an anagram at index 0." },
+      { args: ["abcabc", "abc"], expected: [0, 1, 2, 3], note: "A periodic string — every length-3 window is an anagram." },
+      { args: ["hello", "ll"], expected: [2], note: "Repeated letters in the pattern — only the \"ll\" window matches counts." },
+      { args: ["pqrs", "tu"], expected: [], note: "Pattern letters never appear — no match anywhere." },
+      { args: ["abcba", "abc"], expected: [0, 2], note: "Two anagrams (\"abc\" and \"cba\") around a non-matching middle window." },
+    ],
+  },
+
+  "longest-repeating-character-replacement": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- `right` advances across the string once; `left` only ever moves forward and at most as far as `right`.\n" +
+          "- Each step does O(1) work — one count update, a `maxFreq` comparison, and at most one left eviction " +
+          "(the alphabet is a fixed 26 letters, so `maxFreq` is read directly, never re-scanned).\n\n" +
+          "Both pointers traverse the string at most once, so the whole pass is **O(n)** where `n = s.length`.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1). Here's why:\n\n" +
+          "- The `count` array has a fixed 26 slots, one per uppercase letter.\n" +
+          "- A handful of integers (`left`, `maxFreq`, `best`) round it out.\n\n" +
+          "Independent of input size, the extra space is **O(1)**.",
+      },
+    ],
+    testCases: [
+      { args: ["B", 0], expected: 1, note: "Single character — already uniform." },
+      { args: ["CCCC", 0], expected: 4, note: "All same with no budget — the whole string." },
+      { args: ["XYZW", 0], expected: 1, note: "All distinct, no replacements — best run is a single letter." },
+      { args: ["XYXY", 2], expected: 4, note: "Budget covers the two minority letters — whole string becomes uniform." },
+      { args: ["AABBA", 1], expected: 3, note: "k = 1 can't unify all five; the best window is width 3." },
+      { args: ["AAABBB", 2], expected: 5, note: "k = 2 stretches across the boundary for a width-5 window." },
     ],
   },
 
