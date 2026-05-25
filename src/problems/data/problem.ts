@@ -55,7 +55,8 @@ export type TopicTag =
   | "union-find"
   | "queue"
   | "interval"
-  | "prefix-sum";
+  | "prefix-sum"
+  | "design";
 
 /** One test case, generic over the solution's argument tuple and its return type. */
 export type TestCase<Args extends unknown[], Result> = {

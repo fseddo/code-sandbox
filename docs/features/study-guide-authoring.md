@@ -95,7 +95,7 @@ Keep paragraphs short; lead a labeled paragraph with `**Label:**`.
 
 **Pick the primitive from what the idea needs to show — don't default to a 1-D `lane`.** Before authoring a diagram, name the *thing a reader must see* to get the insight, then ask whether a single lane can actually show it. The lane draws **one** sequence with pointers/marks moving over it; if the mechanic lives somewhere a lane can't reach, the lane will render but quietly hide the very thing it's supposed to teach — and you can't catch that from the data alone (you won't see the rendered page). So reason about it up front. A lane **cannot** show:
 
-- **a second array / a comparison that spans two structures** (a partition straddling two sorted arrays, a merge) — the cross-structure decision would be stuck in caption prose. Use `partitionWalkthrough` (§8c) or two stacked Sections.
+- **a second array / a comparison that spans two structures** (a partition straddling two sorted arrays, a merge) — the cross-structure decision would be stuck in caption prose. Use `partitionWalkthrough` (§8c) for a cut across sorted arrays, `mergeWalkthrough` (§8e) for a k-way merge (the heap/two-pointer kind), or two stacked Sections.
 - **a 2-D board** (§8a · `gridWalkthrough`), **linked-list `next` pointers / rewires** (§8b · `listWalkthrough`).
 
 The available primitives are listed in §8a–§8d. If none fits, author honest prose + a static illustration and say so (§13) — a correct prose page beats a lane that animates the wrong thing. When you reach for the default lane, it should be because the idea genuinely *is* one sequence being scanned, not because it was the first kind you remembered.
@@ -163,6 +163,22 @@ A data type that gets a custom diagram should render **the same way wherever tha
 When you add a primitive: build a static, server-rendered render (the non-interactive sibling of the walkthrough diagram), then teach `ArgValues`/`ResultValue` to dispatch to it on the matching `IoShape`. **Don't** leave a new render usable only inside walkthroughs while examples fall back to a raw `JSON.stringify`.
 
 **Per-problem authors do nothing here** — set the `io` shapes correctly (you already must, for the judge) and the right render appears in the Example and Test-case cells automatically.
+
+### 8e. K-way merge problems — use `mergeWalkthrough`, not a 1-D lane
+
+For problems whose insight is **merging `k` sorted sequences by repeatedly taking the smallest current head** (merge k sorted lists/arrays, and the heap "frontier" pattern generally) author a **`mergeWalkthrough`** Section ([MergeWalkthroughDiagram](../../src/learn/article/sections/MergeWalkthroughDiagram.tsx)). A 1-D lane can draw only one sequence, so the `k` lists get flattened into one row and disambiguated with `ᵃ/ᵇ/ᶜ` superscripts — which makes the reader reverse-engineer which list each value came from, hiding the very mechanic (one frontier per list, the min across them) the diagram should teach. The merge renderer stacks the lists as colored rows, each with a single **frontier** cell (consumed cells dimmed/struck), **derives the heap** from those frontier cells (so the heap strip can't drift from the rows), and grows a **result** lane. Server-rendered, no client JS; shares the `WalkthroughDiagram` palette (each list keeps one color across frames, shared by its row label, frontier cell, and heap pill).
+
+`{ kind: "mergeWalkthrough", lists, frames }`:
+
+- **`lists`** — the `k` sorted inputs as `{ label, values }[]`. `label` is the row tag at left (`"list a"`); the row's color is assigned by its order.
+- **`frames`** — **4–6** curated steps. Each:
+  - **`cursors: (number | null)[]`** — one entry per list: the index of its current frontier head, or **`null`** once that list is drained. The renderer dims/strikes every cell before the cursor and highlights the cursor cell as that list's heap candidate.
+  - **`result: (string | number)[]`** — the merged output *so far*, drawn as a result lane under the lists (give the final "drain" frame the complete output).
+  - **`popped?: number`** — the list index whose frontier was the min this step; its frontier cell and heap pill are drawn as the chosen minimum.
+  - **`action?`** / **`caption?`** — same as §8 (terse decision callout beside the lists — e.g. `"advance a → 4; pop min 1 (list b)"` — plus the plain-English why under it).
+- **Don't restate the heap contents as if you computed them** — the renderer derives the heap strip and the chosen min from `cursors` + `popped`; use `action`/`caption` for the *decision* (which list's head won, which list advances).
+- **Same "teach the whole mechanic" rule** as §8: the seed step, a couple of pop-and-advance steps (including one where a *different* list wins), and a final drain frame showing the completed result.
+- **Bridge if the stored solution differs.** Merge-k's canonical teaching model is the heap; if the stored `solutions[]` uses divide-and-conquer pairwise merging instead, keep the §4 model bridge prose — the diagram traces the heap, the bridge explains the equivalent route the code takes.
 
 ## 9. Code & comments
 

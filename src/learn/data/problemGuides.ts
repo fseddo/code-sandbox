@@ -2468,6 +2468,327 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
     },
   ],
 
+  // ── Heaps & priority queues chapter ──
+
+  "merge-k-sorted-lists": [
+    {
+      kind: "prose",
+      body:
+        "The simplest correct approach ignores that the lists are sorted at all: pour every node into one array, " +
+        "sort it, and rebuild a single list from the sorted values.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — collect all N nodes, sort, rebuild: O(N log N).",
+      source:
+        "function mergeKLists(lists) {\n" +
+        "  const values = [];\n" +
+        "  // Walk every list and dump all values into one array.\n" +
+        "  for (const head of lists) {\n" +
+        "    let node = head;\n" +
+        "    while (node) { values.push(node.val); node = node.next; }\n" +
+        "  }\n" +
+        "  values.sort((a, b) => a - b);          // a full sort over all N values\n" +
+        "  // Rebuild a single sorted list.\n" +
+        "  const dummy = new ListNode(0);\n" +
+        "  let tail = dummy;\n" +
+        "  for (const v of values) { tail.next = new ListNode(v); tail = tail.next; }\n" +
+        "  return dummy.next;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(N log N) over all `N` nodes, and it throws away the fact that each list is *already sorted* — " +
+        "we re-sort values that arrived in order. Can we do better?\n\n" +
+        "The key observation: at every step the next node of the answer is the **smallest among the current heads** " +
+        "of the `k` lists. Finding the minimum of `k` things, repeatedly, while one of them gets replaced each " +
+        "time, is exactly what a **min-heap** does in O(log k). Seed a heap with the head of each list; pop the " +
+        "global minimum, append it to the answer, and push that node's successor. Each of the `N` nodes is pushed " +
+        "and popped once, at O(log k) each.\n\n" +
+        "**Bridge to the stored solution:** the Optimization code below reaches the same O(N log k) bound by a " +
+        "*divide-and-conquer* route instead — it pairs the lists up and merges them in `log k` rounds (the " +
+        "classic two-pointer [merge of two lists](/learn/guide/algos/topic/linked-lists)), which avoids " +
+        "implementing a heap. The heap is the canonical Heaps-chapter framing; the pairwise merge is an " +
+        "equivalent, heap-free way to get the same complexity. The walkthrough below traces the **heap** model.\n\n" +
+        "Walking the heap through `[[1,4,5], [1,3,4], [2,6]]`:",
+    },
+    {
+      kind: "mergeWalkthrough",
+      heading: "each list keeps one frontier head; the heap holds those heads — pop the min, advance that list",
+      lists: [
+        { label: "list a", values: [1, 4, 5] },
+        { label: "list b", values: [1, 3, 4] },
+        { label: "list c", values: [2, 6] },
+      ],
+      frames: [
+        {
+          cursors: [0, 0, 0],
+          result: [],
+          popped: 0,
+          action: "pop min 1 (list a)",
+          caption: "Seed the heap with each list's head: 1 (a), 1 (b), 2 (c). The min is the 1 from list a — pop it.",
+        },
+        {
+          cursors: [1, 0, 0],
+          result: [1],
+          popped: 1,
+          action: "advance a → 4; pop min 1 (list b)",
+          caption: "List a advances to 4, which joins the heap. The new min is the 1 from list b — pop it. Result: 1, 1.",
+        },
+        {
+          cursors: [1, 1, 0],
+          result: [1, 1],
+          popped: 2,
+          action: "advance b → 3; pop min 2 (list c)",
+          caption: "List b advances to 3. The heap is now {4, 3, 2}; the min is 2 from list c — pop it. Result: 1, 1, 2.",
+        },
+        {
+          cursors: [1, 1, 1],
+          result: [1, 1, 2],
+          popped: 1,
+          action: "advance c → 6; pop min 3 (list b)",
+          caption: "List c advances to 6. The heap {4, 3, 6} has min 3 from list b — pop it. Result: 1, 1, 2, 3.",
+        },
+        {
+          cursors: [null, null, null],
+          result: [1, 1, 2, 3, 4, 4, 5, 6],
+          action: "drain remaining → 4, 4, 5, 6",
+          caption: "Keep popping the min and advancing its list: 4 (b), 4 (a), 5 (a), 6 (c). All lists drained — final: 1, 1, 2, 3, 4, 4, 5, 6.",
+        },
+      ],
+    },
+  ],
+
+  "k-most-frequent-strings": [
+    {
+      kind: "prose",
+      body:
+        "The direct approach counts every string, turns the counts into a list, fully sorts that list by the " +
+        "required order (frequency descending, then lexicographic ascending), and takes the first `k`.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — count, then sort all d distinct strings: O(n + d log d).",
+      source:
+        "function kMostFrequent(strs, k) {\n" +
+        "  // Tally each string's frequency.\n" +
+        "  const count = new Map();\n" +
+        "  for (const s of strs) count.set(s, (count.get(s) || 0) + 1);\n" +
+        "  // Sort every distinct string by frequency desc, breaking ties lexicographically asc.\n" +
+        "  const distinct = [...count.keys()];\n" +
+        "  distinct.sort((a, b) =>\n" +
+        "    count.get(b) - count.get(a) || (a < b ? -1 : 1)\n" +
+        "  );\n" +
+        "  return distinct.slice(0, k);            // the top k after a full sort\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "Counting is O(n), but the full sort costs O(d log d) over all `d` distinct strings — and we only want the " +
+        "top `k`. When `k ≪ d`, sorting everything is wasted work. Can we do better?\n\n" +
+        "The key observation: to keep the `k` *most* frequent, hold a **min-heap of size `k`** ordered by *how " +
+        "weak* a candidate is — lowest frequency at the top, and on a frequency tie the lexicographically *larger* " +
+        "string on top (because we want to keep the smaller one). Push each distinct string; whenever the heap " +
+        "exceeds `k`, pop the weakest. Anything weaker than the current root never displaces it, so each push is " +
+        "O(log k). This is the bounded top-k heap from the [Heaps intro](/learn/guide/algos/topic/heaps).\n\n" +
+        "The heap drains *weakest-first*, so reverse the drained order to present strongest-first.\n\n" +
+        "Walking it through `strs = [go, coding, byte, byte, go, interview, go]`, `k = 2` (counts: `go`=3, " +
+        "`byte`=2, `coding`=1, `interview`=1):",
+    },
+    {
+      kind: "walkthrough",
+      heading: "size-2 min-heap keyed by weakness (top = weakest: lowest freq, then larger string)",
+      lane: ["go·3", "coding·1", "byte·2", "interview·1"],
+      frames: [
+        {
+          pointers: [{ name: "push", at: 0 }],
+          range: [0, 0],
+          action: "push go·3 → heap {go·3}",
+          caption: "First distinct string enters. Heap under size k = 2, no eviction.",
+        },
+        {
+          pointers: [{ name: "push", at: 1 }],
+          range: [0, 1],
+          action: "push coding·1 → {coding·1, go·3}, size 2 — ok",
+          caption: "coding (count 1) joins. Heap is exactly size 2; weakest (coding·1) is at the top.",
+        },
+        {
+          pointers: [{ name: "push", at: 2 }],
+          marked: [1],
+          action: "push byte·2 → size 3 > 2 → pop coding·1",
+          caption: "byte (count 2) enters and overflows the heap; evict the weakest, coding·1. Heap {byte·2, go·3}.",
+        },
+        {
+          pointers: [{ name: "push", at: 3 }],
+          marked: [1, 3],
+          action: "push interview·1 → size 3 > 2 → pop interview·1",
+          caption: "interview (count 1) is weaker than the root byte·2, so it's pushed and immediately evicted.",
+        },
+        {
+          marked: [1, 3],
+          action: "drain {byte·2, go·3} weakest-first → [byte, go], reverse → [go, byte]",
+          caption: "Two strings remain. Draining gives byte then go; reverse for strongest-first. Answer: [go, byte].",
+        },
+      ],
+    },
+  ],
+
+  "median-of-an-integer-stream": [
+    {
+      kind: "prose",
+      body:
+        "The naïve design keeps every number in a list. `addNum` appends in O(1), but `findMedian` then has to " +
+        "sort the whole history and read the middle — O(n log n) on every query.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — store all, sort on each query: O(n log n) per findMedian.",
+      source:
+        "function runMedianOps(operations, values) {\n" +
+        "  const nums = [];\n" +
+        "  const result = [];\n" +
+        "  for (let i = 0; i < operations.length; i++) {\n" +
+        "    if (operations[i] === 'addNum') {\n" +
+        "      nums.push(values[i][0]);            // O(1) add\n" +
+        "      result.push(null);\n" +
+        "    } else {                              // findMedian: sort, read the middle\n" +
+        "      const sorted = [...nums].sort((a, b) => a - b);\n" +
+        "      const n = sorted.length;\n" +
+        "      const mid = n >> 1;\n" +
+        "      result.push(n % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2);\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return result;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "Re-sorting the entire history on every `findMedian` is the waste — most of the data hasn't changed. Can " +
+        "we do better?\n\n" +
+        "The key observation: the median only depends on the *boundary* between the smaller half and the larger " +
+        "half. Keep two heaps — a **max-heap `low`** for the smaller half (its top is the largest small value) and " +
+        "a **min-heap `high`** for the larger half (its top is the smallest large value) — balanced so `low` has " +
+        "the same size as `high` or exactly one more. This is the two-heaps technique from the " +
+        "[Heaps intro](/learn/guide/algos/topic/heaps).\n\n" +
+        "Each `addNum` pushes into `low`, hands `low`'s top to `high` (keeping every small value ≤ every large " +
+        "value), then rebalances if `high` outgrew `low` — a constant number of O(log n) heap ops. `findMedian` " +
+        "reads the tops in O(1): `low`'s top when the count is odd, else the average of both tops.\n\n" +
+        "Walking through the adds `5, 2, 8, 1` with a `findMedian` after each:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "two heaps — low (max-heap, small half) | high (min-heap, large half)",
+      lane: ["+5", "+2", "+8", "+1"],
+      frames: [
+        {
+          pointers: [{ name: "add", at: 0 }],
+          range: [0, 0],
+          action: "add 5 → low{5} | high{} → median = 5",
+          caption: "First value lands in low. Count is odd (1), so the median is low's top: 5.",
+        },
+        {
+          pointers: [{ name: "add", at: 1 }],
+          range: [0, 1],
+          action: "add 2 → low{2} | high{5} → median = (2+5)/2 = 3.5",
+          caption: "2 enters low, then low's top (5) moves to high. Even count: average the tops, 3.5.",
+        },
+        {
+          pointers: [{ name: "add", at: 2 }],
+          range: [0, 2],
+          action: "add 8 → low{2,5} | high{8} → median = 5",
+          caption: "8 enters low then high (8); high outgrew low, so high's top moves back. Odd count → low top 5.",
+        },
+        {
+          pointers: [{ name: "add", at: 3 }],
+          range: [0, 3],
+          action: "add 1 → low{1,2} | high{5,8} → median = (2+5)/2 = 3.5",
+          caption: "1 settles into the small half; the halves end balanced at 2 each. Even count → (2+5)/2 = 3.5.",
+        },
+        {
+          range: [0, 3],
+          action: "sorted view {1,2 | 5,8} → boundary tops 2 and 5",
+          caption: "The heaps partition the stream around the median; only the two boundary tops ever matter.",
+        },
+      ],
+    },
+  ],
+
+  "sort-a-k-sorted-array": [
+    {
+      kind: "prose",
+      body:
+        "The obvious approach ignores the `k` guarantee entirely and just runs a general comparison sort over the " +
+        "whole array.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — a full sort, ignoring the k bound: O(n log n).",
+      source:
+        "function sortKSortedArray(nums, k) {\n" +
+        "  // A general sort works, but does O(n log n) regardless of how small k is.\n" +
+        "  return [...nums].sort((a, b) => a - b);\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "A full sort is O(n log n) and never uses the promise that no element is more than `k` slots from home. " +
+        "Can we do better?\n\n" +
+        "The key observation: because every element is within `k` positions of its sorted spot, the **smallest " +
+        "unplaced element is always among the next `k + 1` elements**. So keep a **min-heap of size `k + 1`**: " +
+        "seed it with the first `k + 1` elements, then for each remaining element pop the heap minimum (the next " +
+        "sorted value) and push the newcomer. Drain the heap at the end. This is the bounded-heap idea from the " +
+        "[Heaps intro](/learn/guide/algos/topic/heaps), sized to the window the guarantee gives us.\n\n" +
+        "Each of the `n` elements does one O(log k) push and one O(log k) pop — O(n log k), beating the full sort " +
+        "when `k ≪ n`.\n\n" +
+        "Walking through `nums = [4, 2, 1, 3, 6, 5]`, `k = 2` (heap of size `k + 1 = 3`):",
+    },
+    {
+      kind: "walkthrough",
+      heading: "nums = [4, 2, 1, 3, 6, 5], k = 2 — min-heap of size k+1 = 3",
+      lane: [4, 2, 1, 3, 6, 5],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "in", at: 2 }],
+          range: [0, 2],
+          action: "seed heap {4, 2, 1} → root 1",
+          caption: "Push the first k+1 = 3 elements. The global minimum (1) must be among them — root is 1.",
+        },
+        {
+          pointers: [{ name: "in", at: 3 }],
+          marked: [0, 1, 2],
+          action: "pop 1, push 3 → {4, 2, 3} → output [1]",
+          caption: "Pop the min (1) as the first sorted value, then push the next element, 3. Output: 1.",
+        },
+        {
+          pointers: [{ name: "in", at: 4 }],
+          marked: [0, 1, 2, 3],
+          action: "pop 2, push 6 → {4, 6, 3} → output [1,2]",
+          caption: "Min is now 2 — pop and output it, push 6. Output: 1, 2.",
+        },
+        {
+          pointers: [{ name: "in", at: 5 }],
+          marked: [0, 1, 2, 3, 4],
+          action: "pop 3, push 5 → {4, 6, 5} → output [1,2,3]",
+          caption: "Pop 3, push the last element 5. Output: 1, 2, 3. No elements remain to scan.",
+        },
+        {
+          marked: [0, 1, 2, 3, 4, 5],
+          action: "drain {4, 5, 6} → output [1,2,3,4,5,6]",
+          caption: "Drain the heap in order: 4, 5, 6. Final sorted array: [1, 2, 3, 4, 5, 6].",
+        },
+      ],
+    },
+  ],
+
   // (next-larger-element et al. above are the Stacks chapter)
 };
 
@@ -3480,6 +3801,122 @@ export const PROBLEM_EXTRAS: Record<string, { complexity?: Section[]; testCases?
       { args: [["push", "push", "pop", "push", "peek", "pop", "pop", "empty"], [[1], [2], [], [3], [], [], [], []]], expected: [null, null, 1, null, 2, 2, 3, true], note: "A push (3) after a transfer lands on inStack, preserving FIFO order." },
       { args: [["push", "push", "push", "pop", "pop", "pop", "empty"], [[1], [2], [3], [], [], [], []]], expected: [null, null, null, 1, 2, 3, true], note: "One transfer serves three pops in order 1, 2, 3." },
       { args: [["push", "push", "pop", "pop"], [[8], [9], [], []]], expected: [null, null, 8, 9], note: "Two pushes then two pops drain oldest-first: 8 before 9." },
+    ],
+  },
+
+  "merge-k-sorted-lists": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(N log k) for `N` total nodes across `k` lists. Here's why:\n\n" +
+          "- The heap holds at most `k` nodes (one per list), so each push and pop is O(log k).\n" +
+          "- Every one of the `N` nodes is pushed once and popped once.\n\n" +
+          "So the merge does N × O(log k) work — overall **O(N log k)**, versus O(N log N) for collecting and " +
+          "re-sorting everything. (The stored divide-and-conquer solution reaches the same bound: `log k` rounds, " +
+          "each touching every node once.)",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(k). Here's why:\n\n" +
+          "- The heap never holds more than `k` nodes at a time — one frontier node per list.\n\n" +
+          "The output list reuses the input nodes rather than allocating new ones, so beyond the heap the extra " +
+          "space is **O(k)** (not counting the output).",
+      },
+    ],
+    testCases: [
+      { args: [[]], expected: [], note: "No lists at all — the heap is never seeded, result is empty." },
+      { args: [[[]]], expected: [], note: "A single empty list — nothing to merge, return empty." },
+      { args: [[[7, 8, 9]]], expected: [7, 8, 9], note: "One non-empty list passes straight through, already sorted." },
+      { args: [[[2], [], [1, 3]]], expected: [1, 2, 3], note: "An empty list mixed in is skipped; the rest interleave." },
+      { args: [[[4, 4], [4, 4]]], expected: [4, 4, 4, 4], note: "All-equal values across lists — duplicates are kept, order stable." },
+      { args: [[[-2, 1], [-1, 3]]], expected: [-2, -1, 1, 3], note: "Negatives interleave correctly: -2, -1, 1, 3." },
+    ],
+  },
+
+  "k-most-frequent-strings": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n + d log k) for `n` strings and `d` distinct values. Here's why:\n\n" +
+          "- Counting every string into the map is O(n).\n" +
+          "- Each of the `d` distinct strings does one O(log k) push (and possibly one O(log k) pop) on a heap " +
+          "bounded at size `k`.\n\n" +
+          "So the heap phase is O(d log k), giving **O(n + d log k)** overall — cheaper than the O(n + d log d) " +
+          "full sort when `k ≪ d`.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(d). Here's why:\n\n" +
+          "- The frequency map holds one entry per distinct string — O(d).\n" +
+          "- The heap holds at most `k` strings — O(k), and `k ≤ d`.\n\n" +
+          "So the map dominates at **O(d)** (not counting the output array of `k` strings).",
+      },
+    ],
+    testCases: [
+      { args: [["a"], 1], expected: ["a"], note: "Single string, k = 1 — the only answer." },
+      { args: [["a", "b"], 2], expected: ["a", "b"], note: "k equals the distinct count: every string qualifies, ordered lexicographically on the all-1 tie." },
+      { args: [["c", "a", "b"], 2], expected: ["a", "b"], note: "All count 1 — the tie-break keeps the two lexicographically smallest." },
+      { args: [["p", "p", "q", "q", "r"], 2], expected: ["p", "q"], note: "p and q tie at count 2; both beat r (count 1), ordered p < q." },
+      { args: [["go", "go", "go", "byte", "byte", "run"], 2], expected: ["go", "byte"], note: "Distinct frequencies (3, 2, 1) — top two by frequency, no tie." },
+    ],
+  },
+
+  "median-of-an-integer-stream": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(log n) per `addNum`, O(1) per `findMedian`. Here's why:\n\n" +
+          "- `addNum` does a constant number of heap pushes/pops, each O(log n) on a heap of up to `n` elements.\n" +
+          "- `findMedian` only reads the one or two heap tops — O(1).\n\n" +
+          "So a sequence of `m` operations over a stream of `n` numbers runs in **O(m log n)** — versus O(n log n) " +
+          "*per query* for the sort-every-time brute force.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(n). Here's why:\n\n" +
+          "- Every number added lives in exactly one of the two heaps.\n\n" +
+          "So the two heaps together hold all `n` stream values — **O(n)**.",
+      },
+    ],
+    testCases: [
+      { args: [["addNum", "findMedian"], [[5], []]], expected: [null, 5], note: "Single value — the median of one element is itself." },
+      { args: [["addNum", "addNum", "findMedian"], [[1], [3], []]], expected: [null, null, 2], note: "Even count: median is the average of the two middles, (1+3)/2 = 2." },
+      { args: [["addNum", "addNum", "addNum", "addNum", "findMedian"], [[10], [20], [30], [40], []]], expected: [null, null, null, null, 25], note: "Fractional/averaged median of an even count: (20+30)/2 = 25." },
+      { args: [["addNum", "addNum", "findMedian"], [[-5], [5], []]], expected: [null, null, 0], note: "Negatives and positives — median straddles zero: (-5+5)/2 = 0." },
+      { args: [["addNum", "findMedian", "addNum", "findMedian"], [[4], [], [2], []]], expected: [null, 4, null, 3], note: "Interleaved queries: median 4 (one element), then (2+4)/2 = 3." },
+    ],
+  },
+
+  "sort-a-k-sorted-array": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n log k). Here's why:\n\n" +
+          "- The heap is bounded at `k + 1` elements, so every push and pop is O(log k).\n" +
+          "- Each of the `n` elements is pushed once and popped once.\n\n" +
+          "So the work is n × O(log k) — overall **O(n log k)**, beating the O(n log n) full sort when `k ≪ n`.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(k). Here's why:\n\n" +
+          "- The heap holds at most `k + 1` elements at any moment.\n\n" +
+          "So the extra space is **O(k)** (not counting the output array).",
+      },
+    ],
+    testCases: [
+      { args: [[1], 0], expected: [1], note: "Single element, k = 0 — already in place." },
+      { args: [[9, 8], 1], expected: [8, 9], note: "One adjacent swap away from sorted; a size-2 heap fixes it." },
+      { args: [[3, 3, 3], 1], expected: [3, 3, 3], note: "All equal — order is stable and unchanged." },
+      { args: [[0, -1, -2], 2], expected: [-2, -1, 0], note: "Negatives, fully reversed within the k = 2 window." },
+      { args: [[2, 4, 1, 3, 5], 2], expected: [1, 2, 3, 4, 5], note: "Each value within two slots of home; a size-3 heap pops them in order." },
     ],
   },
 };

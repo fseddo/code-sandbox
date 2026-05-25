@@ -152,6 +152,15 @@
   ::selection {
     background: color-mix(in oklch, var(--primary) 30%, transparent);
   }
+  /* Geist Mono ships code ligatures (===, !==, ...) that overprint at our sizes — disable them wherever we render mono text. */
+  .font-mono,
+  code,
+  pre,
+  kbd,
+  samp {
+    font-variant-ligatures: none;
+    font-feature-settings: "liga" 0, "calt" 0;
+  }
   :focus-visible {
     outline: 2px solid var(--primary);
     outline-offset: 2px;

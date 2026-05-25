@@ -120,6 +120,9 @@ import { evalRPN } from "./evalRPN";
 import { removeAllAdjacentDuplicates } from "./removeAllAdjacentDuplicates";
 import { maxSlidingWindow } from "./maxSlidingWindow";
 import { implementQueueUsingStacks } from "./implementQueueUsingStacks";
+import { sortKSortedArray } from "./sortKSortedArray";
+import { kMostFrequentStrings } from "./kMostFrequentStrings";
+import { medianOfIntegerStream } from "./medianOfIntegerStream";
 
 /**
  * The problem bank, keyed by id. Authored modules keep their precise generics for
@@ -247,6 +250,9 @@ export const problems = {
   "remove-all-adjacent-duplicates-in-string": removeAllAdjacentDuplicates,
   "sliding-window-maximum": maxSlidingWindow,
   "implement-queue-using-stacks": implementQueueUsingStacks,
+  "sort-a-k-sorted-array": sortKSortedArray,
+  "k-most-frequent-strings": kMostFrequentStrings,
+  "median-of-an-integer-stream": medianOfIntegerStream,
 } satisfies Record<string, AnyProblem>;
 
 export type ProblemId = keyof typeof problems;

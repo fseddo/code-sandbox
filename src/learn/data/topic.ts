@@ -140,6 +140,27 @@ export type PartitionWalkthroughFrame = {
   caption?: string;
 };
 
+/** One sorted input row in a {@link Section} `mergeWalkthrough` — a labeled list the merge consumes head-first. */
+export type MergeList = { label: string; values: (string | number)[] };
+
+/**
+ * One step of a {@link Section} `mergeWalkthrough` — the state of a k-way merge. Each list keeps a single
+ * frontier cursor; the set of frontier values *is* the heap, so the renderer derives the heap strip (and
+ * which candidate is the minimum) from `cursors` + the section's `lists` — the picture can't drift from it.
+ */
+export type MergeWalkthroughFrame = {
+  /** Per-list frontier index (the unconsumed head), one entry per row; `null` once that list is drained. */
+  cursors: (number | null)[];
+  /** The merged output so far — the values popped in order, drawn as a result lane under the lists. */
+  result: (string | number)[];
+  /** Which list index was popped this step — its frontier cell and heap pill are drawn as the chosen min. */
+  popped?: number;
+  /** The decision for this step, shown in a dashed callout beside the lists (e.g. `"pop 1 (list a) → push 4"`). */
+  action?: string;
+  /** One-line narration shown under the frame. */
+  caption?: string;
+};
+
 /** Fields shared by every section, regardless of kind — the spine of the discriminated union. */
 type SectionBase = {
   /** Optional sub-heading rendered above the section body. */
@@ -205,6 +226,12 @@ export type Section = SectionBase &
         /** Draw a faint 0-based index under each cell. */
         showIndices?: boolean;
         frames: PartitionWalkthroughFrame[];
+      }
+    | {
+        kind: "mergeWalkthrough";
+        /** The k sorted lists being merged, stacked as rows; each gets a stable color shared with its heap pill. */
+        lists: MergeList[];
+        frames: MergeWalkthroughFrame[];
       }
     /** A bulleted aside in one of three tones — pitfalls (warn), corner cases (info), interview tips (tip). */
     | { kind: "callout"; tone: CalloutTone; items: string[] }
