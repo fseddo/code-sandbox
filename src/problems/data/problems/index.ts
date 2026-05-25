@@ -115,6 +115,11 @@ import { findAnagrams } from "./findAnagrams";
 import { characterReplacement } from "./characterReplacement";
 import { findPeakElement } from "./findPeakElement";
 import { cuttingWood } from "./cuttingWood";
+import { nextLargerToRight } from "./nextLargerToRight";
+import { evalRPN } from "./evalRPN";
+import { removeAllAdjacentDuplicates } from "./removeAllAdjacentDuplicates";
+import { maxSlidingWindow } from "./maxSlidingWindow";
+import { implementQueueUsingStacks } from "./implementQueueUsingStacks";
 
 /**
  * The problem bank, keyed by id. Authored modules keep their precise generics for
@@ -237,6 +242,11 @@ export const problems = {
   "longest-repeating-character-replacement": characterReplacement,
   "find-peak-element": findPeakElement,
   "cutting-wood": cuttingWood,
+  "next-larger-element": nextLargerToRight,
+  "evaluate-reverse-polish-notation": evalRPN,
+  "remove-all-adjacent-duplicates-in-string": removeAllAdjacentDuplicates,
+  "sliding-window-maximum": maxSlidingWindow,
+  "implement-queue-using-stacks": implementQueueUsingStacks,
 } satisfies Record<string, AnyProblem>;
 
 export type ProblemId = keyof typeof problems;

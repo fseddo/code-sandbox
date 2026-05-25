@@ -2027,6 +2027,448 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
       ],
     },
   ],
+
+  "valid-parentheses": [
+    {
+      kind: "prose",
+      body:
+        "The brittle first idea is to *strip matched pairs* repeatedly: scan for an adjacent `()`, `[]`, or `{}`, " +
+        "delete it, and start over, until the string stops shrinking. If you end at the empty string it was " +
+        "balanced. It works, but each deletion rescans the whole string.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — repeatedly delete adjacent matched pairs until stable: O(n²).",
+      source:
+        "function isValid(s) {\n" +
+        "  let prev;\n" +
+        "  // Keep deleting innermost pairs until the string stops changing.\n" +
+        "  do {\n" +
+        "    prev = s;\n" +
+        "    s = s.replace('()', '').replace('[]', '').replace('{}', '');\n" +
+        "  } while (s !== prev);\n" +
+        "  // Balanced iff everything cancelled away.\n" +
+        "  return s.length === 0;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "Each `replace` rescans the string and we may loop O(n) times, so this is O(n²) — and the string copying " +
+        "makes it worse. Can we do better?\n\n" +
+        "The key observation: a closer must always match the **most recently opened** still-unclosed bracket. " +
+        "“Most recent, handled first” is the definition of a **stack**. Push every opener; on a closer, the top " +
+        "of the stack *must* be its matching opener — pop it. A mismatch, or a closer with an empty stack, is an " +
+        "immediate `false`. After one pass the stack must be empty (no dangling openers).\n\n" +
+        "One left-to-right scan, O(1) work per character. Walking it through on a string that nests then breaks:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "s = \"([)]\" — a wrong-order mismatch",
+      lane: ["(", "[", ")", "]"],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "i", at: 0 }],
+          action: "'(' opener → push",
+          caption: "An opener: remember it. Stack (bottom→top): [ ( ].",
+        },
+        {
+          pointers: [{ name: "i", at: 1 }],
+          action: "'[' opener → push",
+          caption: "Another opener nests inside. Stack: [ (, [ ].",
+        },
+        {
+          pointers: [{ name: "i", at: 2 }],
+          action: "')' closer, top is '[' → mismatch, return false",
+          caption: "The closer ')' wants '(' on top, but the most-recent opener is '[' — the nesting order is broken.",
+        },
+        {
+          pointers: [{ name: "i", at: 2 }],
+          marked: [0, 1, 3],
+          action: "short-circuit → false",
+          caption: "We never reach index 3. The single mismatch is enough to reject the whole string.",
+        },
+      ],
+    },
+    {
+      kind: "callout",
+      tone: "info",
+      items: [
+        "A *contrasting* valid string like `\"{[]}\"` would push `{`, push `[`, then meet `]` (top `[` ✓, pop), then `}` (top `{` ✓, pop), ending with an empty stack — balanced.",
+      ],
+    },
+  ],
+
+  "next-larger-element": [
+    {
+      kind: "prose",
+      body:
+        "The obvious approach: for each index, walk *forward* until you hit a strictly larger value, and record " +
+        "it (or `-1` if you fall off the end).",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — scan the suffix for each element: O(n²).",
+      source:
+        "function nextLargerToRight(nums) {\n" +
+        "  const answer = new Array(nums.length).fill(-1);\n" +
+        "  for (let i = 0; i < nums.length; i++) {\n" +
+        "    // Look rightward for the first value that beats nums[i].\n" +
+        "    for (let j = i + 1; j < nums.length; j++) {\n" +
+        "      if (nums[j] > nums[i]) { answer[i] = nums[j]; break; }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return answer;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "On a sorted-descending input every suffix scan runs to the end, so this is O(n²). Can we do better?\n\n" +
+        "The key observation: when we reach a value, it can *immediately answer every earlier value it exceeds* — " +
+        "and those earlier values are exactly the ones still waiting, in decreasing order. Holding “elements " +
+        "still waiting for a larger neighbour, most-recent on top” is a **[monotonic stack](/learn/guide/algos/topic/stacks)**.\n\n" +
+        "Keep a stack of *indices* whose values decrease down the stack. For each new value, pop every waiting " +
+        "index whose value it beats — the current value is their next-larger — then push the current index. " +
+        "Anything still on the stack at the end never met anything larger and keeps `-1`.\n\n" +
+        "Walking it through (the stack below holds the *waiting* indices):",
+    },
+    {
+      kind: "walkthrough",
+      heading: "nums = [2, 1, 2, 4, 3]",
+      lane: [2, 1, 2, 4, 3],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "i", at: 1 }],
+          action: "1 < 2 → push 1",
+          caption: "Index 0 (value 2) is already waiting. Value 1 doesn't beat it, so it waits too. Stack: [0, 1].",
+        },
+        {
+          pointers: [{ name: "i", at: 2 }],
+          marked: [1],
+          action: "2 > 1 → pop 1, answer[1]=2; 2 == 2 → stop",
+          caption: "Value 2 beats the waiting 1 (answer[1]=2) but not the equal 2 at index 0 (strictly greater only). Push 2. Stack: [0, 2].",
+        },
+        {
+          pointers: [{ name: "i", at: 3 }],
+          marked: [0, 1, 2],
+          action: "4 > 2 and 4 > 2 → pop 2 and 0, answer[2]=4, answer[0]=4",
+          caption: "Value 4 clears both waiting 2's at once. Push 3. Stack: [3].",
+        },
+        {
+          pointers: [{ name: "i", at: 4 }],
+          action: "3 < 4 → push 4",
+          caption: "Value 3 can't beat the waiting 4, so it joins the queue. Stack: [3, 4].",
+        },
+        {
+          marked: [0, 1, 2],
+          action: "scan ends → indices 3, 4 keep -1",
+          caption: "Values 4 and 3 never met anything larger to their right. answer = [4, 2, 4, -1, -1].",
+        },
+      ],
+    },
+  ],
+
+  "evaluate-reverse-polish-notation": [
+    {
+      kind: "prose",
+      body:
+        "Postfix notation puts each operator *after* its two operands, so there are no parentheses to balance. A " +
+        "first instinct is to rewrite it into a normal infix expression and evaluate that — but reconstructing " +
+        "and re-parsing the grouping is fiddly and slow.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — collapse the leftmost operator and its two operands, repeat: O(n²).",
+      source:
+        "function evalRPN(tokens) {\n" +
+        "  const t = [...tokens];\n" +
+        "  const ops = { '+': (a, b) => a + b, '-': (a, b) => a - b,\n" +
+        "                '*': (a, b) => a * b, '/': (a, b) => Math.trunc(a / b) };\n" +
+        "  // Find the first operator; its operands are the two tokens just before it.\n" +
+        "  while (t.length > 1) {\n" +
+        "    const i = t.findIndex((tok) => tok in ops);\n" +
+        "    const val = ops[t[i]](Number(t[i - 2]), Number(t[i - 1]));\n" +
+        "    t.splice(i - 2, 3, String(val)); // replace the triple with its result\n" +
+        "  }\n" +
+        "  return Number(t[0]);\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "Each `findIndex` + `splice` is O(n) and we do it O(n) times — O(n²), with array shuffling on top. Can we " +
+        "do better?\n\n" +
+        "The key observation: when you read an operator, its operands are *the two values produced most recently* " +
+        "— last produced is the first one you need. “Most recent, handled first” is a **[stack](/learn/guide/algos/topic/stacks)**. " +
+        "Push every number. On an operator, pop the top two (the **second** pop is the left operand), apply it, " +
+        "and push the result back. One left-to-right pass; the final lone value is the answer.\n\n" +
+        "The lane below is the token stream being scanned; the caption tracks the **operand stack** after each " +
+        "token (its top is the rightmost value listed). Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "tokens = [\"4\", \"13\", \"5\", \"/\", \"+\"]",
+      lane: ["4", "13", "5", "/", "+"],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "i", at: 1 }],
+          action: "push 4, push 13",
+          caption: "Numbers go straight onto the operand stack. Stack: [4, 13].",
+        },
+        {
+          pointers: [{ name: "i", at: 2 }],
+          action: "push 5",
+          caption: "Another number. Stack: [4, 13, 5].",
+        },
+        {
+          pointers: [{ name: "i", at: 3 }],
+          action: "'/' → pop 5 (b), pop 13 (a), push trunc(13/5)=2",
+          caption: "Operator: the two most-recent values are its operands, a=13 (left) over b=5. Stack: [4, 2].",
+        },
+        {
+          pointers: [{ name: "i", at: 4 }],
+          action: "'+' → pop 2 (b), pop 4 (a), push 4+2=6",
+          caption: "Add the remaining two. Stack: [6].",
+        },
+        {
+          pointers: [{ name: "i", at: 4 }],
+          action: "scan ends → return stack top",
+          caption: "One value left on the stack — that's the result: 6.",
+        },
+      ],
+    },
+    {
+      kind: "callout",
+      tone: "warn",
+      items: [
+        "Operand order matters for `-` and `/`: the **first** pop is the right operand `b`, the **second** is the left operand `a` — compute `a - b`, not `b - a`.",
+        "Integer division truncates *toward zero* (`Math.trunc`), so `6 / -4` is `-1`, not the `-2` that `Math.floor` would give.",
+      ],
+    },
+  ],
+
+  "remove-all-adjacent-duplicates-in-string": [
+    {
+      kind: "prose",
+      body:
+        "The literal reading of the problem: scan for any two adjacent equal characters, delete them, and start " +
+        "over — because a deletion can create a *new* adjacent pair underneath. Repeat until a full scan finds " +
+        "nothing to remove.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — find and delete an adjacent pair, restart, until stable: O(n²).",
+      source:
+        "function removeDuplicates(s) {\n" +
+        "  let changed = true;\n" +
+        "  while (changed) {\n" +
+        "    changed = false;\n" +
+        "    for (let i = 0; i + 1 < s.length; i++) {\n" +
+        "      if (s[i] === s[i + 1]) {\n" +
+        "        s = s.slice(0, i) + s.slice(i + 2); // cut the matching pair\n" +
+        "        changed = true;\n" +
+        "        break; // restart the scan from the top\n" +
+        "      }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return s;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "Every deletion restarts an O(n) scan and rebuilds the string, so a long collapsing run is O(n²). Can we " +
+        "do better?\n\n" +
+        "The key observation: a character only ever cancels against the character *immediately before it in the " +
+        "result so far* — the most recently kept one. “Compare against the most recent kept item, and remove it " +
+        "on a match” is a **[stack](/learn/guide/algos/topic/stacks)**. Push each character; but if it equals the " +
+        "current top, the two are an adjacent pair — `pop` the top instead, cancelling both. A pop can expose a " +
+        "new top, so the cascade is handled for free: the *next* character compares against whatever surfaced.\n\n" +
+        "The characters left on the stack, in order, are the answer. The lane is the input being scanned; " +
+        "`marked` cells are characters that have cancelled away. Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "s = \"azxxzy\"",
+      lane: ["a", "z", "x", "x", "z", "y"],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "i", at: 1 }],
+          action: "push 'a', push 'z'",
+          caption: "Top differs each time, so both are kept. Stack: [a, z].",
+        },
+        {
+          pointers: [{ name: "i", at: 2 }],
+          action: "'x' != top 'z' → push",
+          caption: "A new character, no match. Stack: [a, z, x].",
+        },
+        {
+          pointers: [{ name: "i", at: 3 }],
+          marked: [2, 3],
+          action: "'x' == top 'x' → pop",
+          caption: "The second 'x' matches the top — they cancel. Stack: [a, z].",
+        },
+        {
+          pointers: [{ name: "i", at: 4 }],
+          marked: [1, 2, 3, 4],
+          action: "'z' == top 'z' → pop",
+          caption: "Removing the x's exposed 'z' on top; the incoming 'z' cancels it too — the cascade. Stack: [a].",
+        },
+        {
+          pointers: [{ name: "i", at: 5 }],
+          marked: [1, 2, 3, 4],
+          action: "'y' != top 'a' → push",
+          caption: "'y' doesn't match 'a', so it's kept. Stack: [a, y] → result \"ay\".",
+        },
+      ],
+    },
+  ],
+
+  "sliding-window-maximum": [
+    {
+      kind: "prose",
+      body:
+        "The direct approach slides a window of width `k` across the array and, at each position, takes the max " +
+        "of the `k` values inside it.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — re-scan all k values for every window: O(n·k).",
+      source:
+        "function maxSlidingWindow(nums, k) {\n" +
+        "  const result = [];\n" +
+        "  // Each window starts at i and spans k elements.\n" +
+        "  for (let i = 0; i + k <= nums.length; i++) {\n" +
+        "    let m = nums[i];\n" +
+        "    for (let j = i + 1; j < i + k; j++) m = Math.max(m, nums[j]); // rescan the window\n" +
+        "    result.push(m);\n" +
+        "  }\n" +
+        "  return result;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "Re-maxing all `k` values for each of the ~n windows is O(n·k) — quadratic when `k` grows with `n`. A heap " +
+        "drops it to O(n log k); a **monotonic deque** reaches O(n). Can we do better than the heap?\n\n" +
+        "The key observation: if an earlier value is `≤` a later value that's still in the window, the earlier one " +
+        "can *never* be a future maximum — it's dominated and dead. So keep a double-ended queue of *indices* " +
+        "whose values strictly **decrease** front→back; the front is always the current window's max. This is the " +
+        "deque cousin of the **[monotonic stack](/learn/guide/algos/topic/stacks)**, with one extra move: evict " +
+        "the front when it slides out of the window.\n\n" +
+        "For each `i`: pop dominated values off the **back** (`nums[back] ≤ nums[i]`), push `i`, drop the **front** " +
+        "if it's `≤ i - k`, and once the first window is full read the front. The lane below shows the array; " +
+        "`range` is the current window and the caption tracks the deque (front listed first). Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "nums = [1, 3, -1, -3, 5, 3], k = 3",
+      lane: [1, 3, -1, -3, 5, 3],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "i", at: 2 }],
+          range: [0, 2],
+          marked: [0],
+          action: "3 evicted 1; deque [1,2] → window max = nums[1] = 3",
+          caption: "Building the first window: 3 dominated the earlier 1 (popped). Deque indices: [1, 2]. First max = 3.",
+        },
+        {
+          pointers: [{ name: "i", at: 3 }],
+          range: [1, 3],
+          marked: [0],
+          action: "-3 < -1 → push 3; front 1 still in window → max = 3",
+          caption: "-3 doesn't dominate anyone, just appended. Deque: [1, 2, 3]. Front index 1 (value 3) is the max.",
+        },
+        {
+          pointers: [{ name: "i", at: 4 }],
+          range: [2, 4],
+          marked: [0, 1, 2, 3],
+          action: "5 evicts 3,-1,-3 (all ≤ 5); front 1 slid out → max = 5",
+          caption: "Value 5 dominates everything waiting and clears the deque; index 1 also slid past the window. Deque: [4]. Max = 5.",
+        },
+        {
+          pointers: [{ name: "i", at: 5 }],
+          range: [3, 5],
+          marked: [0, 1, 2, 3],
+          action: "3 < 5 → push 5; front 4 in window → max = 5",
+          caption: "3 can't dominate the 5 ahead of it, so it just appends. Deque: [4, 5]. Front index 4 (value 5) is the max.",
+        },
+        {
+          range: [3, 5],
+          marked: [0, 1, 2, 3],
+          action: "scan ends → result = [3, 3, 5, 5]",
+          caption: "Four windows, four maxima. Each index entered and left the deque once, so the whole pass is O(n).",
+        },
+      ],
+    },
+  ],
+
+  "implement-queue-using-stacks": [
+    {
+      kind: "prose",
+      body:
+        "A queue is **FIFO** — first in, first out — but a stack is **LIFO**, so they pull in opposite directions. " +
+        "The naïve fix with a single stack: to dequeue, pop *everything* into a temporary holder so the oldest " +
+        "element surfaces, take it, then pour everything back.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — one stack, reverse on every dequeue: O(n) per pop/peek.",
+      source:
+        "// Using a single stack, every front operation reverses the whole thing twice.\n" +
+        "function dequeue(stack) {\n" +
+        "  const tmp = [];\n" +
+        "  // Pour everything out so the oldest element ends up on top of tmp.\n" +
+        "  while (stack.length) tmp.push(stack.pop());\n" +
+        "  const front = tmp.pop();          // the oldest element\n" +
+        "  while (tmp.length) stack.push(tmp.pop()); // pour it all back\n" +
+        "  return front;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "Every single dequeue does two full O(n) reversals — O(n) per operation. Can we do better?\n\n" +
+        "The key observation: that costly reversal doesn't have to happen *every* time. Use **two** stacks — an " +
+        "`inStack` for pushes and an `outStack` for fronts. Reverse `inStack` into `outStack` **only when " +
+        "`outStack` is empty**; that single pour flips the order so the oldest element sits on top of `outStack`. " +
+        "After that, `pop` and `peek` read straight off `outStack`'s top with no reversal, until it drains and " +
+        "you transfer again.\n\n" +
+        "This is the **two-stacks** technique (see the [Stacks](/learn/guide/algos/topic/stacks) intro). The " +
+        "magic is *amortized* cost: each element is moved between the stacks at most once over its lifetime, so " +
+        "although one transfer is O(n), the cost spread across all operations is **O(1) amortized** each.\n\n" +
+        "**Why it works, step by step** — say we push `1, 2, 3`. `inStack` holds `[1, 2, 3]` (top is 3). The first " +
+        "`peek`/`pop` finds `outStack` empty and transfers: popping 3, then 2, then 1 onto `outStack` yields " +
+        "`[3, 2, 1]` (top is 1 — the oldest!). Now `pop` returns 1, `pop` returns 2 straight off the top. Push a " +
+        "`4`: it lands on `inStack`, *not* `outStack`, so the front order is preserved. When `outStack` finally " +
+        "empties, the next front op transfers `[4]` over and continues. `empty` is just both stacks empty.\n\n" +
+        "**Note on the diagram:** this problem is about two vertical stacks pouring into each other, which our " +
+        "1-D lane diagram can't honestly depict — so this page teaches it in prose rather than forcing a " +
+        "misleading single-row animation. The stored solution below traces the same `inStack`/`outStack` model.",
+    },
+    {
+      kind: "callout",
+      tone: "info",
+      items: [
+        "Transfer **only when `outStack` is empty** — transferring while it still holds elements would interleave new pushes ahead of older ones and break FIFO order.",
+        "`empty` must check *both* stacks: an element can be sitting in either the in- or the out-stack.",
+      ],
+    },
+  ],
+
+  // (next-larger-element et al. above are the Stacks chapter)
 };
 
 /**
@@ -2852,6 +3294,192 @@ export const PROBLEM_EXTRAS: Record<string, { complexity?: Section[]; testCases?
       { args: [[1, 2, 3, 4, 5], 9], expected: 1, note: "Uneven trees — at height 1 the wood is 0+1+2+3+4 = 10 ≥ 9; at 2 it drops to 6." },
       { args: [[2, 6, 3, 8], 15], expected: 1, note: "Same trees as the example, larger k — forces a lower blade (height 1)." },
       { args: [[50], 10], expected: 40, note: "One tall tree — height 40 yields exactly 10 units." },
+    ],
+  },
+
+  "valid-parentheses": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- Each character is visited exactly once in a single left-to-right scan.\n" +
+          "- A push, a pop, and a map lookup are all O(1).\n\n" +
+          "So the work is `n` × O(1) = **O(n)**, where `n` is the string length — a clean linear pass, versus the " +
+          "brute force's repeated O(n²) deletions.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(n). Here's why:\n\n" +
+          "- The stack holds the unclosed openers seen so far.\n" +
+          "- A fully nested string like `\"(((((\"` puts every character on the stack at once.\n\n" +
+          "So the stack can grow to `n` entries in the worst case — overall **O(n)** auxiliary space.",
+      },
+    ],
+    testCases: [
+      { args: ["()"], expected: true, note: "A single matched pair." },
+      { args: [""], expected: true, note: "The empty string is vacuously balanced." },
+      { args: [")"], expected: false, note: "A lone closer — the stack is empty, nothing to match." },
+      { args: ["(()"], expected: false, note: "An opener left unclosed — the stack isn't empty at the end." },
+      { args: ["[](){}"], expected: true, note: "Three independent matched pairs in a row." },
+      { args: ["([)]"], expected: false, note: "Interleaved, not nested — wrong close order." },
+    ],
+  },
+
+  "next-larger-element": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- The outer loop visits each index once.\n" +
+          "- The inner `while` pops indices, but each index is pushed once and popped at most once across the " +
+          "whole run.\n\n" +
+          "So the total push/pop work is bounded by `n`, making the scan **O(n)** — even though the nested " +
+          "`while` reads like it could be quadratic. The brute force's per-element suffix scan is the O(n²) it replaces.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(n). Here's why:\n\n" +
+          "- The stack holds indices still waiting for a larger value.\n" +
+          "- A strictly decreasing input (e.g. `[5, 4, 3, 2, 1]`) never pops until the end, so every index is on " +
+          "the stack at once.\n\n" +
+          "So the stack reaches `n` entries in the worst case — **O(n)**. The output array is the required result, " +
+          "not counted as auxiliary space.",
+      },
+    ],
+    testCases: [
+      { args: [[]], expected: [], note: "Empty input — empty result, returned before the loop runs." },
+      { args: [[9]], expected: [-1], note: "Single element — nothing to its right, so -1." },
+      { args: [[3, 3, 3]], expected: [-1, -1, -1], note: "All equal — strictly greater is never satisfied, so all -1." },
+      { args: [[1, 2, 3]], expected: [2, 3, -1], note: "Strictly increasing — each value's answer is its right neighbor." },
+      { args: [[5, 4, 3, 2, 1]], expected: [-1, -1, -1, -1, -1], note: "Strictly decreasing — the stack never pops; everything stays -1." },
+      { args: [[2, 1, 2, 4, 3]], expected: [4, 2, 4, -1, -1], note: "Mixed — one large value resolves several waiting smaller ones at once." },
+    ],
+  },
+
+  "evaluate-reverse-polish-notation": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- Each token is read once.\n" +
+          "- A number is one push; an operator is two pops, one arithmetic op, and one push — all O(1).\n\n" +
+          "So the work is `n` × O(1) = **O(n)**, where `n` is the token count. The brute force's repeated " +
+          "`findIndex` + `splice` is the O(n²) this replaces.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(n). Here's why:\n\n" +
+          "- The operand stack holds values not yet consumed by an operator.\n" +
+          "- An expression that pushes many numbers before the first operator (e.g. a long run of operands) holds " +
+          "all of them at once.\n\n" +
+          "So the stack can hold up to about `n / 2` operands — **O(n)** auxiliary space.",
+      },
+    ],
+    testCases: [
+      { args: [["5"]], expected: 5, note: "A single number — no operators, the value itself." },
+      { args: [["4", "5", "*"]], expected: 20, note: "One operation: 4 * 5." },
+      { args: [["2", "1", "+", "3", "*"]], expected: 9, note: "(2 + 1) * 3 — the result feeds the next operator." },
+      { args: [["9", "3", "/"]], expected: 3, note: "Division truncates toward zero: 9 / 3 = 3 exactly." },
+      { args: [["10", "2", "-"]], expected: 8, note: "Operand order: a − b = 10 − 2, the second pop is the left operand." },
+      { args: [["-50", "4", "+"]], expected: -46, note: "Negative operand: -50 + 4." },
+    ],
+  },
+
+  "remove-all-adjacent-duplicates-in-string": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- Each character is pushed at most once and popped at most once.\n" +
+          "- The final `join` over the surviving characters is O(n).\n\n" +
+          "So the whole process is **O(n)**, where `n` is the string length — the brute force's restart-on-every-" +
+          "deletion is the O(n²) this replaces.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(n). Here's why:\n\n" +
+          "- The stack holds the characters kept so far.\n" +
+          "- A string with no adjacent duplicates (e.g. `\"abcd\"`) never pops, so every character is on the stack.\n\n" +
+          "So the stack reaches `n` entries in the worst case — **O(n)** (also the size of the output string).",
+      },
+    ],
+    testCases: [
+      { args: ["b"], expected: "b", note: "Single character — nothing to cancel." },
+      { args: ["cc"], expected: "", note: "One pair cancels to the empty string." },
+      { args: ["xyx"], expected: "xyx", note: "Equal characters but not adjacent — nothing cancels." },
+      { args: ["deed"], expected: "", note: "Cascade: the inner 'ee' cancels, then the exposed 'dd' cancels too." },
+      { args: ["abbaca"], expected: "ca", note: "The example: 'bb' then 'aa' cancel, leaving 'ca'." },
+      { args: ["pqrs"], expected: "pqrs", note: "No adjacent duplicates — the string is unchanged." },
+    ],
+  },
+
+  "sliding-window-maximum": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- The loop visits each index once.\n" +
+          "- Each index is pushed onto the deque once and removed once (from either end), so the back-eviction " +
+          "`while` is amortized O(1) per step.\n\n" +
+          "So the total is **O(n)**, where `n` is the array length — beating both the O(n·k) brute force and the " +
+          "O(n log k) heap approach.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(k). Here's why:\n\n" +
+          "- The deque only holds indices currently inside the window.\n" +
+          "- At most `k` indices fit in a window, so the deque never exceeds `k` entries.\n\n" +
+          "So the auxiliary space is **O(k)**. The output array of window maxima is the required result, not counted.",
+      },
+    ],
+    testCases: [
+      { args: [[3], 1], expected: [3], note: "Single element, window of 1 — the element itself." },
+      { args: [[7, 2, 4], 2], expected: [7, 4], note: "Two windows: max(7,2)=7, max(2,4)=4." },
+      { args: [[9, 11], 2], expected: [11], note: "Window equals the array — one max." },
+      { args: [[6, 5, 4, 3, 2], 3], expected: [6, 5, 4], note: "Decreasing — each window's max is its left edge." },
+      { args: [[2, 4, 6, 8], 2], expected: [4, 6, 8], note: "Increasing — each window's max is its right edge." },
+      { args: [[1, 3, -1, -3, 5, 3, 6, 7], 3], expected: [3, 3, 5, 5, 6, 7], note: "The example — a value can dominate several earlier ones at once." },
+    ],
+  },
+
+  "implement-queue-using-stacks": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(1) amortized per operation. Here's why:\n\n" +
+          "- `push` is a single O(1) stack push.\n" +
+          "- `pop`/`peek` are O(1) when `outStack` is non-empty; a transfer is O(n), but it moves each element " +
+          "exactly once over that element's lifetime.\n\n" +
+          "So although a *single* front operation can be O(n), the cost amortizes to **O(1) per operation** across " +
+          "a sequence of `m` calls — the whole sequence is O(m).",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(n). Here's why:\n\n" +
+          "- Every queued element lives in exactly one of the two stacks at any moment.\n\n" +
+          "So the two stacks together hold at most `n` elements — **O(n)**, where `n` is the number of elements " +
+          "currently in the queue.",
+      },
+    ],
+    testCases: [
+      { args: [["push", "peek", "empty"], [[4], [], []]], expected: [null, 4, false], note: "Peek returns the front (4) without removing it; the queue stays non-empty." },
+      { args: [["push", "push", "peek", "pop", "empty"], [[1], [2], [], [], []]], expected: [null, null, 1, 1, false], note: "FIFO: peek and pop both return the oldest (1); 2 remains." },
+      { args: [["push", "pop", "empty"], [[5], [], []]], expected: [null, 5, true], note: "Push then drain — back to empty." },
+      { args: [["push", "push", "pop", "push", "peek", "pop", "pop", "empty"], [[1], [2], [], [3], [], [], [], []]], expected: [null, null, 1, null, 2, 2, 3, true], note: "A push (3) after a transfer lands on inStack, preserving FIFO order." },
+      { args: [["push", "push", "push", "pop", "pop", "pop", "empty"], [[1], [2], [3], [], [], [], []]], expected: [null, null, null, 1, 2, 3, true], note: "One transfer serves three pops in order 1, 2, 3." },
+      { args: [["push", "push", "pop", "pop"], [[8], [9], [], []]], expected: [null, null, 8, 9], note: "Two pushes then two pops drain oldest-first: 8 before 9." },
     ],
   },
 };
