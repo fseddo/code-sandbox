@@ -119,6 +119,32 @@ For 2-D board problems (Sudoku validation, matrix striping, grid scans) author a
 - **Per-frame `grid` override** — for an **in-place** problem where the board mutates (e.g. set-matrix-zeroes), give a frame its own `grid` to show the board's state at that step; otherwise frames reuse the section `grid` (e.g. Sudoku, where the board never changes and only the cursor moves).
 - **Same "teach the whole mechanic" rule** as §8: include a scanning step, the conflict/decision step, and the outcome.
 
+### 8b. Linked-list problems — use `listWalkthrough`, not a 1-D lane
+
+For singly-linked-list problems (reversal, fast/slow midpoint, splice/remove, palindrome) author a **`listWalkthrough`** Section ([NodeChainDiagram](../../src/learn/article/sections/NodeChainDiagram.tsx)) — the linked-list analogue of `walkthrough`. A plain 1-D `lane` draws cells but no `next` arrows, no `null` terminator, and can't depict a *rewired* pointer — so a reversal or a splice reads as nonsense on a lane. The node-chain renderer exists now; use it instead of a lane or prose-only. It shares the `WalkthroughDiagram` palette/posture (server-rendered, pointer color stable by first appearance: orange, sky, violet, emerald).
+
+`{ kind: "listWalkthrough", nodes, showIndices?, frames }`:
+
+- **`nodes`** — the node values, head-first (`(string | number)[]`). The trailing `null` terminator is drawn automatically after the last node; you don't list it.
+- **`showIndices: true`** for position-reasoned problems (remove the kth-from-end, reverse-between positions).
+- **`frames`** — **4–6** curated steps. Each:
+  - **`pointers?: { name, at }[]`** — labeled arrows above nodes. `at` is a node index, or **`at: null`** to park a pointer on the `null` terminator (e.g. `prev = null` at the start of a reversal). Reuse conventional names: `prev`/`curr`/`next`, `slow`/`fast`, `dummy`, `left`/`right`.
+  - **`links?: Record<number, number | null>`** — per-node `next`-link overrides, by *source* node index → *target* node index (or `null` for the terminator). This is the linked-list equivalent of the grid's per-frame `grid` override: use it to depict an **in-place rewire** — a reversed link (`{ 1: 0 }` makes node 1 point back at node 0, drawn as a backward arrow) or a splice. Nodes not listed keep their default forward link (`i -> i + 1`, last → null).
+  - **`marked?: number[]`** — node indices removed/skipped this step (dimmed, struck through).
+  - **`active?: number[]`** — node indices softly highlighted as the region under inspection (e.g. the sublist being reversed).
+  - **`action?`** / **`caption?`** — same as §8 (terse decision callout beside the chain; plain-English why under it).
+- **Same "teach the whole mechanic" rule** as §8: show the setup, a representative mid-rewire step (the backward link / the pointer that didn't move yet), and the final state.
+
+### 8c. Adding a *new* data render — wire it into the Example & Test-case cells too
+
+This is for whoever **builds a new visual primitive** for a data type (the next tree-node, interval, or graph render), not for per-problem authoring — once a primitive exists, example/test-case rendering is automatic and needs nothing from the author (see below).
+
+A data type that gets a custom diagram should render **the same way wherever that value appears** — inside walkthroughs *and* in the Example / Test-case Input/Output cells — so the value reads identically across the page. The Example and Test-case cells are rendered by `ArgValues` / `ResultValue` in [ProblemGuide](../../src/learn/guide/ProblemGuide.tsx), which pick a renderer **from the problem's `io` shape** (`io.params[i]` / `io.result`), not from the value's JS shape — a list `head` and a plain `nums` array are both arrays, so only the io shape disambiguates. Precedent: `"linked-list"` → [NodeChain](../../src/learn/article/sections/NodeChain.tsx) (raw `[…]` + chain, stacked); 2-D grids → [BoardGrid](../../src/learn/article/sections/BoardGrid.tsx).
+
+When you add a primitive: build a static, server-rendered render (the non-interactive sibling of the walkthrough diagram), then teach `ArgValues`/`ResultValue` to dispatch to it on the matching `IoShape`. **Don't** leave a new render usable only inside walkthroughs while examples fall back to a raw `JSON.stringify`.
+
+**Per-problem authors do nothing here** — set the `io` shapes correctly (you already must, for the judge) and the right render appears in the Example and Test-case cells automatically.
+
 ## 9. Code & comments
 
 - **Brute-force snippet** (authored, in the overlay): the simplest correct approach. Comment each meaningful step with intent (*why*, ByteByteGo density): a comment above the loop, above the key line, and an inline trailing note where it clarifies. Caption states the complexity.

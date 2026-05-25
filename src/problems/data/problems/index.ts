@@ -108,6 +108,9 @@ import { buildStarRating } from "./buildStarRating";
 import { buildDebouncedAutocomplete } from "./buildDebouncedAutocomplete";
 import { numberOfProvinces } from "./numberOfProvinces";
 import { geometricTriplets } from "./geometricTriplets";
+import { reverseList } from "./reverseList";
+import { palindromeLinkedList } from "./palindromeLinkedList";
+import { intersectionOfTwoLinkedLists } from "./intersectionOfTwoLinkedLists";
 
 /**
  * The problem bank, keyed by id. Authored modules keep their precise generics for
@@ -223,6 +226,9 @@ export const problems = {
   "build-debounced-autocomplete": buildDebouncedAutocomplete,
   "number-of-provinces": numberOfProvinces,
   "geometric-sequence-triplets": geometricTriplets,
+  "reverse-linked-list": reverseList,
+  "palindrome-linked-list": palindromeLinkedList,
+  "intersection-of-two-linked-lists": intersectionOfTwoLinkedLists,
 } satisfies Record<string, AnyProblem>;
 
 export type ProblemId = keyof typeof problems;

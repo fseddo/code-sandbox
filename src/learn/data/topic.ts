@@ -83,6 +83,37 @@ export type GridWalkthroughFrame = {
   action?: string;
 };
 
+/**
+ * A named pointer over a {@link ListWalkthroughFrame} — a labeled arrow above the node at index `at`,
+ * colored by first-appearance order (the same palette as {@link WalkthroughPointer}). `at: null` parks
+ * the pointer on the trailing `null` terminator (e.g. `prev = null` at the start of a reversal).
+ */
+export type ListPointer = { name: string; at: number | null };
+
+/**
+ * One step of a {@link Section} `listWalkthrough` — the linked-list analogue of {@link WalkthroughFrame}.
+ * The chain is the section's `nodes`; a frame moves pointers over it, can re-aim individual `next` links
+ * (to depict an in-place rewire like reversal), and can flag nodes as removed.
+ */
+export type ListWalkthroughFrame = {
+  /** Pointers to draw above the chain this step. A pointer keeps its color across frames by `name`. */
+  pointers?: ListPointer[];
+  /**
+   * Per-node `next`-link overrides for this step, by source node index. The value is the *target* node
+   * index, or `null` to point at the terminator. Use it to show a reversed/spliced link; nodes not listed
+   * keep their default forward link (`i -> i + 1`, last -> null). A reversed link is drawn facing backward.
+   */
+  links?: Record<number, number | null>;
+  /** Node indices dropped this step (a removed/skipped node) — dimmed and struck through. */
+  marked?: number[];
+  /** Node indices softly highlighted as the region under inspection (e.g. a sublist being reversed). */
+  active?: number[];
+  /** One-line narration shown under the frame. */
+  caption?: string;
+  /** The decision for this step, shown in a dashed callout beside the chain. */
+  action?: string;
+};
+
 /** Fields shared by every section, regardless of kind — the spine of the discriminated union. */
 type SectionBase = {
   /** Optional sub-heading rendered above the section body. */
@@ -132,6 +163,14 @@ export type Section = SectionBase &
         /** Draw faint 0-based row/col index labels (for grid problems reasoned about by coordinate). */
         showIndices?: boolean;
         frames: GridWalkthroughFrame[];
+      }
+    | {
+        kind: "listWalkthrough";
+        /** The linked-list node values, head-first. The trailing `null` terminator is drawn automatically. */
+        nodes: (string | number)[];
+        /** Draw faint 0-based node-position labels under each node (for index-reasoned list problems). */
+        showIndices?: boolean;
+        frames: ListWalkthroughFrame[];
       }
     /** A bulleted aside in one of three tones — pitfalls (warn), corner cases (info), interview tips (tip). */
     | { kind: "callout"; tone: CalloutTone; items: string[] }

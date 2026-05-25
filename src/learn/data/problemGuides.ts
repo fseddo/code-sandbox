@@ -1025,6 +1025,296 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
       ],
     },
   ],
+
+  "reverse-linked-list": [
+    {
+      kind: "prose",
+      body:
+        "The most direct approach sidesteps pointer surgery entirely: walk the list collecting the values into " +
+        "an array, then build a brand-new list from that array read back-to-front.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — collect values, rebuild reversed: O(n) time, O(n) extra space.",
+      source:
+        "function reverseList(head) {\n" +
+        "  // Walk once, copying every value into an array.\n" +
+        "  const values = [];\n" +
+        "  for (let node = head; node; node = node.next) {\n" +
+        "    values.push(node.val);\n" +
+        "  }\n" +
+        "  // Build a fresh list from the values, last value first.\n" +
+        "  let newHead = null;\n" +
+        "  for (const val of values) {\n" +
+        "    newHead = new ListNode(val, newHead); // prepend → reverses order\n" +
+        "  }\n" +
+        "  return newHead;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This works, but it allocates a whole second list plus the values array — O(n) extra space for a problem " +
+        "that's really just *relinking* nodes we already have. Can we do better?\n\n" +
+        "The key observation: reversing a list means flipping the direction of every `next` pointer. Node by " +
+        "node, `1 -> 2 -> 3` becomes `1 <- 2 <- 3`. We don't need new nodes at all — we can rewire the existing " +
+        "ones in a single pass.\n\n" +
+        "The catch is that the moment we set `curr.next = prev`, we've destroyed the link to the *rest* of the " +
+        "list. So before flipping, stash `curr.next` in a temporary `next`. Carry three pointers — `prev` (the " +
+        "reversed part so far, starting at `null`), `curr` (the node being flipped), and the saved `next` — and " +
+        "slide them forward together.\n\n" +
+        "Walking it through on `1 -> 2 -> 3`:",
+    },
+    {
+      kind: "listWalkthrough",
+      heading: "reversing 1 -> 2 -> 3 in place",
+      nodes: [1, 2, 3],
+      frames: [
+        {
+          pointers: [{ name: "prev", at: null }, { name: "curr", at: 0 }],
+          action: "save next = 2; curr.next = prev",
+          caption: "Start: prev = null, curr = node 1. Stash node 1's next (node 2), then flip node 1's link to null.",
+        },
+        {
+          pointers: [{ name: "prev", at: 0 }, { name: "curr", at: 1 }],
+          links: { 0: null },
+          action: "save next = 3; curr.next = prev",
+          caption: "Slide forward: prev = node 1, curr = node 2. Node 1 now points at null. Flip node 2's link back to node 1.",
+        },
+        {
+          pointers: [{ name: "prev", at: 1 }, { name: "curr", at: 2 }],
+          links: { 0: null, 1: 0 },
+          action: "save next = null; curr.next = prev",
+          caption: "prev = node 2, curr = node 3. Node 2 points back at node 1. Flip node 3's link back to node 2.",
+        },
+        {
+          pointers: [{ name: "prev", at: 2 }, { name: "curr", at: null }],
+          links: { 0: null, 1: 0, 2: 1 },
+          action: "curr = null → stop",
+          caption: "curr fell off the end. Every link now faces backward: 3 -> 2 -> 1 -> null. prev (node 3) is the new head.",
+        },
+      ],
+    },
+  ],
+
+  "remove-nth-node-from-end-of-list": [
+    {
+      kind: "prose",
+      body:
+        "Counting from the *end* is awkward in a singly linked list — you can only walk forward. The obvious fix " +
+        "is two passes: walk once to measure the length `L`, then walk again to the `(L - n)`-th node (the one " +
+        "just before the target) and splice the target out.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — measure length, then walk to the predecessor: two passes, O(L).",
+      source:
+        "function removeNthFromEnd(head, n) {\n" +
+        "  // First pass: count the nodes.\n" +
+        "  let length = 0;\n" +
+        "  for (let node = head; node; node = node.next) length++;\n" +
+        "  // A dummy before the head lets us delete the head uniformly.\n" +
+        "  const dummy = new ListNode(0, head);\n" +
+        "  // Second pass: stop on the node just before the target.\n" +
+        "  let prev = dummy;\n" +
+        "  for (let i = 0; i < length - n; i++) prev = prev.next;\n" +
+        "  prev.next = prev.next.next; // skip the target\n" +
+        "  return dummy.next;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "Two passes is fine — O(L) — but interviewers usually want the *one-pass* version, which also reveals a " +
+        "reusable trick. Can we find the predecessor without first knowing `L`?\n\n" +
+        "The key observation: fix a **gap** between two pointers. If `fast` is exactly `n + 1` nodes ahead of " +
+        "`slow`, then when `fast` walks off the end, `slow` is sitting `n + 1` from the end — i.e. on the node " +
+        "*just before* the one to remove. This is the [Two pointers](/learn/guide/algos/topic/two-pointers) " +
+        "gap technique applied to nodes.\n\n" +
+        "Start both at a `dummy` before the head, advance `fast` by `n + 1`, then move both together until `fast` " +
+        "is null. One splice and we're done.\n\n" +
+        "**Note on the model:** the stored solution opens the gap with the loop `for (i = 0; i <= n; i++) fast = " +
+        "fast.next` — that's `n + 1` iterations, the same `n + 1` gap described here. Walking it through on " +
+        "`1 -> 2 -> 3 -> 4 -> 5` with `n = 2` (remove the `4`):",
+    },
+    {
+      kind: "listWalkthrough",
+      heading: "remove 2nd-from-end of 1 -> 2 -> 3 -> 4 -> 5",
+      nodes: ["d", 1, 2, 3, 4, 5],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "slow", at: 0 }, { name: "fast", at: 0 }],
+          caption: "Both start on the dummy `d` (index 0). We'll open a gap of n + 1 = 3 between them.",
+        },
+        {
+          pointers: [{ name: "slow", at: 0 }, { name: "fast", at: 3 }],
+          action: "advance fast n + 1 = 3 steps",
+          caption: "fast jumps to node 3 (value 3). The gap from slow to fast is now 3 nodes.",
+        },
+        {
+          pointers: [{ name: "slow", at: 1 }, { name: "fast", at: 4 }],
+          action: "move both together",
+          caption: "Lockstep step 1: slow → value 1, fast → value 4. The gap is preserved.",
+        },
+        {
+          pointers: [{ name: "slow", at: 2 }, { name: "fast", at: 5 }],
+          action: "move both together",
+          caption: "Lockstep step 2: slow → value 2, fast → value 5 (the last node).",
+        },
+        {
+          pointers: [{ name: "slow", at: 3 }, { name: "fast", at: null }],
+          action: "fast = null → splice",
+          caption: "fast fell off the end. slow sits on value 3 — exactly the node before the target.",
+        },
+        {
+          pointers: [{ name: "slow", at: 3 }],
+          links: { 3: 5 },
+          marked: [4],
+          action: "slow.next = slow.next.next",
+          caption: "Skip node 4 by relinking value 3 straight to value 5. Result: 1 -> 2 -> 3 -> 5.",
+        },
+      ],
+    },
+  ],
+
+  "palindrome-linked-list": [
+    {
+      kind: "prose",
+      body:
+        "A palindrome reads the same both ways, so the simplest check copies every value into an array and " +
+        "compares it against its reverse with two indices closing in from the ends.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — dump to an array, compare ends inward: O(n) time, O(n) extra space.",
+      source:
+        "function isPalindrome(head) {\n" +
+        "  // Copy the values out so we can index from both ends.\n" +
+        "  const values = [];\n" +
+        "  for (let node = head; node; node = node.next) values.push(node.val);\n" +
+        "  // Two pointers converging — the classic palindrome check.\n" +
+        "  let left = 0;\n" +
+        "  let right = values.length - 1;\n" +
+        "  while (left < right) {\n" +
+        "    if (values[left] !== values[right]) return false;\n" +
+        "    left++;\n" +
+        "    right--;\n" +
+        "  }\n" +
+        "  return true;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "That's a clean O(n) check, but it spends O(n) extra space on the array. Can we do better and use O(1) " +
+        "space, working on the list itself?\n\n" +
+        "The key observation: to compare the front half against the back half we need to read the back half " +
+        "*forward*. A list only goes one way — so **reverse the back half in place**, then walk the two halves " +
+        "toward the middle.\n\n" +
+        "Two sub-techniques combine here, both from the [Two pointers](/learn/guide/algos/topic/two-pointers) " +
+        "toolkit: **fast/slow** finds the midpoint (`fast` moves two nodes per one of `slow`, so when `fast` " +
+        "hits the end, `slow` is at the middle), and the three-pointer **reversal** flips the second half. Then " +
+        "compare the original front with the reversed back in lockstep.\n\n" +
+        "**Note on the model:** in the stored solution `slow` does double duty — first as the midpoint finder, " +
+        "then it's consumed by the reversal loop, leaving `prev` as the head of the reversed back half (the " +
+        "`right` walker below). Walking it through on `1 -> 2 -> 2 -> 1`:",
+    },
+    {
+      kind: "listWalkthrough",
+      heading: "is 1 -> 2 -> 2 -> 1 a palindrome?",
+      nodes: [1, 2, 2, 1],
+      frames: [
+        {
+          pointers: [{ name: "slow", at: 0 }, { name: "fast", at: 0 }],
+          caption: "Both start at the head. fast will move twice as fast as slow to locate the midpoint.",
+        },
+        {
+          pointers: [{ name: "slow", at: 1 }, { name: "fast", at: 2 }],
+          action: "slow += 1, fast += 2",
+          caption: "One step: slow → index 1, fast → index 2. fast.next is the last node, so the loop stops next.",
+        },
+        {
+          pointers: [{ name: "slow", at: 2 }, { name: "fast", at: null }],
+          active: [2, 3],
+          action: "fast off end → slow at 2nd half",
+          caption: "slow lands at index 2, the start of the back half (indices 2..3). Now reverse from here.",
+        },
+        {
+          pointers: [{ name: "right", at: 3 }, { name: "left", at: 0 }],
+          links: { 3: 2 },
+          active: [2, 3],
+          action: "reverse back half",
+          caption: "The back half is reversed: index 3 now points to index 2. `right` heads it; `left` is the original head.",
+        },
+        {
+          pointers: [{ name: "left", at: 0 }, { name: "right", at: 3 }],
+          links: { 3: 2 },
+          action: "1 == 1 ✓, then 2 == 2 ✓",
+          caption: "Compare in lockstep: left value 1 == right value 1, then 2 == 2. The reversed half ends — all matched → palindrome.",
+        },
+      ],
+    },
+  ],
+
+  "intersection-of-two-linked-lists": [
+    {
+      kind: "prose",
+      body:
+        "Two lists *intersect* when, from some node on, they share the exact same tail. The brute-force check is " +
+        "the nested one: for every node in list A, walk all of list B looking for the same node (here, the same " +
+        "position in the shared suffix).",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — for each A-node, scan all of B: O(m × n).",
+      source:
+        "function getIntersectionValue(a, b, skipA, skipB) {\n" +
+        "  if (skipA < 0 || skipB < 0) return null; // no merge\n" +
+        "  // For each node in A, look for a matching shared-suffix node in B.\n" +
+        "  for (let i = 0; i < a.length; i++) {\n" +
+        "    for (let j = 0; j < b.length; j++) {\n" +
+        "      // Same node iff both sit in the shared suffix at the same offset.\n" +
+        "      if (i >= skipA && j >= skipB && i - skipA === j - skipB) {\n" +
+        "        return a[i]; // first such match is the intersection\n" +
+        "      }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return null;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "The nested scan is O(m × n). Can we do better?\n\n" +
+        "The key observation: if the lists merge, they share a common *tail*, so they have the same number of " +
+        "nodes *after* the intersection. The only thing in the way is that the two lists can have different " +
+        "lengths before the merge, so a node at distance `d` from head A isn't at distance `d` from head B.\n\n" +
+        "The elegant fix is the **length-alignment** [two-pointer](/learn/guide/algos/topic/two-pointers) walk: " +
+        "send pointer `pa` through A *then* B, and `pb` through B *then* A. Each covers `m + n` nodes total, so " +
+        "after the switch they're aligned and arrive at the first shared node on the same step (or both hit " +
+        "`null` together if there's no merge). No length pre-count, O(1) space.\n\n" +
+        "**Note on the model:** this page is the array-encoded form of the classic node-identity problem (a node " +
+        "is `(list, index)`, the same node when both lie in the shared suffix at the same offset). The encoding " +
+        "makes the first shared node's value simply `a[skipA]`, so the stored solution returns that directly — " +
+        "but the alignment walk below is the idea you'd run on real shared nodes.\n\n" +
+        "*(Two lists sharing a tail aren't a single chain, so a node-chain diagram would misrepresent them — the " +
+        "alignment is shown as a trace instead.)* Take A = `4 -> 1 -> 8 -> 4 -> 5` (length 5) and " +
+        "B = `5 -> 6 -> 1 -> 8 -> 4 -> 5` (length 6), sharing the tail `8 -> 4 -> 5`:",
+    },
+    {
+      kind: "prose",
+      body:
+        "- **Step 0** — `pa` at A's head (`4`), `pb` at B's head (`5`). pa is 2 nodes before the shared `8`; pb is 3 before it. Misaligned by the length gap (6 − 5 = 1).\n" +
+        "- **pa reaches A's end** after 5 steps and **switches to B's head**. pb reaches B's end after 6 steps and **switches to A's head**. Each has now walked 5 + 6 = 11 nodes.\n" +
+        "- From the switch, `pa` is 3 nodes into the combined walk's second leg and `pb` is 2 — and because each will walk the *other* list's prefix, the leftover distance to the shared `8` is now identical for both.\n" +
+        "- **They meet** on the same physical node — the first shared `8`. That's the intersection. (Had the lists not merged, both would reach `null` on the same step and we'd report no intersection.)",
+    },
+  ],
 };
 
 /**
@@ -1446,6 +1736,123 @@ export const PROBLEM_EXTRAS: Record<string, { complexity?: Section[]; testCases?
       { args: [[20, 21, 22, 50, 51]], expected: 3, note: "Two separate runs; the longer is {20,21,22}, length 3." },
       { args: [[9, 1, 4, 7, 3, 2, 6, 8, 5]], expected: 9, note: "Shuffled 1..9 — order doesn't matter, the whole set is one run." },
       { args: [[-10, -8, -9, -7, 5]], expected: 4, note: "Negatives — {-10,-9,-8,-7} form a run of 4; 5 is isolated." },
+    ],
+  },
+
+  "reverse-linked-list": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- The loop visits each of the `n` nodes exactly once.\n" +
+          "- Per node the work is O(1): save `next`, flip one pointer, advance two variables.\n\n" +
+          "There's no nested traversal, so the whole reversal is a single pass — **O(n)**.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1). Here's why:\n\n" +
+          "- Only three pointers (`prev`, `curr`, `next`) are kept, regardless of list length.\n" +
+          "- The nodes are rewired in place — no new list is allocated.\n\n" +
+          "This is the win over the brute force, which built a second list and a values array for **O(n)** space.",
+      },
+    ],
+    testCases: [
+      { args: [[]], expected: [], note: "Empty list — nothing to reverse, returns empty." },
+      { args: [[1]], expected: [1], note: "Single node is its own reverse." },
+      { args: [[1, 2]], expected: [2, 1], note: "Smallest case where pointers actually move." },
+      { args: [[7, 7, 7]], expected: [7, 7, 7], note: "All-equal values — reversed list looks identical, but every link was still flipped." },
+      { args: [[1, 2, 3, 4]], expected: [4, 3, 2, 1], note: "Even length." },
+      { args: [[-1, 0, 2]], expected: [2, 0, -1], note: "Negative and zero values reverse like any other." },
+    ],
+  },
+
+  "remove-nth-node-from-end-of-list": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(L). Here's why:\n\n" +
+          "- Advancing `fast` by `n + 1` is at most `L` steps.\n" +
+          "- The lockstep walk then covers the remaining nodes — at most `L` more.\n\n" +
+          "Both phases are linear and there's no nested loop, so the single pass is **O(L)**, where `L` is the list length. (The two-pass brute force is also O(L), just with two traversals.)",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1). Here's why:\n\n" +
+          "- Only the `dummy` node and the `fast`/`slow` pointers are allocated, independent of `L`.\n" +
+          "- The list is edited in place by one pointer reassignment.\n\n" +
+          "No array or copy of the list is made — **O(1)** auxiliary space.",
+      },
+    ],
+    testCases: [
+      { args: [[1], 1], expected: [], note: "Single node, n = 1 — removing it leaves the empty list (the dummy makes this uniform)." },
+      { args: [[1, 2], 2], expected: [2], note: "n = length removes the head; returning `dummy.next` handles it." },
+      { args: [[1, 2], 1], expected: [1], note: "Remove the last node of a two-node list." },
+      { args: [[1, 2, 3, 4, 5], 2], expected: [1, 2, 3, 5], note: "The worked example — remove the 2nd-from-end (4)." },
+      { args: [[2, 2, 2, 2], 2], expected: [2, 2, 2], note: "Duplicate values — removal is by position, not value." },
+      { args: [[1, 2, 3], 3], expected: [2, 3], note: "n = length again on an odd list — removes the head." },
+    ],
+  },
+
+  "palindrome-linked-list": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- Finding the midpoint with fast/slow is one pass over `n` nodes.\n" +
+          "- Reversing the second half touches each of those nodes once.\n" +
+          "- The final lockstep comparison walks the two halves once.\n\n" +
+          "Three sequential linear passes is still **O(n)** — no nesting.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1). Here's why:\n\n" +
+          "- The midpoint, reversal, and comparison each use only a handful of pointers.\n" +
+          "- The second half is reversed *in place* rather than copied.\n\n" +
+          "This is the improvement over the array-dump brute force, which spends **O(n)** on the values array.",
+      },
+    ],
+    testCases: [
+      { args: [[1]], expected: true, note: "Single node — trivially a palindrome." },
+      { args: [[1, 2]], expected: false, note: "Two distinct values — reversing gives 2 -> 1, which differs." },
+      { args: [[1, 1]], expected: true, note: "Two equal values — the smallest even palindrome." },
+      { args: [[1, 2, 1]], expected: true, note: "Odd length — the lone middle node never needs to match." },
+      { args: [[1, 2, 2, 1]], expected: true, note: "Even-length palindrome — both halves mirror exactly." },
+      { args: [[1, 2, 3, 4, 2, 1]], expected: false, note: "Looks symmetric at the ends but breaks in the middle (3 vs 4)." },
+    ],
+  },
+
+  "intersection-of-two-linked-lists": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(m + n). Here's why:\n\n" +
+          "- The alignment walk sends each pointer through both lists once — at most `m + n` steps before they meet or both reach the end.\n" +
+          "- The array-encoded form resolves the answer in O(1) from `skipA`, but the underlying node-identity algorithm is the linear walk.\n\n" +
+          "Either way there's no nested scan, so it's **O(m + n)** — versus the brute force's O(m × n).",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1). Here's why:\n\n" +
+          "- The alignment walk keeps only two pointers; nothing scales with the list sizes.\n" +
+          "- A hash-set alternative (store all of A's nodes, scan B) would cost O(m) — the two-pointer walk avoids it.\n\n" +
+          "So the optimal approach is **O(1)** auxiliary space.",
+      },
+    ],
+    testCases: [
+      { args: [[2, 6, 4], [1, 5], -1, -1], expected: null, note: "No merge point supplied — the lists never intersect." },
+      { args: [[1], [1], 0, 0], expected: 1, note: "Smallest intersection — both single-node lists share that node." },
+      { args: [[4, 1, 8, 4, 5], [5, 6, 1, 8, 4, 5], 2, 3], expected: 8, note: "Different lengths before the shared tail [8,4,5] — answer is the first shared value, 8." },
+      { args: [[], [1, 2, 3], -1, -1], expected: null, note: "Empty list A can't intersect anything." },
+      { args: [[1, 2, 3, 4, 5], [99, 4, 5], 3, 1], expected: 4, note: "Shared tail [4,5] begins at index 3 in A and 1 in B." },
+      { args: [[8, 8, 8], [8, 8, 8], 0, 0], expected: 8, note: "Identical lists that merge at the head — duplicate values don't fool the position-based identity." },
     ],
   },
 };

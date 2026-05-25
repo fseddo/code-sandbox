@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { LuSquareCode } from "react-icons/lu";
-import type { AnyProblem, ProblemSolution, SupportedLanguage } from "@/problems/data/problem";
+import type { AnyProblem, IoShape, ProblemSolution, SupportedLanguage } from "@/problems/data/problem";
 import { deriveParamNames, type Difficulty } from "@/problems/data/problem";
 import type { ProblemId, ProblemSummary } from "@/problems/data/problems";
 import { companiesForProblem } from "@/problems/data/companies";
 import type { Section } from "@/learn/data/topic";
 import { renderInline } from "@/learn/article/sections/renderInline";
 import { BoardGrid, isScalarGrid } from "@/learn/article/sections/BoardGrid";
+import { NodeChain } from "@/learn/article/sections/NodeChain";
 import { SectionRenderer } from "@/learn/article/SectionRenderer";
 import { ArticleSection } from "@/learn/article/ArticleSection";
 import { CATEGORY_ACCENT } from "@/learn/shared/categoryTheme";
@@ -35,34 +36,74 @@ const DIFFICULTY_PILL: Record<Difficulty, string> = {
 
 const format = (value: unknown) => JSON.stringify(value);
 
+/** An arg/result we draw as a node chain: a `linked-list`-typed value that actually arrived as an array. */
+const isListValue = (value: unknown, shape: IoShape | undefined): value is (string | number)[] =>
+  shape === "linked-list" && Array.isArray(value);
+
 /**
- * Render a call's argument tuple. When any argument is a matrix (a Sudoku board, a 0-1 grid) the whole
- * tuple lays out as labelled blocks with the grid drawn as a board; otherwise it stays the compact
- * inline `name = value, …` line. Shared by the Example and Test-case Input cells so both read the same.
+ * Render a call's argument tuple. When any argument is a matrix (a Sudoku board, a 0-1 grid) or a
+ * `linked-list` the whole tuple lays out as labelled blocks — grids drawn as a board, lists shown raw
+ * with a node-chain render beneath; otherwise it stays the compact inline `name = value, …` line. The
+ * list/grid shape comes from `paramShapes` (the problem's io), since a list `head` and a plain `nums`
+ * array share the same value shape. Shared by the Example and Test-case Input cells so both read the same.
  */
-const ArgValues = ({ args, paramNames }: { args: unknown[]; paramNames: string[] }) => {
+const ArgValues = ({
+  args,
+  paramNames,
+  paramShapes,
+}: {
+  args: unknown[];
+  paramNames: string[];
+  paramShapes?: IoShape[];
+}) => {
   const label = (index: number) => paramNames[index] ?? `arg${index + 1}`;
-  if (!args.some(isScalarGrid)) {
+  const needsBlocks = args.some((arg, i) => isScalarGrid(arg) || isListValue(arg, paramShapes?.[i]));
+  if (!needsBlocks) {
     return <>{args.map((arg, i) => `${label(i)} = ${format(arg)}`).join(", ")}</>;
   }
   return (
     <span className="flex flex-col gap-2">
-      {args.map((arg, i) =>
-        isScalarGrid(arg) ? (
-          <span key={i} className="flex flex-col gap-1">
-            <span className="text-muted-foreground">{label(i)} =</span>
-            <BoardGrid grid={arg} />
-          </span>
-        ) : (
+      {args.map((arg, i) => {
+        if (isScalarGrid(arg)) {
+          return (
+            <span key={i} className="flex flex-col gap-1">
+              <span className="text-muted-foreground">{label(i)} =</span>
+              <BoardGrid grid={arg} />
+            </span>
+          );
+        }
+        if (isListValue(arg, paramShapes?.[i])) {
+          return (
+            <span key={i} className="flex flex-col gap-1">
+              <span>
+                <span className="text-muted-foreground">{label(i)} = </span>
+                {format(arg)}
+              </span>
+              <NodeChain values={arg} />
+            </span>
+          );
+        }
+        return (
           <span key={i}>
             <span className="text-muted-foreground">{label(i)} = </span>
             {format(arg)}
           </span>
-        ),
-      )}
+        );
+      })}
     </span>
   );
 };
+
+/** Render a call's result. A `linked-list` result shows raw with a node-chain beneath; everything else is raw. */
+const ResultValue = ({ value, shape }: { value: unknown; shape?: IoShape }) =>
+  isListValue(value, shape) ? (
+    <span className="flex flex-col gap-1">
+      <span>{format(value)}</span>
+      <NodeChain values={value} />
+    </span>
+  ) : (
+    <>{format(value)}</>
+  );
 
 const OpenInEditor = ({ id }: { id: string }) => (
   <Link
@@ -88,6 +129,8 @@ export const ProblemGuide = ({
     problem.kind === "algo"
       ? deriveParamNames(problem.starterCode.javascript, problem.functionName, problem.examples[0]?.args.length ?? 0)
       : [];
+  const paramShapes = problem.kind === "algo" ? problem.io?.params : undefined;
+  const resultShape = problem.kind === "algo" ? problem.io?.result : undefined;
 
   return (
     <article className="mx-auto max-w-3xl space-y-8 px-6 py-10">
@@ -134,11 +177,11 @@ export const ProblemGuide = ({
               <div key={index} className="space-y-2 rounded-lg border border-border bg-card/40 p-4">
                 <p className="font-mono text-sm">
                   <span className="text-muted-foreground">Input: </span>
-                  <ArgValues args={example.args} paramNames={paramNames} />
+                  <ArgValues args={example.args} paramNames={paramNames} paramShapes={paramShapes} />
                 </p>
                 <p className="font-mono text-sm">
                   <span className="text-muted-foreground">Output: </span>
-                  {format(example.expected)}
+                  <ResultValue value={example.expected} shape={resultShape} />
                 </p>
                 {example.explanation && (
                   <p className="text-sm text-muted-foreground">{renderInline(example.explanation)}</p>
@@ -203,9 +246,11 @@ export const ProblemGuide = ({
                 {extras.testCases.map((testCase, index) => (
                   <tr key={index} className="border-b border-border last:border-0">
                     <td className="px-3 py-2 align-top font-mono text-xs">
-                      <ArgValues args={testCase.args} paramNames={paramNames} />
+                      <ArgValues args={testCase.args} paramNames={paramNames} paramShapes={paramShapes} />
                     </td>
-                    <td className="px-3 py-2 font-mono text-xs">{format(testCase.expected)}</td>
+                    <td className="px-3 py-2 align-top font-mono text-xs">
+                      <ResultValue value={testCase.expected} shape={resultShape} />
+                    </td>
                     <td className="px-3 py-2 text-muted-foreground">{testCase.note}</td>
                   </tr>
                 ))}

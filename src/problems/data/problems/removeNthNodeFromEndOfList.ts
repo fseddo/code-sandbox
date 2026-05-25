@@ -117,32 +117,40 @@ The gap of \`n + 1\` between the pointers guarantees \`slow\` stops one short of
 \`O(L)\` time where \`L\` is the list length, \`O(1)\` space.`,
       code: {
         javascript: `function removeNthFromEnd(head, n) {
+  // Dummy before the head so removing the real head needs no special case.
   const dummy = new ListNode(0, head);
   let fast = dummy;
   let slow = dummy;
+  // Send fast n + 1 nodes ahead, opening a fixed gap of n + 1 between the pointers.
   for (let i = 0; i <= n; i++) {
     fast = fast.next;
   }
+  // Move both in lockstep; when fast runs off the end, slow sits just before the target.
   while (fast) {
     fast = fast.next;
     slow = slow.next;
   }
+  // Splice the n-th-from-end node out by skipping over it.
   slow.next = slow.next.next;
-  return dummy.next;
+  return dummy.next; // skip the dummy; this is the (possibly new) head
 }`,
         typescript: `function removeNthFromEnd(head: ListNode | null, n: number): ListNode | null {
+  // Dummy before the head so removing the real head needs no special case.
   const dummy = new ListNode(0, head);
   let fast: ListNode | null = dummy;
   let slow: ListNode = dummy;
+  // Send fast n + 1 nodes ahead, opening a fixed gap of n + 1 between the pointers.
   for (let i = 0; i <= n; i++) {
     fast = fast!.next;
   }
+  // Move both in lockstep; when fast runs off the end, slow sits just before the target.
   while (fast) {
     fast = fast.next;
     slow = slow.next!;
   }
+  // Splice the n-th-from-end node out by skipping over it.
   slow.next = slow.next!.next;
-  return dummy.next;
+  return dummy.next; // skip the dummy; this is the (possibly new) head
 }`,
       },
     },
