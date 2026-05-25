@@ -1,6 +1,7 @@
 import type { AnyProblem, ClientProblem, AlgoProblem, ProblemBase, ProblemKind } from "../problem";
 import { type CompanyTag, companiesForProblem } from "../companies";
 import { twoSum } from "./twoSum";
+import { longestConsecutive } from "./longestConsecutive";
 import { addTwoNumbers } from "./addTwoNumbers";
 import { lengthOfLongestSubstring } from "./lengthOfLongestSubstring";
 import { findMedianSortedArrays } from "./findMedianSortedArrays";
@@ -106,6 +107,7 @@ import { isSameTree } from "./isSameTree";
 import { buildStarRating } from "./buildStarRating";
 import { buildDebouncedAutocomplete } from "./buildDebouncedAutocomplete";
 import { numberOfProvinces } from "./numberOfProvinces";
+import { geometricTriplets } from "./geometricTriplets";
 
 /**
  * The problem bank, keyed by id. Authored modules keep their precise generics for
@@ -114,6 +116,7 @@ import { numberOfProvinces } from "./numberOfProvinces";
  */
 export const problems = {
   "two-sum": twoSum,
+  "longest-consecutive-sequence": longestConsecutive,
   "add-two-numbers": addTwoNumbers,
   "longest-substring-without-repeating-characters": lengthOfLongestSubstring,
   "median-of-two-sorted-arrays": findMedianSortedArrays,
@@ -219,6 +222,7 @@ export const problems = {
   "build-star-rating": buildStarRating,
   "build-debounced-autocomplete": buildDebouncedAutocomplete,
   "number-of-provinces": numberOfProvinces,
+  "geometric-sequence-triplets": geometricTriplets,
 } satisfies Record<string, AnyProblem>;
 
 export type ProblemId = keyof typeof problems;

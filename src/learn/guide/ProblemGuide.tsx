@@ -6,6 +6,7 @@ import type { ProblemId, ProblemSummary } from "@/problems/data/problems";
 import { companiesForProblem } from "@/problems/data/companies";
 import type { Section } from "@/learn/data/topic";
 import { renderInline } from "@/learn/article/sections/renderInline";
+import { BoardGrid, isScalarGrid } from "@/learn/article/sections/BoardGrid";
 import { SectionRenderer } from "@/learn/article/SectionRenderer";
 import { ArticleSection } from "@/learn/article/ArticleSection";
 import { CATEGORY_ACCENT } from "@/learn/shared/categoryTheme";
@@ -33,6 +34,35 @@ const DIFFICULTY_PILL: Record<Difficulty, string> = {
 };
 
 const format = (value: unknown) => JSON.stringify(value);
+
+/**
+ * Render a call's argument tuple. When any argument is a matrix (a Sudoku board, a 0-1 grid) the whole
+ * tuple lays out as labelled blocks with the grid drawn as a board; otherwise it stays the compact
+ * inline `name = value, …` line. Shared by the Example and Test-case Input cells so both read the same.
+ */
+const ArgValues = ({ args, paramNames }: { args: unknown[]; paramNames: string[] }) => {
+  const label = (index: number) => paramNames[index] ?? `arg${index + 1}`;
+  if (!args.some(isScalarGrid)) {
+    return <>{args.map((arg, i) => `${label(i)} = ${format(arg)}`).join(", ")}</>;
+  }
+  return (
+    <span className="flex flex-col gap-2">
+      {args.map((arg, i) =>
+        isScalarGrid(arg) ? (
+          <span key={i} className="flex flex-col gap-1">
+            <span className="text-muted-foreground">{label(i)} =</span>
+            <BoardGrid grid={arg} />
+          </span>
+        ) : (
+          <span key={i}>
+            <span className="text-muted-foreground">{label(i)} = </span>
+            {format(arg)}
+          </span>
+        ),
+      )}
+    </span>
+  );
+};
 
 const OpenInEditor = ({ id }: { id: string }) => (
   <Link
@@ -104,7 +134,7 @@ export const ProblemGuide = ({
               <div key={index} className="space-y-2 rounded-lg border border-border bg-card/40 p-4">
                 <p className="font-mono text-sm">
                   <span className="text-muted-foreground">Input: </span>
-                  {example.args.map((arg, i) => `${paramNames[i] ?? `arg${i + 1}`} = ${format(arg)}`).join(", ")}
+                  <ArgValues args={example.args} paramNames={paramNames} />
                 </p>
                 <p className="font-mono text-sm">
                   <span className="text-muted-foreground">Output: </span>
@@ -172,8 +202,8 @@ export const ProblemGuide = ({
               <tbody>
                 {extras.testCases.map((testCase, index) => (
                   <tr key={index} className="border-b border-border last:border-0">
-                    <td className="px-3 py-2 font-mono text-xs">
-                      {testCase.args.map((arg, i) => `${paramNames[i] ?? `arg${i + 1}`} = ${format(arg)}`).join(", ")}
+                    <td className="px-3 py-2 align-top font-mono text-xs">
+                      <ArgValues args={testCase.args} paramNames={paramNames} />
                     </td>
                     <td className="px-3 py-2 font-mono text-xs">{format(testCase.expected)}</td>
                     <td className="px-3 py-2 text-muted-foreground">{testCase.note}</td>

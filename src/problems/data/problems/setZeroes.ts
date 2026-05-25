@@ -96,50 +96,60 @@ function setZeroes(matrix: number[][]): number[][] {
         javascript: `function setZeroes(matrix) {
   const m = matrix.length;
   const n = matrix[0].length;
+  // The first row and column will double as marker storage, so capture their own
+  // fate up front — these flags decide whether to zero them at the very end.
   let firstRowZero = false;
   let firstColZero = false;
   for (let j = 0; j < n; j++) if (matrix[0][j] === 0) firstRowZero = true;
   for (let i = 0; i < m; i++) if (matrix[i][0] === 0) firstColZero = true;
+  // Pass 1: scan the interior and stamp each zero's row/column into the headers.
   for (let i = 1; i < m; i++) {
     for (let j = 1; j < n; j++) {
       if (matrix[i][j] === 0) {
-        matrix[i][0] = 0;
-        matrix[0][j] = 0;
+        matrix[i][0] = 0; // mark this row in the first column
+        matrix[0][j] = 0; // mark this column in the first row
       }
     }
   }
+  // Pass 2: apply the marks — clear any interior cell whose header was flagged.
   for (let i = 1; i < m; i++) {
     for (let j = 1; j < n; j++) {
       if (matrix[i][0] === 0 || matrix[0][j] === 0) matrix[i][j] = 0;
     }
   }
+  // Finally resolve the border itself from the saved flags (it can't mark itself).
   if (firstRowZero) for (let j = 0; j < n; j++) matrix[0][j] = 0;
   if (firstColZero) for (let i = 0; i < m; i++) matrix[i][0] = 0;
-  return matrix;
+  return matrix; // same instance, mutated in place
 }`,
         typescript: `function setZeroes(matrix: number[][]): number[][] {
   const m = matrix.length;
   const n = matrix[0].length;
+  // The first row and column will double as marker storage, so capture their own
+  // fate up front — these flags decide whether to zero them at the very end.
   let firstRowZero = false;
   let firstColZero = false;
   for (let j = 0; j < n; j++) if (matrix[0][j] === 0) firstRowZero = true;
   for (let i = 0; i < m; i++) if (matrix[i][0] === 0) firstColZero = true;
+  // Pass 1: scan the interior and stamp each zero's row/column into the headers.
   for (let i = 1; i < m; i++) {
     for (let j = 1; j < n; j++) {
       if (matrix[i][j] === 0) {
-        matrix[i][0] = 0;
-        matrix[0][j] = 0;
+        matrix[i][0] = 0; // mark this row in the first column
+        matrix[0][j] = 0; // mark this column in the first row
       }
     }
   }
+  // Pass 2: apply the marks — clear any interior cell whose header was flagged.
   for (let i = 1; i < m; i++) {
     for (let j = 1; j < n; j++) {
       if (matrix[i][0] === 0 || matrix[0][j] === 0) matrix[i][j] = 0;
     }
   }
+  // Finally resolve the border itself from the saved flags (it can't mark itself).
   if (firstRowZero) for (let j = 0; j < n; j++) matrix[0][j] = 0;
   if (firstColZero) for (let i = 0; i < m; i++) matrix[i][0] = 0;
-  return matrix;
+  return matrix; // same instance, mutated in place
 }`,
       },
     },

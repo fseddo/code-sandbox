@@ -198,35 +198,47 @@ function isValidSudoku(board: string[][]): boolean {
 \`O(1)\` time and space (the board is a fixed 9x9 = 81 cells).`,
       code: {
         javascript: `function isValidSudoku(board) {
+  // One set holds every constraint we've already committed to, tagged by kind.
   const seen = new Set();
+  // Single pass over all 81 cells; the three rules are checked together.
   for (let r = 0; r < 9; r++) {
     for (let c = 0; c < 9; c++) {
       const d = board[r][c];
-      if (d === ".") continue;
+      if (d === ".") continue; // empty cells place no constraint
+      // Which 3x3 box owns this cell: 0..8, row-major over the box grid.
       const box = Math.floor(r / 3) * 3 + Math.floor(c / 3);
+      // The same digit may legally repeat across the board — only within
+      // the *same* row, *same* column, or *same* box is it a conflict.
       const keys = ["row-" + r + "-" + d, "col-" + c + "-" + d, "box-" + box + "-" + d];
       for (const key of keys) {
-        if (seen.has(key)) return false;
+        if (seen.has(key)) return false; // this digit already claimed that line/box
         seen.add(key);
       }
     }
   }
+  // Scanned every cell with no collision — the placement is valid.
   return true;
 }`,
         typescript: `function isValidSudoku(board: string[][]): boolean {
+  // One set holds every constraint we've already committed to, tagged by kind.
   const seen = new Set<string>();
+  // Single pass over all 81 cells; the three rules are checked together.
   for (let r = 0; r < 9; r++) {
     for (let c = 0; c < 9; c++) {
       const d = board[r][c];
-      if (d === ".") continue;
+      if (d === ".") continue; // empty cells place no constraint
+      // Which 3x3 box owns this cell: 0..8, row-major over the box grid.
       const box = Math.floor(r / 3) * 3 + Math.floor(c / 3);
+      // The same digit may legally repeat across the board — only within
+      // the *same* row, *same* column, or *same* box is it a conflict.
       const keys = ["row-" + r + "-" + d, "col-" + c + "-" + d, "box-" + box + "-" + d];
       for (const key of keys) {
-        if (seen.has(key)) return false;
+        if (seen.has(key)) return false; // this digit already claimed that line/box
         seen.add(key);
       }
     }
   }
+  // Scanned every cell with no collision — the placement is valid.
   return true;
 }`,
       },

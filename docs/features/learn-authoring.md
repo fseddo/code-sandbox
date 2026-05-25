@@ -82,4 +82,4 @@ export const myTopic = {
 - Every `practice` / `exampleProblem` id resolves in the bank (or you accept the dim-chip fallback).
 - Every `resources` URL actually loads.
 - The `walkthrough` reads top-to-bottom without the surrounding prose — captions + actions carry it.
-- Rendered at `/learn/<slug>`: the "On this page" nav lists the parts you expect, and nothing looks empty.
+- Don't run a render/dev-server check — the maintainer reviews the rendered page themselves. Confirm the section *data* is well-formed (tsc + the section types) and leave the visual pass to them.

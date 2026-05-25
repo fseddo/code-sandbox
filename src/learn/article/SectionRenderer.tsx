@@ -6,6 +6,7 @@ import { ComplexityTable } from "./sections/ComplexityTable";
 import { MatrixGrid } from "./sections/MatrixGrid";
 import { GraphDiagram } from "./sections/GraphDiagram";
 import { WalkthroughDiagram } from "./sections/WalkthroughDiagram";
+import { GridWalkthroughDiagram } from "./sections/GridWalkthroughDiagram";
 import { CalloutSection } from "./sections/CalloutSection";
 import { PracticeList } from "./sections/PracticeList";
 import { ResourceList } from "./sections/ResourceList";
@@ -31,6 +32,8 @@ const renderBody = ({ section, problemsById }: SectionRendererProps) => {
       return <MatrixGrid section={section} />;
     case "walkthrough":
       return <WalkthroughDiagram section={section} />;
+    case "gridWalkthrough":
+      return <GridWalkthroughDiagram section={section} />;
     case "callout":
       return <CalloutSection section={section} />;
     case "practice":

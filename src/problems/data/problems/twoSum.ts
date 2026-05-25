@@ -55,20 +55,24 @@ function twoSum(nums: number[], target: number): number[] {
 \`O(n²)\` time, \`O(1)\` space — simple, but quadratic on large inputs.`,
       code: {
         javascript: `function twoSum(nums, target) {
+  // Try every distinct pair (i, j) with i < j.
   for (let i = 0; i < nums.length; i++) {
     for (let j = i + 1; j < nums.length; j++) {
+      // First pair that hits target wins; i < j keeps the indices ascending.
       if (nums[i] + nums[j] === target) return [i, j];
     }
   }
-  return [];
+  return []; // guaranteed solution means this is unreachable
 }`,
         typescript: `function twoSum(nums: number[], target: number): number[] {
+  // Try every distinct pair (i, j) with i < j.
   for (let i = 0; i < nums.length; i++) {
     for (let j = i + 1; j < nums.length; j++) {
+      // First pair that hits target wins; i < j keeps the indices ascending.
       if (nums[i] + nums[j] === target) return [i, j];
     }
   }
-  return [];
+  return []; // guaranteed solution means this is unreachable
 }`,
       },
     },
@@ -79,22 +83,32 @@ function twoSum(nums: number[], target: number): number[] {
 \`O(n)\` time, \`O(n)\` space.`,
       code: {
         javascript: `function twoSum(nums, target) {
+  // Map each value we've passed to the index it lives at.
   const seen = new Map();
   for (let i = 0; i < nums.length; i++) {
+    // The one number that completes this pair.
     const need = target - nums[i];
+    // Check before inserting: never pairs an element with itself, and
+    // the stored partner is at an earlier index, so [seen, i] is ascending.
     if (seen.has(need)) return [seen.get(need), i];
+    // Partner not seen yet — record this value so a later element can find it.
     seen.set(nums[i], i);
   }
-  return [];
+  return []; // guaranteed solution means this is unreachable
 }`,
         typescript: `function twoSum(nums: number[], target: number): number[] {
+  // Map each value we've passed to the index it lives at.
   const seen = new Map<number, number>();
   for (let i = 0; i < nums.length; i++) {
+    // The one number that completes this pair.
     const need = target - nums[i];
+    // Check before inserting: never pairs an element with itself, and
+    // the stored partner is at an earlier index, so [seen, i] is ascending.
     if (seen.has(need)) return [seen.get(need)!, i];
+    // Partner not seen yet — record this value so a later element can find it.
     seen.set(nums[i], i);
   }
-  return [];
+  return []; // guaranteed solution means this is unreachable
 }`,
       },
     },

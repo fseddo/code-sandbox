@@ -6,6 +6,8 @@ The bar is the ByteByteGo *Coding Interview Patterns* problem chapter (statement
 
 **This is the authoring half of a two-agent pipeline.** This agent *writes* the page. A separate **auditor agent** then independently (a) audits the entry against this rubric, and (b) **verifies every authored test case** by running it through the real worker (`verify`). So: author carefully, but know the test-case outputs and the overall entry will be machine- and rubric-checked afterward — write them in a form the auditor can run (§11), and surface anything you're unsure about so the audit can focus there.
 
+**Building a whole chapter at once?** The `study-guide-section-builder` agent orchestrates the entire flow for one chapter — sourcing the problem set from ByteByteGo, importing gaps, redoing the topic intro, running author → auditor for every problem, and batching all checks to the end. The per-problem author/auditor rules below are what it dispatches; read them as the contract that agent relies on.
+
 ## 1. Page anatomy — derived vs authored
 
 A problem page is assembled from three sources. **The agent only writes the "authored" rows.** Everything else is pulled from the problem bank automatically.
@@ -51,6 +53,7 @@ The Intuition section must move brute-force → optimal the way ByteByteGo does:
    - Name the flaw and ask the question: *"This is O(n³) — far more work than necessary. Can we do better?"*
    - State the **key observation** that unlocks the optimization (*"if we fix one number, the rest is just finding a pair…"*).
    - Connect to a known pattern when one applies, as a **cross-link** (§7): *"…which is exactly the [Two pointers](/learn/guide/algos/topic/two-pointers) pair-sum problem."*
+   - **Bridge the model to the stored solution if they differ.** If the walkthrough teaches a different-but-equivalent variable model than the stored `solutions[]` actually uses (e.g. a `slow`/`fast` pair when the implementation tracks a `k`-as-count, or a walkthrough that never exercises an early-exit branch the code has), state the correspondence explicitly here — *"`slow` here is `k - 1` in the implementation"* — so a reader who scrolls from the walkthrough into the Optimization code never meets a variable that wasn't introduced. A faithful match is best; an explicit bridge is the fallback; an unexplained mismatch is a defect the auditor will flag.
    - Transition into the diagram, ending on a colon: *"Walking it through:"*
 4. **Walkthrough** — visualize the optimal idea frame by frame (§8).
 
@@ -93,6 +96,7 @@ Keep paragraphs short; lead a labeled paragraph with `**Label:**`.
 `{ kind: "walkthrough", lane, showIndices?, frames }` ([WalkthroughDiagram](../../src/learn/article/sections/WalkthroughDiagram.tsx)). Rules:
 
 - **`lane`** — the sequence being scanned (`(string | number)[]`). For sorted/array problems show the **sorted** array if that's what the optimal uses; put the sort in the `heading` (e.g. `heading: "sorted: [-4, -1, -1, 0, 1, 2]"`).
+- **One lane per walkthrough Section.** `WalkthroughDiagram` renders the single `lane` for *every* frame; frames only move pointers/marks over it — they **cannot** swap in a second string/array. So every frame's `pointers.at` and `marked` indices must be in-bounds for that one lane, and no frame's `action`/`caption` may reference a value that isn't in the rendered lane. To show a **second** input (e.g. a passing case after a failing one, as Valid Palindrome does), add a **second** `walkthrough` Section with its own `lane` and `heading` — don't narrate a different input over the first lane.
 - **`showIndices: true`** for any index-returning or index-reasoned problem.
 - **`frames`** — **4–6** frames. Each: `pointers?: { name, at }[]`, `range?: [start, end]` (window highlight), `marked?: number[]` (evicted/skipped cells, struck through), `action?` (the decision callout beside the lane, e.g. `"sum < target → left++"`), `caption?` (the one-line why).
 - **Pointer names drive color** (stable by first appearance: orange, sky, violet, emerald). Reuse conventional names: `left`/`right`, `L`/`R`, `i`, `slow`/`fast`.
@@ -102,6 +106,18 @@ Keep paragraphs short; lead a labeled paragraph with `**Label:**`.
   - the **success step(s)**.
   3Sum's walkthrough does all three — model it.
 - Keep `action` terse and math-y; keep `caption` a plain-English why. Don't restate the code.
+
+### 8a. Grid problems — use `gridWalkthrough`, not a 1-D lane
+
+For 2-D board problems (Sudoku validation, matrix striping, grid scans) author a **`gridWalkthrough`** Section ([GridWalkthroughDiagram](../../src/learn/article/sections/GridWalkthroughDiagram.tsx)) — the 2-D analogue of `walkthrough`. It renders a stack of curated board snapshots, one per step. **Do not** flatten a grid onto a 1-D `lane` (a single row is misleading) and do not fall back to a prose-only description — the grid renderer exists now, so show the real board.
+
+`{ kind: "gridWalkthrough", grid, showIndices?, frames }`:
+
+- **`grid`** — the 2-D board `(string | number)[][]`. Rendered by the shared [BoardGrid](../../src/learn/article/sections/BoardGrid.tsx) primitive (same one the Example and Test-case inputs use, so a board reads identically everywhere). Empty cells (`"."` or `0`) render dimmed.
+- **`showIndices: true`** for any coordinate-reasoned problem (Sudoku, matrix) — draws row/col index gutters.
+- **`frames`** — **4–6** curated key steps (not every cell). Each: `cursor?: [row, col]` (the cell being scanned, orange highlight), `marked?: [row, col][]` (conflicts / cells about to be zeroed, rose), `active?: [row, col][]` (the region under inspection — current row/col/box, soft highlight), `action?`, `caption?`. Coordinates must be in-bounds for the board.
+- **Per-frame `grid` override** — for an **in-place** problem where the board mutates (e.g. set-matrix-zeroes), give a frame its own `grid` to show the board's state at that step; otherwise frames reuse the section `grid` (e.g. Sudoku, where the board never changes and only the cursor moves).
+- **Same "teach the whole mechanic" rule** as §8: include a scanning step, the conflict/decision step, and the outcome.
 
 ## 9. Code & comments
 
@@ -140,7 +156,7 @@ Run and confirm all pass:
 - `npx tsc --noEmit` — clean.
 - `npx eslint src/learn src/problems/data/problems/<file>.ts` — clean.
 - `node scripts/verifyProblems.mjs <slug>` — still PASS (confirms commenting the stored solution didn't break the problem).
-- **Render check**: hit `/learn/guide/<track>/problem/<id>` and confirm: one Example, Intuition reads lead→brute→retrospective→walkthrough, the walkthrough frames are correct, Optimization shows the commented solution, Complexity bullets render, Test cases table renders, prev/next nav points at the right neighbours.
+- **Don't run a render/dev-server check.** The maintainer reviews the rendered page themselves; agent-driven render checks usually just fail to boot and waste a turn. Confirm the section *data* is well-formed (tsc + the section types catch structural problems); leave the visual pass to the maintainer.
 - **Self-derive** every walkthrough frame, brute-force output, and test-case output before handing off. The auditor verifies the test cases mechanically, but the walkthrough, brute-force code, and complexity are reasoning the auditor reviews — not runs — so they must be right going in.
 
 ## 13. Hand-off to the auditor

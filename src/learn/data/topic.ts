@@ -64,6 +64,25 @@ export type WalkthroughFrame = {
   action?: string;
 };
 
+/** A single cell coordinate in a 2-D board walkthrough, as `[row, col]` (0-based). */
+export type GridCoord = [row: number, col: number];
+
+/** One step of a {@link Section} `gridWalkthrough` — the 2-D analogue of {@link WalkthroughFrame}. */
+export type GridWalkthroughFrame = {
+  /** Board state for this step. Defaults to the section's `grid`; supply it to depict an in-place mutation. */
+  grid?: (string | number)[][];
+  /** The cell the scan sits on this step — drawn with the cursor highlight. */
+  cursor?: GridCoord;
+  /** Cells flagged this step (a conflict, a cell about to be zeroed) — drawn marked. */
+  marked?: GridCoord[];
+  /** Cells softly highlighted as the region under inspection (the current row / column / box). */
+  active?: GridCoord[];
+  /** One-line narration shown under the frame. */
+  caption?: string;
+  /** The decision for this step, shown in a dashed callout beside the board. */
+  action?: string;
+};
+
 /** Fields shared by every section, regardless of kind — the spine of the discriminated union. */
 type SectionBase = {
   /** Optional sub-heading rendered above the section body. */
@@ -105,6 +124,14 @@ export type Section = SectionBase &
         /** Draw a faint 0-based index under each cell (for index-returning problems like two-sum). */
         showIndices?: boolean;
         frames: WalkthroughFrame[];
+      }
+    | {
+        kind: "gridWalkthrough";
+        /** The 2-D board being scanned — frames default to this state unless a frame overrides `grid`. */
+        grid: (string | number)[][];
+        /** Draw faint 0-based row/col index labels (for grid problems reasoned about by coordinate). */
+        showIndices?: boolean;
+        frames: GridWalkthroughFrame[];
       }
     /** A bulleted aside in one of three tones — pitfalls (warn), corner cases (info), interview tips (tip). */
     | { kind: "callout"; tone: CalloutTone; items: string[] }

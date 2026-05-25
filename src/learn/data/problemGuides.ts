@@ -160,6 +160,111 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
     },
   ],
 
+  "valid-sudoku": [
+    {
+      kind: "prose",
+      body:
+        "The rules are three independent checks, so the plainest approach runs three sweeps. For each of the nine " +
+        "rows collect its filled digits and look for a repeat; do the same for each column; then for each of the " +
+        "nine `3 x 3` boxes. If any group repeats a digit the board is invalid.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — nine rows + nine columns + nine boxes, each re-scanned: O(1) for 9x9, but three full passes.",
+      source:
+        "function isValidSudoku(board) {\n" +
+        "  // True if a group of cells repeats any digit (ignoring '.').\n" +
+        "  const hasDup = (cells) => {\n" +
+        "    const seen = new Set();\n" +
+        "    for (const d of cells) {\n" +
+        "      if (d === '.') continue;       // empty cells never conflict\n" +
+        "      if (seen.has(d)) return true;  // digit already in this group\n" +
+        "      seen.add(d);\n" +
+        "    }\n" +
+        "    return false;\n" +
+        "  };\n" +
+        "  // Pass 1: every row.\n" +
+        "  for (let r = 0; r < 9; r++) {\n" +
+        "    if (hasDup(board[r])) return false;\n" +
+        "  }\n" +
+        "  // Pass 2: every column (gather the 9 cells down each column).\n" +
+        "  for (let c = 0; c < 9; c++) {\n" +
+        "    const col = [];\n" +
+        "    for (let r = 0; r < 9; r++) col.push(board[r][c]);\n" +
+        "    if (hasDup(col)) return false;\n" +
+        "  }\n" +
+        "  // Pass 3: every 3x3 box (top-left corners at multiples of 3).\n" +
+        "  for (let br = 0; br < 9; br += 3) {\n" +
+        "    for (let bc = 0; bc < 9; bc += 3) {\n" +
+        "      const box = [];\n" +
+        "      for (let r = br; r < br + 3; r++)\n" +
+        "        for (let c = bc; c < bc + 3; c++) box.push(board[r][c]);\n" +
+        "      if (hasDup(box)) return false;\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return true;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "That works, but it walks the board three separate times and re-derives a fresh `Set` for every group. " +
+        "Can we do it in one pass and keep it cleaner?\n\n" +
+        "Notice the only thing each group cares about is: *has this digit already appeared in my row, my column, " +
+        "or my box?* A repeat is a [duplicate-detection](/learn/guide/algos/topic/hash-maps) problem, and a hash " +
+        "**set** answers \"have I seen this before?\" in O(1). So we don't need to gather groups at all — we can " +
+        "scan the 81 cells once and, at each filled cell, test three memberships at once.\n\n" +
+        "Keep three kinds of seen-marker, tagged so they can't collide: `row-r-d`, `col-c-d`, and `box-b-d`, where " +
+        "the box index `b = floor(r/3) * 3 + floor(c/3)` (0–8). For a digit `d` at `(r, c)`, if any of its three " +
+        "keys is already in the set, that digit repeats in that row, column, or box — return `false` immediately. " +
+        "Otherwise add all three keys and move on. The same digit `5` is free to appear all over the board; only a " +
+        "*matching* key (same line or same box) is a conflict.\n\n" +
+        "The set check is the same one-line `seen.has(...)` for all three rules — no special-casing per group. " +
+        "Here's the left-to-right, top-to-bottom scan over a board whose column 0 hides a repeated 5:",
+    },
+    {
+      kind: "gridWalkthrough",
+      heading: "scan order: row by row, testing three keys at each filled cell",
+      showIndices: true,
+      grid: [
+        ["5", "3", ".", ".", "7", ".", ".", ".", "."],
+        ["6", ".", ".", "1", "9", "5", ".", ".", "."],
+        [".", "9", "8", ".", ".", ".", ".", "6", "."],
+        ["5", ".", ".", ".", "6", ".", ".", ".", "3"],
+        ["4", ".", ".", "8", ".", "3", ".", ".", "1"],
+        ["7", ".", ".", ".", "2", ".", ".", ".", "6"],
+        [".", "6", ".", ".", ".", ".", "2", "8", "."],
+        [".", ".", ".", "4", "1", "9", ".", ".", "5"],
+        [".", ".", ".", ".", "8", ".", ".", "7", "9"],
+      ],
+      frames: [
+        {
+          cursor: [0, 0],
+          action: "5 @ (0,0) · keys new → add",
+          caption: "First filled cell: stamp `row-0-5`, `col-0-5`, and `box-0-5`. All three are new.",
+        },
+        {
+          cursor: [1, 0],
+          action: "6 @ (1,0) · keys new → add",
+          caption: "Routine: every filled cell stamps its three keys. Column 0 now holds a 5 and a 6.",
+        },
+        {
+          cursor: [1, 5],
+          action: "5 @ (1,5) · keys new → add",
+          caption: "A second 5 — but row 1, column 5, box 1 are all different from the first 5's groups, so no key collides. The same digit is free to repeat elsewhere.",
+        },
+        {
+          cursor: [3, 0],
+          marked: [[0, 0]],
+          active: [[1, 0], [2, 0], [4, 0], [5, 0], [6, 0], [7, 0], [8, 0]],
+          action: "5 @ (3,0) · col-0-5 already seen → false",
+          caption: "Down column 0, this 5 matches the 5 at (0,0): `col-0-5` is already in the set. The board is invalid — stop immediately.",
+        },
+      ],
+    },
+  ],
+
   "3sum": [
     {
       kind: "prose",
@@ -236,6 +341,89 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
           marked: [2],
           action: "nums[2] == nums[1] → skip",
           caption: "Index 2 is another -1; skip it as a pivot, or we'd emit [-1, -1, 2] and [-1, 0, 1] a second time.",
+        },
+      ],
+    },
+  ],
+
+  "geometric-sequence-triplets": [
+    {
+      kind: "prose",
+      body:
+        "A first pass checks every index triple `(i, j, k)` with `i < j < k` and counts the ones that step up by the " +
+        "ratio `r` — `nums[j] === nums[i] * r` and `nums[k] === nums[j] * r`.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — every ordered triple, count the geometric ones: O(n³).",
+      source:
+        "function geometricTriplets(nums, r) {\n" +
+        "  let count = 0;\n" +
+        "  // Check every distinct triple of indexes in order.\n" +
+        "  for (let i = 0; i < nums.length; i++) {\n" +
+        "    for (let j = i + 1; j < nums.length; j++) {\n" +
+        "      for (let k = j + 1; k < nums.length; k++) {\n" +
+        "        // A geometric step needs the middle to be i × r and the last to be the middle × r.\n" +
+        "        if (nums[j] === nums[i] * r && nums[k] === nums[j] * r) {\n" +
+        "          count++; // each qualifying index combination is its own triplet\n" +
+        "        }\n" +
+        "      }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return count;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(n³) — far more work than necessary. Can we do better?\n\n" +
+        "Notice that a triplet is pinned down by its **middle** element. If we fix `nums[j]` as the middle, a valid " +
+        "triplet just needs a left partner equal to `nums[j] / r` somewhere *before* `j`, and a right partner equal " +
+        "to `nums[j] * r` somewhere *after* `j`. The number of triplets centred on `j` is then simply " +
+        "`(# of nums[j]/r on the left) × (# of nums[j]*r on the right)` — every left partner can pair with every " +
+        "right partner.\n\n" +
+        "Counting *how many* of a given value sit on each side is what a frequency map does in O(1), so this is a " +
+        "[Hash map](/learn/guide/algos/topic/hash-maps) problem. Keep two maps: `left` (values strictly before `j`) " +
+        "and `right` (values strictly after `j`). Seed `right` with the whole array, then sweep `j` left to right — " +
+        "before counting, move `nums[j]` out of `right`; after counting, add it into `left`. Because the left partner " +
+        "must be the *exact* integer `nums[j] / r`, guard the division with `nums[j] % r === 0`. (The stored " +
+        "solution iterates the middle directly and names it `mid` rather than indexing `nums[j]`.)\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "nums = [1, 2, 2, 4], r = 2",
+      lane: [1, 2, 2, 4],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "j", at: 0 }],
+          action: "1 % 2 ≠ 0 → skip",
+          caption:
+            "right = {2:2, 4:1}, left = {}. Middle 1 would need a left partner of 1/2 — not an integer, so the guard rejects it. Contributes 0.",
+        },
+        {
+          pointers: [{ name: "j", at: 1 }],
+          action: "left[1] × right[4] = 1 × 1 = 1",
+          caption:
+            "left = {1:1}, right = {2:1, 4:1}. Middle 2 needs 2/2 = 1 on the left (one) and 2×2 = 4 on the right (one). count = 1.",
+        },
+        {
+          pointers: [{ name: "j", at: 2 }],
+          action: "left[1] × right[4] = 1 × 1 = 1",
+          caption:
+            "left = {1:1, 2:1}, right = {4:1}. The second 2 is its own middle — same partners (the 1 and the 4), counted again by index. count = 2.",
+        },
+        {
+          pointers: [{ name: "j", at: 3 }],
+          action: "left[2] × right[8] = 2 × 0 = 0",
+          caption:
+            "left = {1:1, 2:2}, right = {}. Middle 4 has two left partners (the 2s) but needs a 4×2 = 8 after it — none exist. Contributes 0.",
+        },
+        {
+          action: "total = 2",
+          caption: "Sweep done: triplets (0,1,3) and (0,2,3), one per choice of middle 2. Answer: 2.",
         },
       ],
     },
@@ -571,6 +759,272 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "}",
     },
   ],
+
+  "two-sum": [
+    {
+      kind: "prose",
+      body:
+        "The most direct approach checks every pair of numbers: for each index `i`, walk every later index " +
+        "`j` and test whether `nums[i] + nums[j]` equals `target`. The first matching pair is the answer, " +
+        "and because `j` always starts after `i` the two indices come out in ascending order for free.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — test every pair: O(n²).",
+      source:
+        "function twoSum(nums, target) {\n" +
+        "  // Try every distinct pair (i, j) with i < j.\n" +
+        "  for (let i = 0; i < nums.length; i++) {\n" +
+        "    for (let j = i + 1; j < nums.length; j++) {\n" +
+        "      // First pair that hits target wins; i < j keeps indices ascending.\n" +
+        "      if (nums[i] + nums[j] === target) return [i, j];\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return []; // problem guarantees a solution, so this is unreachable\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(n²) — for each element we rescan the whole rest of the array. Can we do better?\n\n" +
+        "The inner loop is really asking one narrow question: *have I already seen the number that completes " +
+        "this pair?* For a value `x`, that partner is exactly `target − x` — there is only **one** number that " +
+        "works. So instead of scanning for it, we can remember every value we've passed in a hash map keyed by " +
+        "value, and look the partner up in O(1).\n\n" +
+        "Storing `value → index` lets that lookup also hand back *where* the partner was, which is what we need " +
+        "to return. This is the core [hash maps](/learn/guide/algos/topic/hash-maps) trick: trade O(n) space for " +
+        "O(1) membership-and-recall, collapsing the nested scan into a single pass.\n\n" +
+        "One pass suffices if we check **before** we insert: at index `i` we ask whether `target − nums[i]` is " +
+        "already stored, and only then add `nums[i]` ourselves. Checking first means we never pair an element " +
+        "with itself, and the stored partner is always at an earlier index — so `[seen, i]` is already ascending.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "nums = [3, 8, 2, 7, 5], target = 9 — one-pass seen-map",
+      lane: [3, 8, 2, 7, 5],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "i", at: 0 }],
+          action: "need 9 − 3 = 6 → not seen, store 3 → seen = {3:0}",
+          caption: "Partner of 3 is 6; nothing stored yet, so record value 3 at index 0.",
+        },
+        {
+          pointers: [{ name: "i", at: 1 }],
+          marked: [0],
+          action: "need 9 − 8 = 1 → not seen, store 8 → seen = {3:0, 8:1}",
+          caption: "A miss: 1 was never seen. Add value 8 at index 1 and move on.",
+        },
+        {
+          pointers: [{ name: "i", at: 2 }],
+          marked: [0, 1],
+          action: "need 9 − 2 = 7 → not seen, store 2 → seen = {3:0, 8:1, 2:2}",
+          caption: "Still no partner — 7 hasn't appeared. Record value 2 at index 2.",
+        },
+        {
+          pointers: [{ name: "i", at: 3 }],
+          marked: [0, 1, 2],
+          action: "need 9 − 7 = 2 → seen at index 2 → return [2, 3]",
+          caption: "Hit: the partner 2 was stored back at index 2. The pair is [2, 3], already ascending.",
+        },
+      ],
+    },
+  ],
+
+  "set-matrix-zeroes": [
+    {
+      kind: "prose",
+      body:
+        "We can't zero a cell's row and column the instant we see a `0` — those freshly written zeros would " +
+        "look like original zeros to the rest of the scan and cascade outward, eventually wiping the whole " +
+        "matrix. The fix is to **decide first, write second**: one pass records *which* rows and *which* " +
+        "columns contain a zero into two sets, and a second pass zeroes a cell only if its row or column was " +
+        "marked. No write can corrupt a decision, because every decision is already made.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — two sets remember the marked rows and columns: O(m·n) time, O(m + n) space.",
+      source:
+        "function setZeroes(matrix) {\n" +
+        "  const zeroRows = new Set();\n" +
+        "  const zeroCols = new Set();\n" +
+        "  // Pass 1: only *record* which rows and columns had a zero — write nothing yet.\n" +
+        "  for (let i = 0; i < matrix.length; i++) {\n" +
+        "    for (let j = 0; j < matrix[0].length; j++) {\n" +
+        "      if (matrix[i][j] === 0) {\n" +
+        "        zeroRows.add(i);\n" +
+        "        zeroCols.add(j);\n" +
+        "      }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  // Pass 2: zero a cell iff its row or column was marked — decisions are frozen.\n" +
+        "  for (let i = 0; i < matrix.length; i++) {\n" +
+        "    for (let j = 0; j < matrix[0].length; j++) {\n" +
+        "      if (zeroRows.has(i) || zeroCols.has(j)) matrix[i][j] = 0;\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return matrix;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This runs in O(m·n) time, which is optimal — we have to look at every cell at least once. But the two " +
+        "sets cost O(m + n) extra space. Can we do better on space?\n\n" +
+        "The key observation: the matrix already contains `m + n` cells we could repurpose as marker storage — " +
+        "its **first row and first column**. Let `matrix[0][j]` stand in for `zeroCols.has(j)` and `matrix[i][0]` " +
+        "for `zeroRows.has(i)`. Scanning the *interior* (rows and columns from index 1), whenever a cell is `0` " +
+        "we stamp a `0` into its column's header `matrix[0][j]` and its row's header `matrix[i][0]`. That is the " +
+        "[hash maps](/learn/guide/algos/topic/hash-maps) marker idea — membership flags — pushed down to O(1) " +
+        "extra space by storing the flags inside the data itself.\n\n" +
+        "The catch is the first row and first column overlap at `matrix[0][0]` and double as both data and " +
+        "markers, so we can't let them encode their own fate. We track *those two* with a pair of booleans " +
+        "(`firstRowZero`, `firstColZero`) scanned up front, mark and apply the interior from the headers, then " +
+        "zero the first row and first column **last** from the two booleans. So the stored solution keeps the " +
+        "two-pass *decide-then-write* spine of the brute force; it just swaps the two `Set`s for the matrix's " +
+        "own border plus two flags.\n\n" +
+        "Here's that marker scan on a 3x4 grid — the highlighted **border** holds the flags; watch interior zeros " +
+        "stamp their row and column headers, then the apply pass clear every flagged cell:",
+    },
+    {
+      kind: "gridWalkthrough",
+      heading: "matrix = [[1,2,3,4],[5,0,7,8],[9,1,2,0]] — border row/column store the flags",
+      showIndices: true,
+      grid: [
+        [1, 2, 3, 4],
+        [5, 0, 7, 8],
+        [9, 1, 2, 0],
+      ],
+      frames: [
+        {
+          active: [[0, 0], [0, 1], [0, 2], [0, 3], [1, 0], [2, 0]],
+          action: "firstRowZero = false · firstColZero = false",
+          caption: "Neither the first row nor the first column holds an original zero, so the border (highlighted) is free to repurpose as marker storage.",
+        },
+        {
+          grid: [
+            [1, 0, 3, 4],
+            [0, 0, 7, 8],
+            [9, 1, 2, 0],
+          ],
+          cursor: [1, 1],
+          marked: [[0, 1], [1, 0]],
+          action: "0 @ (1,1) → stamp headers (0,1) and (1,0)",
+          caption: "Interior zero at (1,1): write 0 into its column header (0,1) and its row header (1,0). The data zero stays put.",
+        },
+        {
+          grid: [
+            [1, 0, 3, 0],
+            [0, 0, 7, 8],
+            [0, 1, 2, 0],
+          ],
+          cursor: [2, 3],
+          marked: [[0, 3], [2, 0]],
+          action: "0 @ (2,3) → stamp headers (0,3) and (2,0)",
+          caption: "Second interior zero at (2,3) stamps header (0,3) and (2,0). The border now flags rows 1, 2 and columns 1, 3.",
+        },
+        {
+          grid: [
+            [1, 0, 3, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+          ],
+          marked: [[1, 1], [1, 2], [1, 3], [2, 1], [2, 2], [2, 3]],
+          action: "apply: zero each interior cell with a flagged header",
+          caption: "Second pass clears every interior cell whose row or column header is 0. Both border flags were false, so the first row and column keep their non-marker values — the matrix is done.",
+        },
+      ],
+    },
+  ],
+
+  "longest-consecutive-sequence": [
+    {
+      kind: "prose",
+      body:
+        "The most direct way to find the longest run of consecutive values is to **sort** the array, then walk it " +
+        "once: every time the next value is exactly one more than the previous, the current run grows; otherwise " +
+        "the run resets. Track the longest run seen. Sorting lines the values up so consecutive numbers sit next " +
+        "to each other, and a single pass measures every run.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — sort, then scan for the longest consecutive run: O(n log n).",
+      source:
+        "function longestConsecutive(nums) {\n" +
+        "  if (nums.length === 0) return 0;\n" +
+        "  // Sort so consecutive values become adjacent.\n" +
+        "  const sorted = [...nums].sort((a, b) => a - b);\n" +
+        "  let longest = 1;\n" +
+        "  let run = 1;\n" +
+        "  for (let i = 1; i < sorted.length; i++) {\n" +
+        "    if (sorted[i] === sorted[i - 1]) continue; // duplicate counts once\n" +
+        "    if (sorted[i] === sorted[i - 1] + 1) {\n" +
+        "      run++; // extends the current run\n" +
+        "    } else {\n" +
+        "      run = 1; // gap — start a fresh run\n" +
+        "    }\n" +
+        "    longest = Math.max(longest, run);\n" +
+        "  }\n" +
+        "  return longest;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(n log n) — the sort dominates, and the prompt asks for O(n). Can we do better than sorting?\n\n" +
+        "The only reason we sorted was to ask *\"is the next number present?\"* — but a hash set answers exactly " +
+        "that in O(1), no ordering required. Dump every value into a `Set` (which also drops duplicates for free), " +
+        "and consecutiveness becomes a membership test: a run containing `n` simply means `n`, `n+1`, `n+2`, … are " +
+        "all in the set.\n\n" +
+        "The key observation that keeps this linear: **only start counting a run from its smallest value** — a value " +
+        "`n` whose predecessor `n - 1` is *absent* from the set. Any value in the middle of a run has its predecessor " +
+        "present, so we skip it rather than re-walking the same run from the inside. That guard means each run is " +
+        "walked exactly once, and across all runs every value is visited at most twice — so despite the nested-looking " +
+        "while loop, the total work is O(n). This trading of O(n) space for O(1) lookups is the core " +
+        "[hash maps](/learn/guide/algos/topic/hash-maps) move.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "set of nums = [100, 4, 200, 1, 3, 2] — walk forward only from run starts",
+      lane: [100, 4, 200, 1, 3, 2],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "n", at: 0 }],
+          action: "has(99)? no → run start; has(101)? no",
+          caption: "100 is a run start (99 absent), but 101 is missing too — a lone run of length 1.",
+        },
+        {
+          pointers: [{ name: "n", at: 1 }],
+          marked: [1],
+          action: "has(3)? yes → skip",
+          caption: "A skip step: 4 has predecessor 3 in the set, so it sits inside a run — don't start here.",
+        },
+        {
+          pointers: [{ name: "n", at: 3 }],
+          action: "has(0)? no → run start",
+          caption: "1 is a run start (0 absent). Begin walking forward: length = 1, look for 2.",
+        },
+        {
+          pointers: [{ name: "n", at: 3 }, { name: "current", at: 1 }],
+          marked: [3, 5, 4, 1],
+          action: "has(2),has(3),has(4) ✓ → length 4; has(5)? no",
+          caption: "Walk 1 → 2 → 3 → 4 (all present, scattered across the lane), stop at the missing 5. Run length 4. longest = 4.",
+        },
+        {
+          pointers: [{ name: "n", at: 4 }],
+          marked: [4],
+          action: "has(2)? yes → skip",
+          caption: "3 has predecessor 2 present — skip. Same for 2 (1 present). They were already counted by the walk.",
+        },
+      ],
+    },
+  ],
 };
 
 /**
@@ -581,12 +1035,129 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
  */
 export type GuideTestCase = { args: unknown[]; expected: unknown; note: string };
 
+/** Fresh 9x9 board of empty cells, for building small single-conflict test boards. */
+const emptyBoard = () => Array.from({ length: 9 }, () => Array<string>(9).fill("."));
+
 /**
  * Post-optimization teaching content, shown *after* the Optimization section: a complexity write-up and a
  * table of edge cases worth considering. Authored (the test cases are deliberately not the real hidden tests,
  * so the page can't be used to game the judge). Keyed by problem id, same enrichment posture as PROBLEM_GUIDES.
  */
 export const PROBLEM_EXTRAS: Record<string, { complexity?: Section[]; testCases?: GuideTestCase[] }> = {
+  "set-matrix-zeroes": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(m·n). Here's why:\n\n" +
+          "- A first sweep over every cell records which rows and columns must be zeroed — `m × n` cells.\n" +
+          "- A second sweep over every cell applies the marks — another `m × n` cells.\n\n" +
+          "Both passes are linear in the cell count and run one after the other, so the total is " +
+          "2 × O(m·n) = **O(m·n)**, where `m` and `n` are the matrix's dimensions. We can't do better — any " +
+          "correct solution must inspect every cell at least once.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1). Here's why:\n\n" +
+          "- The brute-force baseline keeps two sets, `zeroRows` and `zeroCols`, holding up to `m` and `n` " +
+          "entries — that's O(m + n) extra space.\n" +
+          "- The stored solution drops both sets: it reuses the matrix's own first row and first column as the " +
+          "marker storage and adds only two booleans (`firstRowZero`, `firstColZero`) — O(1) extra space.\n\n" +
+          "So the optimization trades the O(m + n) sets for **O(1)** extra space. Nothing new is allocated — the " +
+          "result is the same matrix mutated in place, so there is no output array to count.",
+      },
+    ],
+    testCases: [
+      {
+        args: [[[1, 2, 3], [4, 5, 6]]],
+        expected: [[1, 2, 3], [4, 5, 6]],
+        note: "No zero anywhere — the matrix is returned unchanged.",
+      },
+      {
+        args: [[[2, 3, 4], [5, 0, 7], [8, 9, 1]]],
+        expected: [[2, 0, 4], [0, 0, 0], [8, 0, 1]],
+        note: "A single interior zero at (1,1) clears row 1 and column 1, leaving the corners intact.",
+      },
+      {
+        args: [[[0, 3, 3], [4, 5, 6]]],
+        expected: [[0, 0, 0], [0, 5, 6]],
+        note: "Zero in the top-left corner — the tricky case for the marker trick, since (0,0) is both a header and data. firstRowZero and firstColZero handle it: row 0 and column 0 both clear.",
+      },
+      {
+        args: [[[1, 2], [0, 0]]],
+        expected: [[0, 0], [0, 0]],
+        note: "An all-zero row marks both columns, so its zeros cascade upward and the whole matrix clears.",
+      },
+      {
+        args: [[[2, 0, 4, 5]]],
+        expected: [[0, 0, 0, 0]],
+        note: "Single-row 1xN matrix — the only row contains a zero, so the entire row clears.",
+      },
+      {
+        args: [[[2], [0], [5]]],
+        expected: [[0], [0], [0]],
+        note: "Single-column Nx1 matrix — the zero at (1,0) clears the lone column top to bottom.",
+      },
+    ],
+  },
+
+  "valid-sudoku": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(1) for this problem. Here's why:\n\n" +
+          "- The board is a fixed `9 x 9`, so the scan always visits exactly 81 cells.\n" +
+          "- Each cell does a constant amount of work: derive three keys and do three O(1) set probes.\n\n" +
+          "There is no loop whose length grows with an input size, so the work is bounded by a constant — **O(1)**. " +
+          "Phrased for a general `n x n` board it would be **O(n²)**: one visit per cell over the n² cells, with " +
+          "O(1) per cell.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1) for this problem. Here's why:\n\n" +
+          "- The `seen` set holds at most three keys per filled cell, so at most 3 × 81 = 243 keys — a fixed bound.\n" +
+          "- No other storage grows with the board.\n\n" +
+          "So the extra space is constant, **O(1)**. For a general `n x n` board the set holds up to O(n²) keys, " +
+          "so it would be **O(n²)**. Nothing is returned but a boolean, so there is no output array to count.",
+      },
+    ],
+    testCases: [
+      {
+        args: [emptyBoard()],
+        expected: true,
+        note: "Empty board — no filled cells means no constraints, so it is trivially valid.",
+      },
+      {
+        args: [(() => { const b = emptyBoard(); b[4][4] = "9"; return b; })()],
+        expected: true,
+        note: "A single filled cell can never conflict with itself.",
+      },
+      {
+        args: [(() => { const b = emptyBoard(); b[2][0] = "6"; b[2][7] = "6"; return b; })()],
+        expected: false,
+        note: "Row conflict — two 6s in row 2 (different boxes), caught by the shared `row-2-6` key.",
+      },
+      {
+        args: [(() => { const b = emptyBoard(); b[0][3] = "2"; b[5][3] = "2"; return b; })()],
+        expected: false,
+        note: "Column conflict — two 2s down column 3 (different rows and boxes).",
+      },
+      {
+        args: [(() => { const b = emptyBoard(); b[3][3] = "4"; b[5][5] = "4"; return b; })()],
+        expected: false,
+        note: "Box-only conflict — two 4s in the centre box at different rows and columns.",
+      },
+      {
+        args: [(() => { const b = emptyBoard(); b[0][0] = "7"; b[4][4] = "7"; b[8][8] = "7"; return b; })()],
+        expected: true,
+        note: "Same digit, distinct row/column/box each time — repeats across the board are allowed.",
+      },
+    ],
+  },
+
   "valid-palindrome": {
     complexity: [
       {
@@ -648,6 +1219,46 @@ export const PROBLEM_EXTRAS: Record<string, { complexity?: Section[]; testCases?
     ],
   },
 
+  "geometric-sequence-triplets": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- One pass seeds the `right` frequency map with every value — O(n).\n" +
+          "- The main sweep visits each index once; per index it does a constant number of map operations (one " +
+          "removal from `right`, two lookups, one insertion into `left`), each O(1) on average.\n\n" +
+          "There is no nested loop — the brute force's inner two loops are replaced by two constant-time map probes — " +
+          "so the whole thing is **O(n)**, where `n` is the length of `nums`.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(n). Here's why:\n\n" +
+          "- The `right` map starts with one entry per distinct value, up to O(n) of them.\n" +
+          "- As the sweep proceeds, values shift into the `left` map, which together with `right` holds at most O(n) " +
+          "entries.\n\n" +
+          "Both maps together are bounded by the number of distinct values, so the auxiliary space is **O(n)**. The " +
+          "running `count` is a single integer and isn't counted.",
+      },
+    ],
+    testCases: [
+      { args: [[9, 3], 3], expected: 0, note: "Only two elements — a triplet needs three indices." },
+      { args: [[2, 6, 10], 3], expected: 0, note: "No-solution case: 2×3 = 6, but 6×3 = 18 ≠ 10." },
+      { args: [[1, 10, 100], 10], expected: 1, note: "Smallest exact chain with r > 1 — one triplet." },
+      {
+        args: [[4, 4, 4, 4, 4, 4], 1],
+        expected: 20,
+        note: "All equal with r = 1 — every i < j < k qualifies: C(6, 3) = 20.",
+      },
+      {
+        args: [[2, 4, 4, 8, 8], 2],
+        expected: 4,
+        note: "Overlapping repeats: each of the two 4s pairs with one 2 on the left and two 8s on the right → 2 + 2.",
+      },
+    ],
+  },
+
   "3sum": {
     complexity: [
       {
@@ -678,6 +1289,36 @@ export const PROBLEM_EXTRAS: Record<string, { complexity?: Section[]; testCases?
         expected: [[-2, 0, 2], [-2, 1, 1]],
         note: "Duplicates that must not yield repeated triplets.",
       },
+    ],
+  },
+
+  "two-sum": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- The array is scanned once, left to right, visiting each element a single time.\n" +
+          "- Per element the work is O(1): one hash-map lookup for the partner and at most one insertion.\n\n" +
+          "There is no nested loop — the inner scan of the brute force is replaced by a constant-time map probe " +
+          "— so the whole pass is **O(n)**, where `n` is the length of `nums`.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(n). Here's why:\n\n" +
+          "- The `seen` map can hold up to one entry per element if the answer is the final pair.\n" +
+          "- Each entry is a `value → index` mapping taking O(1), so the map grows linearly with the input.\n\n" +
+          "That extra map is the cost of the speed-up — we spend **O(n)** space to drop the time from O(n²) to " +
+          "O(n). The returned two-index array isn't counted as auxiliary space.",
+      },
+    ],
+    testCases: [
+      { args: [[1, 4], 5], expected: [0, 1], note: "Smallest valid input — two elements that sum to target." },
+      { args: [[1, 2, 4], 8], expected: [], note: "No pair sums to target — the unreachable fallback returns []." },
+      { args: [[-4, -1, -3, -8], -7], expected: [0, 2], note: "Negatives — −4 + −3 = −7, found by a later index." },
+      { args: [[5, 5, 3], 10], expected: [0, 1], note: "Duplicate values — two equal 5s pair up; second is the partner." },
+      { args: [[6, 2, 8, 1, 5], 6], expected: [3, 4], note: "Target reached only by a later pair: 1 + 5 at the end." },
     ],
   },
 
@@ -771,6 +1412,40 @@ export const PROBLEM_EXTRAS: Record<string, { complexity?: Section[]; testCases?
       { args: [[4, 4, 4, 4]], expected: [4], note: "All equal — every later value is a duplicate of the first, leaving one." },
       { args: [[-3, -3, -1, -1, -1, 6]], expected: [-3, -1, 6], note: "Repeated runs of varying length collapse to one each." },
       { args: [[2, 2, 5, 8, 8]], expected: [2, 5, 8], note: "Duplicates at both ends with a unique value between them." },
+    ],
+  },
+
+  "longest-consecutive-sequence": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- Building the `Set` from the input is one O(n) pass.\n" +
+          "- The outer loop visits each distinct value once, doing an O(1) `has(n - 1)` check.\n" +
+          "- The inner `while` only runs for *run starts*, and it walks each value of a run at most once across " +
+          "the whole algorithm.\n\n" +
+          "The nested `while` looks like it could make this O(n²), but the run-start guard means a value is " +
+          "touched by an inner walk only when its run is counted, once — so every value is visited at most twice " +
+          "total, and the overall time is **O(n)**.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(n). Here's why:\n\n" +
+          "- The `Set` holds up to one entry per distinct value, so it grows linearly with the input.\n" +
+          "- The loop itself uses only a few counters (`longest`, `length`, `current`) — O(1).\n\n" +
+          "That set is the price of dropping the time from the sort's O(n log n) to **O(n)**: we spend **O(n)** " +
+          "extra space to buy O(1) membership tests.",
+      },
+    ],
+    testCases: [
+      { args: [[]], expected: 0, note: "Empty array — no numbers, so the longest run is 0." },
+      { args: [[99]], expected: 1, note: "Single element — a run of length 1 with no neighbours." },
+      { args: [[5, 5, 5]], expected: 1, note: "All duplicates collapse to one value in the set — run of 1." },
+      { args: [[20, 21, 22, 50, 51]], expected: 3, note: "Two separate runs; the longer is {20,21,22}, length 3." },
+      { args: [[9, 1, 4, 7, 3, 2, 6, 8, 5]], expected: 9, note: "Shuffled 1..9 — order doesn't matter, the whole set is one run." },
+      { args: [[-10, -8, -9, -7, 5]], expected: 4, note: "Negatives — {-10,-9,-8,-7} form a run of 4; 5 is isolated." },
     ],
   },
 };
