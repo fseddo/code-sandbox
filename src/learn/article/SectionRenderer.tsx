@@ -8,6 +8,7 @@ import { GraphDiagram } from "./sections/GraphDiagram";
 import { WalkthroughDiagram } from "./sections/WalkthroughDiagram";
 import { GridWalkthroughDiagram } from "./sections/GridWalkthroughDiagram";
 import { NodeChainDiagram } from "./sections/NodeChainDiagram";
+import { PartitionDiagram } from "./sections/PartitionDiagram";
 import { CalloutSection } from "./sections/CalloutSection";
 import { PracticeList } from "./sections/PracticeList";
 import { ResourceList } from "./sections/ResourceList";
@@ -37,6 +38,8 @@ const renderBody = ({ section, problemsById }: SectionRendererProps) => {
       return <GridWalkthroughDiagram section={section} />;
     case "listWalkthrough":
       return <NodeChainDiagram section={section} />;
+    case "partitionWalkthrough":
+      return <PartitionDiagram section={section} />;
     case "callout":
       return <CalloutSection section={section} />;
     case "practice":

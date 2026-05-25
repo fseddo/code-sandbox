@@ -1518,6 +1518,515 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "- **They meet** on the same physical node — the first shared `8`. That's the intersection. (Had the lists not merged, both would reach `null` on the same step and we'd report no intersection.)",
     },
   ],
+
+  "search-insert-position": [
+    {
+      kind: "prose",
+      body:
+        "The plain approach scans left to right and stops at the first element that is `>= target` — that index " +
+        "either holds the target or is the slot it belongs in. If nothing is large enough, it belongs at the end.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — linear scan for the first index >= target: O(n).",
+      source:
+        "function searchInsert(nums, target) {\n" +
+        "  // Walk left to right; the first slot not smaller than target is the answer.\n" +
+        "  for (let i = 0; i < nums.length; i++) {\n" +
+        "    if (nums[i] >= target) return i; // found it, or the gap it slots into\n" +
+        "  }\n" +
+        "  return nums.length; // larger than everything — goes at the end\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(n) — but the array is *sorted*, and the prompt demands O(log n), so the scan wastes the " +
+        "ordering. Can we do better?\n\n" +
+        "The values `< target` form a prefix and the values `>= target` form a suffix; we want the **boundary** " +
+        "between them. That's a textbook **lower-bound** binary search: keep a half-open range `[lo, hi)`, and at " +
+        "each step look at `mid`. If `nums[mid] < target`, the boundary is strictly to the right, so `lo = mid + 1`; " +
+        "otherwise `mid` is a *candidate* boundary, so `hi = mid` to keep it. When `lo === hi`, `lo` is the first " +
+        "index whose value is `>= target` — the insertion point.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "nums = [1, 3, 5, 6], target = 2",
+      lane: [1, 3, 5, 6],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "lo", at: 0 }, { name: "hi", at: 4 }],
+          range: [0, 3],
+          action: "mid = 2, nums[2] = 5 >= 2 → hi = 2",
+          caption: "Range is [0, 4). nums[2] = 5 is not below 2, so the boundary is at index 2 or to its left — keep mid.",
+        },
+        {
+          pointers: [{ name: "lo", at: 0 }, { name: "hi", at: 2 }],
+          range: [0, 1],
+          marked: [2, 3],
+          action: "mid = 1, nums[1] = 3 >= 2 → hi = 1",
+          caption: "Now [0, 2). nums[1] = 3 is still not below 2 — discard the right half again.",
+        },
+        {
+          pointers: [{ name: "lo", at: 0 }, { name: "hi", at: 1 }],
+          range: [0, 0],
+          marked: [1, 2, 3],
+          action: "mid = 0, nums[0] = 1 < 2 → lo = 1",
+          caption: "nums[0] = 1 is below 2, so index 0 is too small — push lo past it.",
+        },
+        {
+          pointers: [{ name: "lo", at: 1 }, { name: "hi", at: 1 }],
+          range: [1, 1],
+          marked: [0, 2, 3],
+          action: "lo === hi → return 1",
+          caption: "The range is empty. 2 belongs at index 1, between 1 and 3.",
+        },
+      ],
+    },
+  ],
+
+  "find-first-and-last-position-of-element-in-sorted-array": [
+    {
+      kind: "prose",
+      body:
+        "The direct approach scans the whole array, remembering the first and last index where the value equals " +
+        "the target. If it never appears, the answer is `[-1, -1]`.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — one linear pass tracking first and last match: O(n).",
+      source:
+        "function searchRange(nums, target) {\n" +
+        "  let first = -1;\n" +
+        "  let last = -1;\n" +
+        "  // Scan every index; record the first hit, and keep overwriting the last hit.\n" +
+        "  for (let i = 0; i < nums.length; i++) {\n" +
+        "    if (nums[i] === target) {\n" +
+        "      if (first === -1) first = i; // first time we see the target\n" +
+        "      last = i;                    // every later hit pushes last forward\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return [first, last];\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(n), but the prompt requires O(log n) and the array is sorted — equal values sit in one " +
+        "contiguous block. Can we do better?\n\n" +
+        "We want the two *ends* of that block, and each end is a **boundary**. The first occurrence is the " +
+        "lower bound: the first index whose value is `>= target`. The last occurrence is one step before the " +
+        "*upper* bound: the first index whose value is `> target`, minus one. So run the same " +
+        "[boundary search](/learn/guide/algos/topic/binary-search) twice — once for `target`, once for " +
+        "`target + 1` — and bracket the run.\n\n" +
+        "If the lower bound lands past the array or on a value that isn't the target, the target is absent and the " +
+        "answer is `[-1, -1]`.\n\n" +
+        "Walking through the lower-bound search for the first occurrence:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "nums = [5, 7, 7, 8, 8, 10], target = 8",
+      lane: [5, 7, 7, 8, 8, 10],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "lo", at: 0 }, { name: "hi", at: 6 }],
+          range: [0, 5],
+          action: "mid = 3, nums[3] = 8 >= 8 → hi = 3",
+          caption: "Lower bound of 8 in [0, 6). nums[3] = 8 is a candidate first occurrence — keep it.",
+        },
+        {
+          pointers: [{ name: "lo", at: 0 }, { name: "hi", at: 3 }],
+          range: [0, 2],
+          marked: [3, 4, 5],
+          action: "mid = 1, nums[1] = 7 < 8 → lo = 2",
+          caption: "Now [0, 3). nums[1] = 7 is below 8, so the first 8 is to the right — push lo past it.",
+        },
+        {
+          pointers: [{ name: "lo", at: 2 }, { name: "hi", at: 3 }],
+          range: [2, 2],
+          marked: [0, 1, 4, 5],
+          action: "mid = 2, nums[2] = 7 < 8 → lo = 3",
+          caption: "nums[2] = 7 is still below 8 — the first 8 must be at index 3.",
+        },
+        {
+          pointers: [{ name: "lo", at: 3 }, { name: "hi", at: 3 }],
+          range: [3, 3],
+          marked: [0, 1, 2, 4, 5],
+          action: "lo === hi → first = 3",
+          caption: "First occurrence is index 3. A second search for 9's lower bound returns 5, so last = 5 − 1 = 4.",
+        },
+      ],
+    },
+  ],
+
+  "search-in-rotated-sorted-array": [
+    {
+      kind: "prose",
+      body:
+        "The obvious approach ignores the rotation entirely and scans every element until it finds the target, " +
+        "returning its index or `-1`.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — linear scan, rotation ignored: O(n).",
+      source:
+        "function search(nums, target) {\n" +
+        "  // Check each position in turn; the rotation doesn't matter to a linear scan.\n" +
+        "  for (let i = 0; i < nums.length; i++) {\n" +
+        "    if (nums[i] === target) return i;\n" +
+        "  }\n" +
+        "  return -1; // not present\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(n) and throws away all the structure — the prompt wants O(log n). Can we do better?\n\n" +
+        "The array isn't globally sorted, but a rotation has a key property: at *any* midpoint, **at least one " +
+        "half is fully sorted** (the pivot can only sit in one of them). Compare `nums[lo]` to `nums[mid]` to " +
+        "learn which half is the clean, sorted one. Then check whether `target` falls inside that sorted half's " +
+        "value range: if so, search there; if not, the target must be in the other half. Either way we discard " +
+        "half each step — ordinary [binary search](/learn/guide/algos/topic/binary-search), just with a " +
+        "which-half-is-sorted test layered on top.\n\n" +
+        "This uses the inclusive `lo <= hi` exact-match shape (returning `mid` on a hit), not the half-open " +
+        "boundary form — we want a specific value, not a boundary.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "nums = [4, 5, 6, 7, 0, 1, 2], target = 0",
+      lane: [4, 5, 6, 7, 0, 1, 2],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "lo", at: 0 }, { name: "mid", at: 3 }, { name: "hi", at: 6 }],
+          action: "nums[lo]=4 <= nums[mid]=7 → left half sorted; 0 not in [4,7) → lo = 4",
+          caption: "mid = 3 (value 7). The left half [4,5,6,7] is sorted, but 0 isn't inside its range — so search the right.",
+        },
+        {
+          pointers: [{ name: "lo", at: 4 }, { name: "mid", at: 5 }, { name: "hi", at: 6 }],
+          marked: [0, 1, 2, 3],
+          action: "nums[lo]=0 <= nums[mid]=1 → left half sorted; 0 in [0,1) → hi = 4",
+          caption: "Now [4, 6], mid = 5 (value 1). The left half [0,1] is sorted and 0 falls in [0,1) — discard the right.",
+        },
+        {
+          pointers: [{ name: "lo", at: 4 }, { name: "mid", at: 4 }, { name: "hi", at: 4 }],
+          marked: [0, 1, 2, 3, 5, 6],
+          action: "nums[mid] = 0 === target ✓ → return 4",
+          caption: "Range collapses to index 4, whose value is exactly 0. Found at index 4.",
+        },
+        {
+          pointers: [{ name: "lo", at: 0 }, { name: "mid", at: 3 }, { name: "hi", at: 6 }],
+          action: "(absent target 3) right half [0,1,2] sorted; 3 not in (7,2] → hi = 2 … eventually lo > hi → -1",
+          caption: "Had the target been 3, every half-check would exclude it and the pointers would cross, returning -1.",
+        },
+      ],
+    },
+  ],
+
+  "median-of-two-sorted-arrays": [
+    {
+      kind: "prose",
+      body:
+        "The straightforward approach merges the two sorted arrays into one — a two-pointer walk taking the " +
+        "smaller front each time — then reads the middle value (odd total) or averages the two middle values " +
+        "(even total).",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — merge fully, then pick the middle: O(m + n) time and space.",
+      source:
+        "function findMedianSortedArrays(nums1, nums2) {\n" +
+        "  const merged = [];\n" +
+        "  let i = 0;\n" +
+        "  let j = 0;\n" +
+        "  // Standard merge: repeatedly take the smaller of the two fronts.\n" +
+        "  while (i < nums1.length && j < nums2.length) {\n" +
+        "    if (nums1[i] <= nums2[j]) merged.push(nums1[i++]);\n" +
+        "    else merged.push(nums2[j++]);\n" +
+        "  }\n" +
+        "  while (i < nums1.length) merged.push(nums1[i++]); // drain the leftovers\n" +
+        "  while (j < nums2.length) merged.push(nums2[j++]);\n" +
+        "  const n = merged.length;\n" +
+        "  const mid = Math.floor(n / 2);\n" +
+        "  // Odd total -> the single middle; even total -> average the two middles.\n" +
+        "  return n % 2 === 1 ? merged[mid] : (merged[mid - 1] + merged[mid]) / 2;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(m + n) — and the merge is the slow part. The classic target is **O(log(m + n))**. Can we do " +
+        "better?\n\n" +
+        "The median only depends on a *partition*: a cut through each array so that everything on the left is `<=` " +
+        "everything on the right, with the left side holding exactly `half` of the combined elements. We never " +
+        "merge — we only need the values straddling that cut. And a cut in one array *forces* the cut in the other " +
+        "(their left sizes must sum to `half`), so there is only **one** free choice: **binary-search the cut in " +
+        "the smaller array**.\n\n" +
+        "At each candidate cut, look at the four boundary values. Matching the stored solution's names: `cut1` is " +
+        "the count taken from `nums1`, so `left1 = nums1[cut1 - 1]` and `right1 = nums1[cut1]` (and likewise " +
+        "`left2` / `right2` in `nums2`), with sentinels `−∞` / `+∞` for an empty side. The cut is correct when " +
+        "`maxLeft = max(left1, left2)` is `<=` `minRight = min(right1, right2)`; otherwise the offending side tells " +
+        "you which way to shift — and you discard *half* the remaining cut positions, the same as a binary search " +
+        "over a sorted array.\n\n" +
+        "In the diagram below, the **top axis** is that binary search itself: the candidate range `[lo, hi]` for " +
+        "`cut1`, halved each step as the probe `mid` lands (note `cut1` jumps `2 → 4 → 3`, not `+1` at a time). The " +
+        "**two rows** show the partition that `cut1` — and the forced `cut2 = half − cut1` — induce, with `│` " +
+        "marking each cut; the **strip** under each step is the derived `maxLeft ≤ minRight` check that decides " +
+        "which half to keep:",
+    },
+    {
+      kind: "partitionWalkthrough",
+      heading: "nums1 = [1, 5, 8, 12, 18], nums2 = [2, 4, 9, 11, 15, 20] — binary-search cut1 in the smaller array",
+      showIndices: true,
+      rows: [
+        { label: "nums1", values: [1, 5, 8, 12, 18] },
+        { label: "nums2", values: [2, 4, 9, 11, 15, 20] },
+      ],
+      frames: [
+        {
+          cuts: [2, 4],
+          search: { lo: 0, hi: 5 },
+          action: "left2 = 11 > right1 = 8 → lo = cut1 + 1",
+          caption: "half = 6, so the combined left side needs 6 values. cut1 ranges over [0, 5]; probe the midpoint cut1 = 2 → {1, 5} from nums1 and {2, 4, 9, 11} from nums2. But 11 sits left of 8 — nums2 gives up too much, so discard the lower half: lo = 3.",
+        },
+        {
+          cuts: [4, 2],
+          search: { lo: 3, hi: 5 },
+          action: "left1 = 12 > right2 = 9 → hi = cut1 − 1",
+          caption: "Now cut1 ∈ [3, 5]; probe cut1 = 4 → {1, 5, 8, 12} and {2, 4}. This time 12 is left of 9 — nums1 over-contributes, so discard the upper half: hi = 3.",
+        },
+        {
+          cuts: [3, 3],
+          search: { lo: 3, hi: 3 },
+          action: "left1 ≤ right2 and left2 ≤ right1 → valid",
+          caption: "The range collapses to cut1 = 3 → {1, 5, 8} and {2, 4, 9} on the left. Now every left value is ≤ every right value — the cut is correct.",
+        },
+        {
+          cuts: [3, 3],
+          search: { lo: 3, hi: 3 },
+          action: "odd total → median = maxLeft = max(8, 9) = 9",
+          caption: "11 elements in total (odd), so the median is the largest left-side value, maxLeft = max(8, 9) = 9. Merged, the arrays are [1, 2, 4, 5, 8, 9, 11, 12, 15, 18, 20].",
+        },
+      ],
+    },
+  ],
+
+  "search-a-2d-matrix": [
+    {
+      kind: "prose",
+      body:
+        "The simplest approach scans every cell of the matrix, row by row, and returns `true` the moment it sees " +
+        "the target — `false` if it finishes without finding it.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — scan all m×n cells: O(m·n).",
+      source:
+        "function searchMatrix(matrix, target) {\n" +
+        "  // Look at every cell; the matrix's structure is ignored here.\n" +
+        "  for (const row of matrix) {\n" +
+        "    for (const value of row) {\n" +
+        "      if (value === target) return true;\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return false;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(m·n) and ignores the strong ordering: each row is sorted, and every row starts above where " +
+        "the previous row ended. Can we do better?\n\n" +
+        "That ordering means the rows, read end to end, form **one fully sorted sequence** of length `m·n`. So " +
+        "treat the matrix as a *virtual* sorted array and run plain " +
+        "[binary search](/learn/guide/algos/topic/binary-search) over the flat indices `0 … m·n − 1`. Map a flat " +
+        "index `k` back to a cell with `matrix[Math.floor(k / n)][k % n]` (row = `k ÷ n`, column = `k mod n`), and " +
+        "compare as usual. Each step halves the m·n cells, giving **O(log(m·n))**.\n\n" +
+        "Walking it through over the flattened view:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "flattened [1, 3, 5, 7, 10, 11, 16, 20, 23, 30, 34, 60], target = 16 (3×4 matrix)",
+      lane: [1, 3, 5, 7, 10, 11, 16, 20, 23, 30, 34, 60],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "lo", at: 0 }, { name: "mid", at: 5 }, { name: "hi", at: 11 }],
+          action: "mid = 5 → matrix[1][1] = 11 < 16 → lo = 6",
+          caption: "Flat index 5 maps to row 1, col 1 (value 11). 11 < 16, so discard the left half.",
+        },
+        {
+          pointers: [{ name: "lo", at: 6 }, { name: "mid", at: 8 }, { name: "hi", at: 11 }],
+          marked: [0, 1, 2, 3, 4, 5],
+          action: "mid = 8 → matrix[2][0] = 23 > 16 → hi = 7",
+          caption: "Now [6, 11], mid = 8 maps to row 2, col 0 (value 23). 23 > 16, so discard the right half.",
+        },
+        {
+          pointers: [{ name: "lo", at: 6 }, { name: "mid", at: 6 }, { name: "hi", at: 7 }],
+          marked: [0, 1, 2, 3, 4, 5, 8, 9, 10, 11],
+          action: "mid = 6 → matrix[1][2] = 16 === target ✓ → return true",
+          caption: "Flat index 6 maps to row 1, col 2 (value 16) — exactly the target. Found in three steps.",
+        },
+        {
+          pointers: [{ name: "lo", at: 0 }, { name: "mid", at: 5 }, { name: "hi", at: 11 }],
+          action: "(absent target 13) every comparison excludes it; lo passes hi → return false",
+          caption: "Had we searched 13, no flat index would match and the range would empty out, returning false.",
+        },
+      ],
+    },
+  ],
+
+  "find-peak-element": [
+    {
+      kind: "prose",
+      body:
+        "The direct approach scans for any element strictly greater than both of its neighbors, treating the " +
+        "out-of-bounds neighbors as `-∞`, and returns its index.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — scan for an element bigger than both neighbors: O(n).",
+      source:
+        "function findPeakElement(nums) {\n" +
+        "  const n = nums.length;\n" +
+        "  for (let i = 0; i < n; i++) {\n" +
+        "    // Out-of-bounds neighbors count as -Infinity, so the ends only beat their one real neighbor.\n" +
+        "    const left = i === 0 ? -Infinity : nums[i - 1];\n" +
+        "    const right = i === n - 1 ? -Infinity : nums[i + 1];\n" +
+        "    if (nums[i] > left && nums[i] > right) return i; // a peak\n" +
+        "  }\n" +
+        "  return -1; // unreachable: a peak always exists\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(n), but the prompt demands O(log n) — and the array isn't sorted, so what is there to halve? " +
+        "Can we do better?\n\n" +
+        "The key observation: **follow the rising slope and you can't miss a peak.** Look at `mid` and its right " +
+        "neighbor. If `nums[mid] < nums[mid + 1]`, the values are climbing rightward — since the far-right edge " +
+        "drops off to `-∞`, *some* peak must lie to the right, so move `lo = mid + 1`. Otherwise the slope falls " +
+        "(or `mid` is itself a peak), and a peak lies at `mid` or to its left, so `hi = mid`. This is the half-open " +
+        "[boundary search](/learn/guide/algos/topic/binary-search) shape, applied to a *monotonic predicate* " +
+        "(\"is the slope still rising?\") rather than to sorted values.\n\n" +
+        "When `lo === hi` the range is a single index, and the inward-sloping boundaries guarantee it's a peak.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "nums = [1, 2, 1, 3, 5, 6, 4]",
+      lane: [1, 2, 1, 3, 5, 6, 4],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "lo", at: 0 }, { name: "mid", at: 3 }, { name: "hi", at: 6 }],
+          action: "nums[3]=3 < nums[4]=5 → slope rising → lo = 4",
+          caption: "mid = 3. The value to the right is larger, so we're on a rising slope — a peak lies to the right.",
+        },
+        {
+          pointers: [{ name: "lo", at: 4 }, { name: "mid", at: 5 }, { name: "hi", at: 6 }],
+          range: [4, 6],
+          marked: [0, 1, 2, 3],
+          action: "nums[5]=6 > nums[6]=4 → slope falling → hi = 5",
+          caption: "Now [4, 6], mid = 5. The value to the right is smaller — the slope falls, so a peak is at 5 or left of it.",
+        },
+        {
+          pointers: [{ name: "lo", at: 4 }, { name: "mid", at: 4 }, { name: "hi", at: 5 }],
+          range: [4, 5],
+          marked: [0, 1, 2, 3, 6],
+          action: "nums[4]=5 < nums[5]=6 → slope rising → lo = 5",
+          caption: "mid = 4 (value 5) is below its right neighbor — still rising, so move past it.",
+        },
+        {
+          pointers: [{ name: "lo", at: 5 }, { name: "hi", at: 5 }],
+          range: [5, 5],
+          marked: [0, 1, 2, 3, 4, 6],
+          action: "lo === hi → return 5",
+          caption: "The range collapses to index 5 (value 6), which beats both neighbors — a peak. (Index 1 is also a peak; either is accepted.)",
+        },
+      ],
+    },
+  ],
+
+  "cutting-wood": [
+    {
+      kind: "prose",
+      body:
+        "The direct approach tries every possible blade height from the tallest tree downward, summing the wood " +
+        "each height yields, and returns the first (highest) height that reaches `k`.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — try every height from the tallest down: O(M·n), M = tallest tree.",
+      source:
+        "function cutWood(heights, k) {\n" +
+        "  const max = Math.max(...heights);\n" +
+        "  // Try blade heights from tallest down; the first that yields >= k is the answer.\n" +
+        "  for (let h = max; h >= 0; h--) {\n" +
+        "    let wood = 0;\n" +
+        "    for (const height of heights) wood += Math.max(0, height - h); // wood above the blade\n" +
+        "    if (wood >= k) return h;\n" +
+        "  }\n" +
+        "  return 0;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(M·n) — and when trees are billions tall, `M` is huge. The trees aren't sorted, so what is " +
+        "there to binary-search? Can we do better?\n\n" +
+        "The trick is to **binary-search the answer, not the input.** The wood collected is *monotonic* in the " +
+        "blade height: raise the blade and you collect strictly less (never more). So the candidate heights split " +
+        "cleanly into a feasible low range (`wood >= k`) and an infeasible high range, with one boundary between " +
+        "them — exactly the [monotonic-predicate](/learn/guide/algos/topic/binary-search) setup. Search heights " +
+        "in `[0, max]`: for a candidate `mid`, sum `max(0, h − mid)` over all trees in O(n); if that's `>= k`, the " +
+        "blade can go at least this high, so record it and search higher; otherwise search lower.\n\n" +
+        "That replaces the M outer steps with `log M`, giving **O(n log M)**.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "heights = [2, 6, 3, 8], k = 7 (searching blade height in [0, 8])",
+      lane: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "lo", at: 0 }, { name: "mid", at: 4 }, { name: "hi", at: 8 }],
+          action: "H = 4 → wood = 2 + 0 + 4 = 6 < 7 → hi = 3",
+          caption: "The lane is the candidate heights 0..8. At H = 4 the wood is (6−4)+(8−4) = 6 < 7 — infeasible, so go lower.",
+        },
+        {
+          pointers: [{ name: "lo", at: 0 }, { name: "mid", at: 1 }, { name: "hi", at: 3 }],
+          marked: [4, 5, 6, 7, 8],
+          action: "H = 1 → wood = 1 + 5 + 2 + 7 = 15 >= 7 → best = 1, lo = 2",
+          caption: "Now [0, 3], H = 1 yields 15 ≥ 7 — feasible. Record 1 as the best so far and search higher.",
+        },
+        {
+          pointers: [{ name: "lo", at: 2 }, { name: "mid", at: 2 }, { name: "hi", at: 3 }],
+          marked: [0, 1, 4, 5, 6, 7, 8],
+          action: "H = 2 → wood = 0 + 4 + 1 + 6 = 11 >= 7 → best = 2, lo = 3",
+          caption: "H = 2 yields 11 ≥ 7 — still feasible. Update best to 2 and keep climbing.",
+        },
+        {
+          pointers: [{ name: "lo", at: 3 }, { name: "mid", at: 3 }, { name: "hi", at: 3 }],
+          marked: [0, 1, 2, 4, 5, 6, 7, 8],
+          action: "H = 3 → wood = 0 + 3 + 0 + 5 = 8 >= 7 → best = 3, lo = 4 > hi → stop",
+          caption: "H = 3 yields 8 ≥ 7 — feasible, best = 3. lo passes hi, so 3 is the highest blade that still collects 7.",
+        },
+      ],
+    },
+  ],
 };
 
 /**
@@ -2147,6 +2656,202 @@ export const PROBLEM_EXTRAS: Record<string, { complexity?: Section[]; testCases?
       { args: [[], [1, 2, 3], -1, -1], expected: null, note: "Empty list A can't intersect anything." },
       { args: [[1, 2, 3, 4, 5], [99, 4, 5], 3, 1], expected: 4, note: "Shared tail [4,5] begins at index 3 in A and 1 in B." },
       { args: [[8, 8, 8], [8, 8, 8], 0, 0], expected: 8, note: "Identical lists that merge at the head — duplicate values don't fool the position-based identity." },
+    ],
+  },
+
+  "search-insert-position": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(log n). Here's why:\n\n" +
+          "- Each iteration discards half the remaining range by moving `lo` or `hi` to `mid`.\n" +
+          "- Starting from `n` candidate positions, the range halves until it is empty.\n\n" +
+          "So the loop runs about log₂ n times — overall **O(log n)**.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1). Here's why:\n\n" +
+          "- Only the two integer bounds `lo` and `hi` are kept; nothing scales with the input.\n\n" +
+          "The returned index is a single number, not counted as extra space — overall **O(1)**.",
+      },
+    ],
+    testCases: [
+      { args: [[], 5], expected: 0, note: "Empty array — the target slots at index 0." },
+      { args: [[3], 3], expected: 0, note: "Single element equal to the target — found at index 0." },
+      { args: [[10, 20, 30], 5], expected: 0, note: "Smaller than everything — inserts at the front." },
+      { args: [[2, 2, 2], 2], expected: 0, note: "All equal to the target — the lower bound is index 0." },
+      { args: [[1, 1, 3, 3, 5], 3], expected: 2, note: "Duplicates — returns the first index whose value is >= target." },
+      { args: [[1, 2], 9], expected: 2, note: "Larger than everything — inserts at the end (index length)." },
+    ],
+  },
+
+  "find-first-and-last-position-of-element-in-sorted-array": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(log n). Here's why:\n\n" +
+          "- Finding the first occurrence is one boundary binary search over `n` elements — O(log n).\n" +
+          "- Finding the last occurrence is a second boundary search (the lower bound of `target + 1`) — also O(log n).\n\n" +
+          "Two O(log n) searches add to **O(log n)** overall.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1). Here's why:\n\n" +
+          "- Each search keeps only its `lo`/`hi` bounds; the two are run one after another, not nested.\n\n" +
+          "The two-element result array is the output, not auxiliary space — overall **O(1)**.",
+      },
+    ],
+    testCases: [
+      { args: [[], 1], expected: [-1, -1], note: "Empty array — the target is absent." },
+      { args: [[4], 4], expected: [0, 0], note: "Single matching element — first and last are the same index." },
+      { args: [[3, 3, 3, 3, 3], 3], expected: [0, 4], note: "All equal to the target — the run spans the whole array." },
+      { args: [[1, 5, 9], 4], expected: [-1, -1], note: "Target falls in a gap between values — absent." },
+      { args: [[1, 1, 2, 2, 2, 9], 2], expected: [2, 4], note: "Duplicates — brackets the block of 2s from index 2 to 4." },
+      { args: [[10, 20], 5], expected: [-1, -1], note: "Smaller than every element — absent." },
+    ],
+  },
+
+  "search-in-rotated-sorted-array": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(log n). Here's why:\n\n" +
+          "- Each step computes one midpoint, decides which half is sorted, and discards the half that can't hold the target.\n" +
+          "- The which-half-is-sorted test is O(1), so the range still halves every iteration.\n\n" +
+          "So the search runs about log₂ n times — overall **O(log n)**.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1). Here's why:\n\n" +
+          "- Only the `lo`/`hi`/`mid` integers are tracked; the input isn't copied or re-sorted.\n\n" +
+          "No structure grows with `n` — overall **O(1)**.",
+      },
+    ],
+    testCases: [
+      { args: [[], 5], expected: -1, note: "Empty array — nothing to find." },
+      { args: [[3], 3], expected: 0, note: "Single element equal to the target." },
+      { args: [[1, 2, 3, 4, 5], 4], expected: 3, note: "Not actually rotated — degrades to ordinary binary search." },
+      { args: [[6, 7, 1, 2, 3], 1], expected: 2, note: "Target sits just past the pivot, in the rotated suffix." },
+      { args: [[4, 5, 6, 7, 0, 1, 2], 8], expected: -1, note: "Target larger than every element — absent." },
+      { args: [[7, 8, 1, 2, 3], 7], expected: 0, note: "Target is the rotation's largest value, at the front." },
+    ],
+  },
+
+  "median-of-two-sorted-arrays": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(log(min(m, n))). Here's why:\n\n" +
+          "- The binary search runs over cut positions in the *smaller* array only (the longer one's cut is derived).\n" +
+          "- Each step checks four boundary values in O(1) and halves the candidate cut range.\n\n" +
+          "So the work is logarithmic in the shorter length — overall **O(log(min(m, n)))**. (The merge baseline is O(m + n).)",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1). Here's why:\n\n" +
+          "- The partition search keeps only the cut bounds and the four boundary values; no merged array is built.\n\n" +
+          "Nothing scales with the inputs — overall **O(1)**. (The O(m + n) merge baseline would also cost O(m + n) space.)",
+      },
+    ],
+    testCases: [
+      { args: [[5], [5]], expected: 5, note: "Two single-element arrays — both elements equal, so the median is that value." },
+      { args: [[], [2, 4, 6]], expected: 4, note: "One array empty — median of [2,4,6] is the middle, 4." },
+      { args: [[1, 4], [2, 3]], expected: 2.5, note: "Even total — merged [1,2,3,4], average the two middles (2 and 3)." },
+      { args: [[10, 20, 30], [15]], expected: 17.5, note: "Even total — merged [10,15,20,30], average 15 and 20." },
+      { args: [[8], []], expected: 8, note: "Single element, other array empty — that element is the median." },
+      { args: [[1, 2, 3], [10, 20, 30]], expected: 6.5, note: "Disjoint ranges — merged [1,2,3,10,20,30], average 3 and 10." },
+    ],
+  },
+
+  "search-a-2d-matrix": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(log(m·n)). Here's why:\n\n" +
+          "- The matrix is treated as one sorted sequence of `m·n` cells.\n" +
+          "- Each step maps a flat midpoint back to a cell in O(1) and halves the range.\n\n" +
+          "So the search runs about log₂(m·n) times — overall **O(log(m·n))**, the same as binary-searching a length-`m·n` array.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1). Here's why:\n\n" +
+          "- Only the flat `lo`/`hi` indices are kept; the matrix isn't flattened into a real array.\n\n" +
+          "The row/column are computed on the fly from the flat index — overall **O(1)**.",
+      },
+    ],
+    testCases: [
+      { args: [[[2, 4, 6, 8]], 6], expected: true, note: "Single row, target present." },
+      { args: [[[2, 4, 6, 8]], 5], expected: false, note: "Single row, target falls in a gap — absent." },
+      { args: [[[1], [5], [9]], 9], expected: true, note: "Single column, target in the last row." },
+      { args: [[[1, 2], [3, 4]], 1], expected: true, note: "Target at the very first cell." },
+      { args: [[[1, 2], [3, 4]], 4], expected: true, note: "Target at the very last cell." },
+      { args: [[[10, 20], [30, 40]], 5], expected: false, note: "Target smaller than every cell — absent." },
+    ],
+  },
+
+  "find-peak-element": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(log n). Here's why:\n\n" +
+          "- Each step compares `nums[mid]` to its right neighbor and discards the half that can't slope up to a peak.\n" +
+          "- The comparison is O(1), so the range halves every iteration.\n\n" +
+          "So the search runs about log₂ n times — overall **O(log n)**, versus O(n) for a linear peak scan.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1). Here's why:\n\n" +
+          "- Only the `lo`/`hi` bounds are kept; nothing scales with the input.\n\n" +
+          "The returned index is a single number — overall **O(1)**.",
+      },
+    ],
+    testCases: [
+      { args: [[42]], expected: 0, note: "Single element — trivially a peak (no real neighbors)." },
+      { args: [[10, 9, 8, 7]], expected: 0, note: "Strictly decreasing — the first element is the only peak." },
+      { args: [[1, 2, 3, 4]], expected: 3, note: "Strictly increasing — the last element is the peak the search lands on." },
+      { args: [[2, 4, 1]], expected: 1, note: "Single interior peak at index 1." },
+      { args: [[2, 1, 3]], expected: 2, note: "Two peaks (indices 0 and 2); the search returns 2. Any valid peak is accepted by the checker." },
+      { args: [[4, 5, 2, 1]], expected: 1, note: "Peak at index 1, then a downhill run." },
+    ],
+  },
+
+  "cutting-wood": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n log M). Here's why:\n\n" +
+          "- The blade height is binary-searched over `[0, M]` where `M` is the tallest tree — about log₂ M steps.\n" +
+          "- Each step sums the wood over all `n` trees in O(n) to test feasibility.\n\n" +
+          "So the total is n × log M = **O(n log M)**, versus O(n·M) for trying every height.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1). Here's why:\n\n" +
+          "- The search keeps only the height bounds and a running wood sum; no extra structure is allocated.\n\n" +
+          "Nothing scales with `n` or `M` beyond the input itself — overall **O(1)**.",
+      },
+    ],
+    testCases: [
+      { args: [[7], 3], expected: 4, note: "Single tree — cutting at height 4 yields exactly 3 units." },
+      { args: [[4, 4, 4], 12], expected: 0, note: "Need all the wood — only cutting to the ground reaches k." },
+      { args: [[10, 10, 10], 15], expected: 5, note: "Three equal trees — height 5 gives 5+5+5 = 15." },
+      { args: [[1, 2, 3, 4, 5], 9], expected: 1, note: "Uneven trees — at height 1 the wood is 0+1+2+3+4 = 10 ≥ 9; at 2 it drops to 6." },
+      { args: [[2, 6, 3, 8], 15], expected: 1, note: "Same trees as the example, larger k — forces a lower blade (height 1)." },
+      { args: [[50], 10], expected: 40, note: "One tall tree — height 40 yields exactly 10 units." },
     ],
   },
 };

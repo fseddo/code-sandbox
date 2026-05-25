@@ -114,6 +114,32 @@ export type ListWalkthroughFrame = {
   action?: string;
 };
 
+/** One sorted row in a {@link Section} `partitionWalkthrough` — a labeled array the cut divides into left/right. */
+export type PartitionRow = { label: string; values: number[] };
+
+/**
+ * One step of a {@link Section} `partitionWalkthrough` — a candidate partition of the rows. `cuts[r]` is how
+ * many of row `r`'s values fall on the *left* of the cut (`0` … `values.length`). The renderer *derives* each
+ * row's boundary values (the last-left and first-right cells, with ±∞ sentinels at the edges), the global
+ * `maxLeft` / `minRight`, and the `maxLeft ≤ minRight` verdict from the data — so a frame only carries the
+ * cuts plus its narration, and the cross-row comparison can never drift out of sync with the picture.
+ */
+export type PartitionWalkthroughFrame = {
+  /** Elements on the left of the cut, per row index — length matches the section's `rows`. */
+  cuts: number[];
+  /**
+   * The binary-search candidate range `[lo, hi]` for the cut in row 0 this step. When present, the renderer
+   * draws a **cut axis** (candidate positions `0 … rows[0].length`) with `lo` / `hi` / `mid` pointers, marking
+   * the discarded candidates — making the *halving* visible (the part a partition picture alone hides). The
+   * probe `mid` is `cuts[0]`.
+   */
+  search?: { lo: number; hi: number };
+  /** The decision for this step, shown in a dashed callout beside the rows (e.g. `"left2 = 10 > right1 = 3 → lo = cut1 + 1"`). */
+  action?: string;
+  /** One-line narration shown under the frame. */
+  caption?: string;
+};
+
 /** Fields shared by every section, regardless of kind — the spine of the discriminated union. */
 type SectionBase = {
   /** Optional sub-heading rendered above the section body. */
@@ -171,6 +197,14 @@ export type Section = SectionBase &
         /** Draw faint 0-based node-position labels under each node (for index-reasoned list problems). */
         showIndices?: boolean;
         frames: ListWalkthroughFrame[];
+      }
+    | {
+        kind: "partitionWalkthrough";
+        /** Two (or more) sorted arrays a cut divides — stacked as rows, each with its own cut line. */
+        rows: PartitionRow[];
+        /** Draw a faint 0-based index under each cell. */
+        showIndices?: boolean;
+        frames: PartitionWalkthroughFrame[];
       }
     /** A bulleted aside in one of three tones — pitfalls (warn), corner cases (info), interview tips (tip). */
     | { kind: "callout"; tone: CalloutTone; items: string[] }

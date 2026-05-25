@@ -93,7 +93,14 @@ Keep paragraphs short; lead a labeled paragraph with `**Label:**`.
 
 ## 8. Walkthrough authoring (our diagram)
 
-`{ kind: "walkthrough", lane, showIndices?, frames }` ([WalkthroughDiagram](../../src/learn/article/sections/WalkthroughDiagram.tsx)). Rules:
+**Pick the primitive from what the idea needs to show — don't default to a 1-D `lane`.** Before authoring a diagram, name the *thing a reader must see* to get the insight, then ask whether a single lane can actually show it. The lane draws **one** sequence with pointers/marks moving over it; if the mechanic lives somewhere a lane can't reach, the lane will render but quietly hide the very thing it's supposed to teach — and you can't catch that from the data alone (you won't see the rendered page). So reason about it up front. A lane **cannot** show:
+
+- **a second array / a comparison that spans two structures** (a partition straddling two sorted arrays, a merge) — the cross-structure decision would be stuck in caption prose. Use `partitionWalkthrough` (§8c) or two stacked Sections.
+- **a 2-D board** (§8a · `gridWalkthrough`), **linked-list `next` pointers / rewires** (§8b · `listWalkthrough`).
+
+The available primitives are listed in §8a–§8d. If none fits, author honest prose + a static illustration and say so (§13) — a correct prose page beats a lane that animates the wrong thing. When you reach for the default lane, it should be because the idea genuinely *is* one sequence being scanned, not because it was the first kind you remembered.
+
+`{ kind: "walkthrough", lane, showIndices?, frames }` ([WalkthroughDiagram](../../src/learn/article/sections/WalkthroughDiagram.tsx)) — for a single sequence being scanned. Rules:
 
 - **`lane`** — the sequence being scanned (`(string | number)[]`). For sorted/array problems show the **sorted** array if that's what the optimal uses; put the sort in the `heading` (e.g. `heading: "sorted: [-4, -1, -1, 0, 1, 2]"`).
 - **One lane per walkthrough Section.** `WalkthroughDiagram` renders the single `lane` for *every* frame; frames only move pointers/marks over it — they **cannot** swap in a second string/array. So every frame's `pointers.at` and `marked` indices must be in-bounds for that one lane, and no frame's `action`/`caption` may reference a value that isn't in the rendered lane. To show a **second** input (e.g. a passing case after a failing one, as Valid Palindrome does), add a **second** `walkthrough` Section with its own `lane` and `heading` — don't narrate a different input over the first lane.
@@ -135,7 +142,19 @@ For singly-linked-list problems (reversal, fast/slow midpoint, splice/remove, pa
   - **`action?`** / **`caption?`** — same as §8 (terse decision callout beside the chain; plain-English why under it).
 - **Same "teach the whole mechanic" rule** as §8: show the setup, a representative mid-rewire step (the backward link / the pointer that didn't move yet), and the final state.
 
-### 8c. Adding a *new* data render — wire it into the Example & Test-case cells too
+### 8c. Partition problems — use `partitionWalkthrough`, not a 1-D lane
+
+For problems whose insight is a **cut across two (or more) sorted arrays** — the median of two sorted arrays, and partition/merge-flavored searches generally — author a **`partitionWalkthrough`** Section ([PartitionDiagram](../../src/learn/article/sections/PartitionDiagram.tsx)). A 1-D lane can only draw one array, so the cross-array comparison that *is* the algorithm (`maxLeft ≤ minRight`, where the two sides straddle different arrays) gets exiled to caption prose and the diagram teaches nothing. The partition renderer stacks the arrays as rows, draws each row's cut line, rings the boundary cells, and **derives** the verdict so it can't drift from the picture.
+
+`{ kind: "partitionWalkthrough", rows, showIndices?, frames }`:
+
+- **`rows`** — the sorted arrays as `{ label, values: number[] }[]` (two for median; the model generalizes to more). `label` is the row tag shown at left (`"nums1"`).
+- **`frames`** — **4–6** curated candidate partitions. Each carries **`cuts: number[]`** (how many of each row's values fall on the *left* of the cut, `0 … values.length`, one entry per row) plus **`action?`** / **`caption?`** (§8 rules). The renderer computes each row's boundary values (last-left / first-right, with `−∞` / `+∞` sentinels at the edges), the global `maxLeft` = max of the left boundaries and `minRight` = min of the right boundaries, and the `maxLeft ≤ minRight` ✓/✗ verdict — so **don't restate those in the caption as if you computed them**; let the strip show them and use `action`/`caption` for the *decision* (which way to shift the cut, and why).
+- **Show the search, not just the partition** — give each frame **`search: { lo, hi }`** (the candidate range for the cut in row 0; the probe `mid` is `cuts[0]`). The renderer then draws a **cut axis** above the rows with `lo`/`hi`/`mid` pointers and the discarded candidates struck through, so the *halving* is visible. Without it the diagram shows only the partition state and reads like two pointers — the exact trap §8's lead warns about. **Pick an example big enough that the cut visibly jumps** (e.g. `cut1: 2 → 4 → 3`), not one so small the binary search is indistinguishable from `+1` stepping.
+- **Match the stored solution's variable names** in `action` (`cut1`, `left1`/`right1`/`left2`/`right2`, `maxLeft`/`minRight`, `lo = cut1 + 1`) so a reader moving from the diagram into the Optimization code meets the same names.
+- **Same "teach the whole mechanic" rule** as §8: at least one **invalid** cut with the shift it forces (✗), then the **valid** cut (✓), then reading the median off `maxLeft` (and `minRight` for an even total).
+
+### 8d. Adding a *new* data render — wire it into the Example & Test-case cells too
 
 This is for whoever **builds a new visual primitive** for a data type (the next tree-node, interval, or graph render), not for per-problem authoring — once a primitive exists, example/test-case rendering is automatic and needs nothing from the author (see below).
 
