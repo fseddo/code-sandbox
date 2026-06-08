@@ -1,4 +1,4 @@
-import type { AnyProblem, ClientProblem, AlgoProblem, ProblemBase, ProblemKind } from "../problem";
+import type { AnyProblem, ProblemBase, ProblemKind } from "../problem";
 import { type CompanyTag, companiesForProblem } from "../companies";
 import { twoSum } from "./twoSum";
 import { longestConsecutive } from "./longestConsecutive";
@@ -123,6 +123,23 @@ import { implementQueueUsingStacks } from "./implementQueueUsingStacks";
 import { sortKSortedArray } from "./sortKSortedArray";
 import { kMostFrequentStrings } from "./kMostFrequentStrings";
 import { medianOfIntegerStream } from "./medianOfIntegerStream";
+import { intervalIntersection } from "./intervalIntersection";
+import { maxOverlappingIntervals } from "./maxOverlappingIntervals";
+import { rangeSumQuery } from "./rangeSumQuery";
+import { subarraySum } from "./subarraySum";
+import { productExceptSelf } from "./productExceptSelf";
+import { rangeSum2D } from "./rangeSum2D";
+import { invertTree } from "./invertTree";
+import { isBalanced } from "./isBalanced";
+import { isSymmetric } from "./isSymmetric";
+import { verticalOrder } from "./verticalOrder";
+import { buildTree } from "./buildTree";
+import { kthSmallest } from "./kthSmallest";
+import { lowestCommonAncestor } from "./lowestCommonAncestor";
+import { maxPathSum } from "./maxPathSum";
+import { rightSideView } from "./rightSideView";
+import { widthOfBinaryTree } from "./widthOfBinaryTree";
+import { serializeDeserialize } from "./serializeDeserialize";
 
 /**
  * The problem bank, keyed by id. Authored modules keep their precise generics for
@@ -253,11 +270,28 @@ export const problems = {
   "sort-a-k-sorted-array": sortKSortedArray,
   "k-most-frequent-strings": kMostFrequentStrings,
   "median-of-an-integer-stream": medianOfIntegerStream,
+  "interval-intersections": intervalIntersection,
+  "max-overlapping-intervals": maxOverlappingIntervals,
+  "range-sum-query-immutable": rangeSumQuery,
+  "subarray-sum-equals-k": subarraySum,
+  "product-of-array-except-self": productExceptSelf,
+  "range-sum-query-2d-immutable": rangeSum2D,
+  "invert-binary-tree": invertTree,
+  "balanced-binary-tree": isBalanced,
+  "symmetric-tree": isSymmetric,
+  "binary-tree-vertical-order-traversal": verticalOrder,
+  "construct-binary-tree-from-preorder-and-inorder-traversal": buildTree,
+  "kth-smallest-element-in-a-bst": kthSmallest,
+  "lowest-common-ancestor-of-a-binary-tree": lowestCommonAncestor,
+  "binary-tree-maximum-path-sum": maxPathSum,
+  "binary-tree-right-side-view": rightSideView,
+  "maximum-width-of-binary-tree": widthOfBinaryTree,
+  "serialize-and-deserialize-binary-tree": serializeDeserialize,
 } satisfies Record<string, AnyProblem>;
 
 export type ProblemId = keyof typeof problems;
 
-/** Full problem incl. server-only fields — narrow on `kind` at the call site. Never hand this to a client component. */
+/** The full problem — narrow on `kind` at the call site (the algo arm is handed whole to the client workspace). */
 export const getProblem = (id: string): AnyProblem | undefined =>
   (problems as Record<string, AnyProblem>)[id];
 
@@ -287,13 +321,3 @@ export const listProblemSummaries = (): ProblemSummary[] =>
     kind,
     companies: companiesForProblem(id as ProblemId),
   }));
-
-/** Drop `keys` from `value`, keeping the result type *derived* (`Omit<T, K>`) rather than cast. */
-const omit = <T extends object, K extends keyof T>(value: T, keys: readonly K[]): Omit<T, K> => {
-  const copy = { ...value };
-  for (const key of keys) delete (copy as Partial<T>)[key];
-  return copy;
-};
-
-/** Strip the server-only fields (hidden tests, answer-checker), leaving a shape safe to serialize into client props. */
-export const toClientProblem = (problem: AlgoProblem): ClientProblem => omit(problem, ["hiddenTests", "checker"]);

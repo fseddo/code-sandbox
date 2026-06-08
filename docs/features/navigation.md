@@ -16,8 +16,9 @@ logic stay under [`src/problems/`](../../src/problems/).
 /pads             src/app/pads/page.tsx — searchable scratchpad list (<PadsCatalog>) + New pad action
 /pad              src/app/pad/page.tsx — force-dynamic; mints a fresh pad id and redirects to /pad/[id]
 /pad/[id]         src/app/pad/[id]/page.tsx — a blank scratchpad (redirects to /problems/[id] if the id is a problem)
-/api/judge        src/app/api/judge/route.ts — the judge engine (unchanged; named for the engine, not the catalog)
 ```
+
+There are **no API routes** — grading runs in a client-side browser Web Worker (see [algo.md](algo.md)), so the app serves only pages and static assets.
 
 ## App shell — [AppHeader](../../src/components/AppHeader.tsx)
 
@@ -36,8 +37,8 @@ layout), so the full-height workspaces (`AlgoWorkspace` / `BuildWorkspace`) keep
   (tags/companies) across all groups, with arrow-key navigation and Enter to open.
 
 The detail route was renamed `/judge/[id]` → `/problems/[id]` so the URL stops leaking the "judge"
-implementation name. The **API** route stays `/api/judge` deliberately: it's the worker-backed grader, not
-the catalog, so renaming it would push the rename into worker code for no gain. In the workspace breadcrumb
+implementation name. There is no longer an `/api/judge` route at all — grading moved into a client-side
+browser Web Worker (see [algo.md](algo.md)), so the app serves no judge endpoint. In the workspace breadcrumb
 ([DetailHeader](../../src/components/DetailHeader.tsx) via [ProblemDetailHeader](../../src/problems/shared/ProblemDetailHeader.tsx)),
 the brand returns to the landing `/` and the `Problems` crumb returns to the catalog at `/problems`.
 

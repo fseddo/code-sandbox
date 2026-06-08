@@ -10,6 +10,7 @@ import { GridWalkthroughDiagram } from "./sections/GridWalkthroughDiagram";
 import { NodeChainDiagram } from "./sections/NodeChainDiagram";
 import { PartitionDiagram } from "./sections/PartitionDiagram";
 import { MergeWalkthroughDiagram } from "./sections/MergeWalkthroughDiagram";
+import { TreeWalkthroughDiagram } from "./sections/TreeWalkthroughDiagram";
 import { CalloutSection } from "./sections/CalloutSection";
 import { PracticeList } from "./sections/PracticeList";
 import { ResourceList } from "./sections/ResourceList";
@@ -43,6 +44,8 @@ const renderBody = ({ section, problemsById }: SectionRendererProps) => {
       return <PartitionDiagram section={section} />;
     case "mergeWalkthrough":
       return <MergeWalkthroughDiagram section={section} />;
+    case "treeWalkthrough":
+      return <TreeWalkthroughDiagram section={section} />;
     case "callout":
       return <CalloutSection section={section} />;
     case "practice":

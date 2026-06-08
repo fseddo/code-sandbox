@@ -19,7 +19,12 @@ type CodeEditorProps = {
 const sizing = EditorView.theme({
   "&": { height: "100%", fontSize: "13px", backgroundColor: "transparent" },
   ".cm-gutters": { backgroundColor: "transparent", border: "none" },
-  ".cm-scroller": { fontFamily: "var(--font-geist-mono, ui-monospace, monospace)" },
+  ".cm-scroller": {
+    fontFamily: "var(--font-geist-mono, ui-monospace, monospace)",
+    // Geist Mono's === / !== / ... ligatures overprint adjacent glyphs at our size — match the global mono rule.
+    fontVariantLigatures: "none",
+    fontFeatureSettings: '"liga" 0, "calt" 0',
+  },
 });
 
 /** Standalone CodeMirror editor for a single file. Reusable; not tied to Sandpack. */

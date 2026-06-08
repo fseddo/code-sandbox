@@ -1,8 +1,11 @@
 import { notFound } from "next/navigation";
-import { getProblem, problemNumber, toClientProblem, type ProblemId } from "@/problems/data/problems";
+import { getProblem, listProblems, problemNumber, type ProblemId } from "@/problems/data/problems";
 import { companiesForProblem } from "@/problems/data/companies";
 import { AlgoWorkspace } from "@/problems/algo/AlgoWorkspace";
 import { BuildLoader } from "./BuildLoader";
+
+// Prerender every problem page at build (ids come from the registry); unknown ids still render on demand.
+export const generateStaticParams = () => listProblems().map((problem) => ({ id: problem.id }));
 
 const ProblemPage = async ({ params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params;
@@ -14,13 +17,13 @@ const ProblemPage = async ({ params }: { params: Promise<{ id: string }> }) => {
   const number = problemNumber(id);
   const companies = companiesForProblem(id as ProblemId);
 
-  // Build problems are open-ended pad tasks (no hidden tests to strip); algo problems run in the judge.
+  // Build problems are open-ended pad tasks; algo problems are graded client-side in AlgoWorkspace.
   return (
     <main className="h-screen w-screen overflow-hidden">
       {problem.kind === "build" ? (
         <BuildLoader problem={problem} number={number} companies={companies} />
       ) : (
-        <AlgoWorkspace problem={toClientProblem(problem)} number={number} companies={companies} />
+        <AlgoWorkspace problem={problem} number={number} companies={companies} />
       )}
     </main>
   );

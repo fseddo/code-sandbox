@@ -1,5 +1,5 @@
 import type { GridCoord, GridWalkthroughFrame, Section } from "@/learn/data/topic";
-import { BoardGrid, type CellState } from "./BoardGrid";
+import { BoardGrid, type CellState } from "@/components/dataViews/BoardGrid";
 
 type GridWalkthroughSection = Extract<Section, { kind: "gridWalkthrough" }>;
 

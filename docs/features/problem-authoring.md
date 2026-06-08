@@ -119,12 +119,15 @@ export type ProblemSource = {
 };
 ```
 
-### `ClientProblem` projection
+### `ClientProblem` — now the full problem
 
-`examples`, `constraints`, `tags`, and `source` are all client-safe. The server-only fields are
-`hiddenTests` **and** `checker` (the answer-validator source) — [`toClientProblem`](../../src/problems/data/problems/index.ts)
-strips exactly those two via a derived `omit`, so adding a future server-only field to the
-`ClientProblem` `Omit` becomes a compile error there until it's also dropped.
+`ClientProblem` is a plain alias for `AlgoProblem`: client-side grading needs the whole problem in the
+browser, so `hiddenTests` **and** `checker` (the answer-validator source) ship to the client along with
+`examples`/`constraints`/`tags`/`source`. The historical server-only projection (`toClientProblem`, which
+stripped those two via a derived `omit`) is gone — when grading ran on the server the client got an
+`Omit` without the answers; with no server there's nothing to hold them back. That trades answer secrecy
+for deleting the server-side code-execution surface; restoring secrecy is a documented future step (see
+[algo.md](algo.md)).
 
 ## Test-case policy — coverage, not a flat count
 

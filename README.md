@@ -1,10 +1,27 @@
-# Noodle
+# noodle
 
-Noodle is a coding playground with two modes: solve leetcode-style algorithm problems, or take on codepad-style build prompts like "build a React app that does X." Bring your own problems, or let agents source them — scraped from the web, or generated from a one-line summary.
+> Learn it, practice it, or just start coding.
 
-A live code playground in the browser — a CoderPad + LeetCode hybrid for personal use. Write React + TypeScript in the editor, watch [Vite](https://vite.dev) build it inside a [Sandpack](https://sandpack.codesandbox.io/) container, and see the live preview alongside the console.
+A self-contained interview-prep workspace — a [CoderPad](https://coderpad.io) + [LeetCode](https://leetcode.com) hybrid in a single [Next.js 16](https://nextjs.org) app — with three sides: **Learn**, **Problems**, and **Pad**. A personal learning project, built to explore generic, type-driven component design in React 19 + TypeScript.
 
-Each pad has its own URL (`/pad/<id>`) and autosaves to localStorage in this browser. The algorithm side ships a **server-side judge** (a terminable worker thread running `node:vm`) and a typed problem bank of **100+ problems** spanning arrays, strings, linked lists, binary trees, DP, and backtracking. Server-side persistence is planned next.
+## Features
+
+### Learn
+- Typed data-structures-&-algorithms topics rendered as structured articles — complexity tables, worked examples, and hand-rolled SVG diagrams (graphs, matrices, frame-by-frame walkthroughs).
+- A sequenced **study guide** layered over the same topics: pick a track, step through patterns chapter by chapter, each with practice problems and an authored intuition → brute-force → walkthrough overlay.
+
+### Problems
+- 140 coding problems with a **client-side judge** that runs each submission in a terminable browser Web Worker and grades it against hidden tests, with a per-mode wall-clock timeout that kills infinite loops.
+- A filterable catalog (by topic, difficulty, company, and progress) and a ⌘K command palette that searches pages, topics, and problems.
+- Open-ended **build problems** ("build a React component that does X") solved in the in-browser bundler and human-evaluated, alongside the auto-graded ones.
+
+### Pad
+- Free-coding scratchpads: write React + TypeScript and watch [Vite](https://vite.dev) build it inside a [Sandpack](https://sandpack.codesandbox.io/) container.
+- A file tree, live preview, and a custom console, with an event-driven save model that HMR-pushes edits without cold-restarting the dev server.
+
+## How the problem bank was built
+
+The 140 problems and the study-guide pages were sourced and authored with **Claude sub-agents** working against a fixed schema and rubric — one agent maps a problem to the typed model, another sources the problems a given company is known to ask, another authors study-guide pages and a paired agent audits them. Every result is gated through the real judge worker before it lands ([problem-authoring.md](docs/features/problem-authoring.md), [company-sourcing.md](docs/features/company-sourcing.md)).
 
 ## Quick start
 
@@ -13,27 +30,21 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) — `New pad` mints a fresh id and drops you into the workspace.
+Open [http://localhost:3000](http://localhost:3000). Press <kbd>⌘K</kbd> to search.
 
 ## Testing
 
 ```bash
-npm test           # vitest: io converters + every reference solution through the real judge worker
-npm run test:watch # watch mode
+npm test                                 # vitest: I/O converters + every reference solution through the judge worker
 node scripts/verifyProblems.mjs [slug]   # standalone problem verifier (optional slug filter)
 ```
 
-The suite runs each problem's reference solution against its full example + hidden set (submit mode), so a broken problem or harness regression fails CI. See [docs/features/problem-authoring.md](docs/features/problem-authoring.md).
+`npm test` runs every problem's reference solution through the actual judge worker against its full visible + hidden test set, so a broken problem or harness regression fails CI.
 
 ## Stack
 
-- [Next.js 16](https://nextjs.org) App Router, React 19
-- [Sandpack](https://sandpack.codesandbox.io/) for in-browser Vite bundling
-- [shadcn/ui](https://ui.shadcn.com) (Base UI variant) on Tailwind v4
-- [react-resizable-panels](https://github.com/bvaughn/react-resizable-panels) v4 for the split panes
+[Next.js 16](https://nextjs.org) App Router · React 19 · TypeScript · [Sandpack](https://sandpack.codesandbox.io/) + [CodeMirror 6](https://codemirror.net) · [shadcn/ui](https://ui.shadcn.com) (Base UI) on [Tailwind v4](https://tailwindcss.com) · [Shiki](https://shiki.style) · a terminable Web Worker for the in-browser judge · [Vitest](https://vitest.dev).
 
-## For agents and contributors
+## Docs
 
-- Repo orientation, conventions, and routing to feature docs → [CLAUDE.md](CLAUDE.md)
-- Next.js 16 specifics → [AGENTS.md](AGENTS.md)
-- Doc layout + how docs grow with the codebase → [docs/README.md](docs/README.md)
+Design rationale lives in [`docs/`](docs/), one doc per area: [pad](docs/features/pad.md), [algo + judge](docs/features/algo.md), [catalog & routing](docs/features/navigation.md), [Learn & study guide](docs/features/learn.md), [problem authoring](docs/features/problem-authoring.md), [company sourcing](docs/features/company-sourcing.md). Repo conventions are in [CLAUDE.md](CLAUDE.md); doc organization in [docs/README.md](docs/README.md).

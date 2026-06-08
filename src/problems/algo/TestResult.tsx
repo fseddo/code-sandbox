@@ -4,6 +4,7 @@ import { CaseTabs } from "@/problems/algo/CaseTabs";
 import { ValueBlock } from "@/problems/algo/ValueBlock";
 import { ArgsList } from "@/problems/algo/ArgsList";
 import { stringify } from "@/problems/shared/format";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const Centered = ({ children }: { children: React.ReactNode }) => (
@@ -25,20 +26,33 @@ const StatusBlock = ({ title, tone, message }: { title: string; tone: "danger" |
   </div>
 );
 
-const CaseDetail = ({ result, problem, index }: { result: TestResultData; problem: ClientProblem; index: number }) => {
-  if (result.hidden) {
+const CaseDetail = ({
+  result,
+  problem,
+  revealed,
+  onReveal,
+}: {
+  result: TestResultData;
+  problem: ClientProblem;
+  revealed: boolean;
+  onReveal: () => void;
+}) => {
+  if (result.hidden && !revealed) {
     return (
-      <p className="text-xs text-muted-foreground">
-        Hidden test — input and output stay masked so the case still probes a real solution.
-      </p>
+      <div className="flex flex-col items-start gap-3">
+        <p className="text-xs text-muted-foreground">
+          Hidden test — input and output stay masked so the case still probes a real solution.
+        </p>
+        <Button variant="outline" size="sm" onClick={onReveal}>
+          Reveal test case
+        </Button>
+      </div>
     );
   }
 
-  const args = problem.examples[index]?.args ?? [];
-
   return (
     <div className="flex flex-col gap-3">
-      <ArgsList problem={problem} args={args} />
+      <ArgsList problem={problem} args={result.args} />
       <ValueBlock label="Stdout">{result.logs.length > 0 ? result.logs.join("\n") : "(no output)"}</ValueBlock>
       {result.error ? (
         <ValueBlock label="Runtime Error" tone="danger">
@@ -58,6 +72,7 @@ const CaseDetail = ({ result, problem, index }: { result: TestResultData; proble
 
 const OkResult = ({ results, problem }: { results: TestResultData[]; problem: ClientProblem }) => {
   const [active, setActive] = useState(0);
+  const [revealed, setRevealed] = useState<ReadonlySet<number>>(new Set());
   const selected = Math.min(active, results.length - 1);
   const result = results[selected];
 
@@ -86,7 +101,12 @@ const OkResult = ({ results, problem }: { results: TestResultData[]; problem: Cl
         onSelect={setActive}
         statusAt={(index) => (results[index].passed ? "pass" : "fail")}
       />
-      <CaseDetail result={result} problem={problem} index={selected} />
+      <CaseDetail
+        result={result}
+        problem={problem}
+        revealed={revealed.has(selected)}
+        onReveal={() => setRevealed((prev) => new Set(prev).add(selected))}
+      />
     </div>
   );
 };

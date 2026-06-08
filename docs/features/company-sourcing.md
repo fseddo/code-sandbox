@@ -92,10 +92,11 @@ export type AnyProblem = AlgoProblem | BuildProblem;
   (type-only, erased imports). Whether build problems adopt the full `PadProfile` is Phase 2's call.
 - **`ProblemSource.origin`** widened to `"leetcode" | "authored"` (and `frontendId` is now optional)
   so off-catalog and build problems have honest provenance.
-- **`toClientProblem` is unchanged** (`AlgoProblem → ClientProblem`); `getProblem`/`listProblems` now
-  return `AnyProblem`, and the two algo-only server boundaries
-  ([`/problems/[id]` page](../../src/app/problems/[id]/page.tsx), [`/api/judge` route](../../src/app/api/judge/route.ts))
-  narrow on `kind === "algo"` — build problems `notFound`/`400` until their route lands in Phase 2.
+- **`getProblem`/`listProblems` now return `AnyProblem`**, and the algo-only server boundary
+  ([`/problems/[id]` page](../../src/app/problems/[id]/page.tsx)) narrows on `kind === "algo"` — build
+  problems `notFound` until their route lands in Phase 2. (`ClientProblem` is now a plain alias for
+  `AlgoProblem`; grading moved client-side, so the old server-only projection / `/api/judge` route are
+  gone — see [algo.md](algo.md).)
 
 **Honest cost:** every consumer that reads a problem now narrows on `kind`. That's the real,
 non-accidental price of a second problem type — accepted deliberately, because pure-function tests

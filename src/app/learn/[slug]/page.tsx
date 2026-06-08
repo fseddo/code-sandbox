@@ -1,8 +1,11 @@
 import { notFound } from "next/navigation";
 import { AppHeader } from "@/components/AppHeader";
-import { getTopic } from "@/learn/data/topics";
+import { getTopic, listTopics } from "@/learn/data/topics";
 import { listProblemSummaries, type ProblemSummary } from "@/problems/data/problems";
 import { LearnArticle } from "@/learn/article/LearnArticle";
+
+// Prerender every topic article at build; unknown slugs still render on demand and `notFound()`.
+export const generateStaticParams = () => listTopics().map((topic) => ({ slug: topic.slug }));
 
 const TopicPage = async ({ params }: { params: Promise<{ slug: string }> }) => {
   const { slug } = await params;

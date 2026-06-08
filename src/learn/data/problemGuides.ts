@@ -9,6 +9,858 @@ import type { Section } from "./topic";
  * (statement + examples + constraints + Optimization + CTA) — this is the enrichment layer.
  */
 export const PROBLEM_GUIDES: Record<string, Section[]> = {
+  "invert-binary-tree": [
+    {
+      kind: "prose",
+      body:
+        "Inverting a tree means swapping every node's two children, so the result is the mirror image of the input. " +
+        "The most direct way to picture it is level by level: at each node, exchange its left and right subtrees, " +
+        "then do the same inside each subtree.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — BFS, swapping each node's children as it's dequeued: O(n) time, O(n) space.",
+      source:
+        "function invertTree(root) {\n" +
+        "  if (!root) return null;\n" +
+        "  const queue = [root];\n" +
+        "  while (queue.length) {\n" +
+        "    const node = queue.shift();\n" +
+        "    // Swap this node's two children.\n" +
+        "    const tmp = node.left;\n" +
+        "    node.left = node.right;\n" +
+        "    node.right = tmp;\n" +
+        "    // Visit the children to swap their children too.\n" +
+        "    if (node.left) queue.push(node.left);\n" +
+        "    if (node.right) queue.push(node.right);\n" +
+        "  }\n" +
+        "  return root;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "That works and is already O(n), but the explicit queue and the temp-swap obscure how simple the idea is. " +
+        "The key observation: *inverting a tree is inverting its left subtree, inverting its right subtree, and then " +
+        "swapping the two results*. That's a textbook recursion — the structure of the solution mirrors the recursive " +
+        "structure of the tree itself.\n\n" +
+        "The stored solution drops the queue for that recursion: it inverts each subtree first, then assigns them " +
+        "back crossed over. (`left` and `right` in the code are the already-inverted subtrees, so the assignment " +
+        "`root.left = right` is the swap.)\n\n" +
+        "Walking the recursion through `[4, 2, 7, 1, 3, 6, 9]`:",
+    },
+    {
+      kind: "treeWalkthrough",
+      heading: "invert each subtree first, then swap the two results (post-order)",
+      nodes: [
+        { id: "r", val: 4, left: "a", right: "b" },
+        { id: "a", val: 2, left: "a1", right: "a2" },
+        { id: "b", val: 7, left: "b1", right: "b2" },
+        { id: "a1", val: 1 },
+        { id: "a2", val: 3 },
+        { id: "b1", val: 6 },
+        { id: "b2", val: 9 },
+      ],
+      frames: [
+        {
+          pointers: [{ name: "invert", at: "a" }],
+          active: ["a", "a1", "a2"],
+          action: "invert(2) → swap 1 ↔ 3",
+          caption: "Recurse left first. Node 2's children are leaves; swap them so 3 lands on the left, 1 on the right.",
+        },
+        {
+          nodes: [
+            { id: "r", val: 4, left: "a", right: "b" },
+            { id: "a", val: 2, left: "a2", right: "a1" },
+            { id: "b", val: 7, left: "b1", right: "b2" },
+            { id: "a1", val: 1 },
+            { id: "a2", val: 3 },
+            { id: "b1", val: 6 },
+            { id: "b2", val: 9 },
+          ],
+          pointers: [{ name: "invert", at: "b" }],
+          active: ["b", "b1", "b2"],
+          action: "invert(7) → swap 6 ↔ 9",
+          caption: "The left subtree is inverted. Same on the right: at node 7, swap 6 and 9.",
+        },
+        {
+          nodes: [
+            { id: "r", val: 4, left: "a", right: "b" },
+            { id: "a", val: 2, left: "a2", right: "a1" },
+            { id: "b", val: 7, left: "b2", right: "b1" },
+            { id: "a1", val: 1 },
+            { id: "a2", val: 3 },
+            { id: "b1", val: 6 },
+            { id: "b2", val: 9 },
+          ],
+          pointers: [{ name: "invert", at: "r" }],
+          active: ["r"],
+          action: "invert(4) → swap subtrees",
+          caption: "Both subtrees are inverted. Now swap them at the root: the 7-subtree moves left, the 2-subtree moves right.",
+        },
+        {
+          nodes: [
+            { id: "r", val: 4, left: "b", right: "a" },
+            { id: "b", val: 7, left: "b2", right: "b1" },
+            { id: "a", val: 2, left: "a2", right: "a1" },
+            { id: "b2", val: 9 },
+            { id: "b1", val: 6 },
+            { id: "a2", val: 3 },
+            { id: "a1", val: 1 },
+          ],
+          caption: "Done. Read in level order: [4, 7, 2, 9, 6, 3, 1] — every level reversed, the mirror of the input.",
+        },
+      ],
+    },
+    {
+      kind: "callout",
+      tone: "info",
+      items: [
+        "The empty-tree base case (`if (!root) return null`) is what makes the recursion terminate; every leaf's two `null` children hit it.",
+      ],
+    },
+  ],
+
+  "balanced-binary-tree": [
+    {
+      kind: "prose",
+      body:
+        "A tree is height-balanced when *every* node's two subtrees differ in height by at most one. The literal " +
+        "reading of that definition is a two-function solution: a `height` helper, and an `isBalanced` that, at every " +
+        "node, computes both subtree heights and checks the difference.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — recompute every subtree's height from scratch at each node: O(n²).",
+      source:
+        "function isBalanced(root) {\n" +
+        "  if (!root) return true;\n" +
+        "  // Height of a subtree: longest path down, in edges + 1.\n" +
+        "  const height = (node) => node ? 1 + Math.max(height(node.left), height(node.right)) : 0;\n" +
+        "  // This node balanced?\n" +
+        "  const diff = Math.abs(height(root.left) - height(root.right));\n" +
+        "  // ...and both subtrees balanced, recursively.\n" +
+        "  return diff <= 1 && isBalanced(root.left) && isBalanced(root.right);\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(n²) — far more work than necessary. Can we do better?\n\n" +
+        "The waste is that `height` is called over and over: checking the root computes the whole tree's heights, " +
+        "then checking each child recomputes its subtree's heights, and so on — every node's height is recomputed " +
+        "once per ancestor. But a node only needs its children's heights, and those are available the moment the " +
+        "children return.\n\n" +
+        "The key observation: **compute height bottom-up, and let it double as the balance check**. Have the height " +
+        "function return a sentinel — `-1` — the instant it discovers an imbalance, and propagate that sentinel up so " +
+        "the whole tree fails fast. One post-order pass, each node visited once.\n\n" +
+        "Walking it through a tree whose left side runs deep while its right child is a lone leaf:",
+    },
+    {
+      kind: "treeWalkthrough",
+      heading: "height returned bottom-up; the moment |left − right| > 1, return the −1 sentinel",
+      nodes: [
+        { id: "r", val: 1, left: "a", right: "b" },
+        { id: "a", val: 2, left: "c" },
+        { id: "b", val: 2 },
+        { id: "c", val: 3, left: "d", right: "e" },
+        { id: "d", val: 4, left: "f" },
+        { id: "e", val: 4 },
+        { id: "f", val: 5 },
+      ],
+      frames: [
+        {
+          pointers: [{ name: "height", at: "f" }],
+          active: ["f"],
+          badges: { f: "h=1" },
+          action: "leaf 5 → height 1",
+          caption: "Post-order dives to the deepest node first. Leaf 5 has no children, so it returns height 1.",
+        },
+        {
+          pointers: [{ name: "height", at: "c" }],
+          active: ["c", "d", "e", "f"],
+          badges: { f: "h=1", d: "h=2", e: "h=1", c: "h=3" },
+          action: "node 3: |2 − 1| ≤ 1 ✓ → height 3",
+          caption: "Node 4 (left) returns 2, node 4 (right) returns 1 — balanced. Node 3 takes 1 + max(2,1) = height 3.",
+        },
+        {
+          pointers: [{ name: "height", at: "a" }],
+          active: ["a"],
+          badges: { c: "h=3", a: "−1" },
+          action: "node 2: |3 − 0| = 3 > 1 ✗ → return −1",
+          caption: "The left 2 has a height-3 child and an empty (height-0) side: difference 3. Imbalance found — return the −1 sentinel.",
+        },
+        {
+          pointers: [{ name: "height", at: "r" }],
+          marked: ["b"],
+          badges: { a: "−1", r: "−1" },
+          action: "−1 seen → short-circuit, return −1",
+          caption: "−1 bubbles straight to the root; the answer is false and the right subtree's height is never computed.",
+        },
+      ],
+    },
+    {
+      kind: "callout",
+      tone: "info",
+      items: [
+        "In the stored solution the value `-1` is *not* a height — it's the \"already unbalanced\" flag. Any real height is `>= 0`, so `-1` is unambiguous.",
+        "Because the check rides on the height computation, the answer is found in a single traversal rather than the brute force's repeated re-descents.",
+      ],
+    },
+  ],
+
+  "symmetric-tree": [
+    {
+      kind: "prose",
+      body:
+        "A tree is symmetric when it's a mirror of itself. The tempting first move is to *build* the mirror — invert " +
+        "the tree into a copy — and check whether the copy equals the original. It's correct, but it allocates a whole " +
+        "second tree to answer a yes/no question.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — invert a copy of the tree, then compare it to the original: O(n) time, O(n) space.",
+      source:
+        "function isSymmetric(root) {\n" +
+        "  // Deep-copy the tree with its children swapped (the mirror).\n" +
+        "  const mirror = (node) =>\n" +
+        "    node ? { val: node.val, left: mirror(node.right), right: mirror(node.left) } : null;\n" +
+        "  // Compare two trees node for node.\n" +
+        "  const equal = (a, b) =>\n" +
+        "    (!a && !b) || (!!a && !!b && a.val === b.val && equal(a.left, b.left) && equal(a.right, b.right));\n" +
+        "  return equal(root, mirror(root));\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(n) time but allocates a full mirror copy. Can we do better on space?\n\n" +
+        "The key observation: symmetry is a property of a *pair* of subtrees, not of one tree, so we never need to " +
+        "build anything — just compare the left subtree against the right subtree directly. Two subtrees mirror when " +
+        "their roots match **and** the left's *left* mirrors the right's *right* (the outer pair) **and** the left's " +
+        "*right* mirrors the right's *left* (the inner pair). The two recursive calls cross over — that crossing is the " +
+        "whole trick.\n\n" +
+        "This is the same paired-recursion idea as [Same Tree](/learn/guide/algos/problem/same-tree), but with the " +
+        "child comparisons flipped.\n\n" +
+        "Tracing `[1, 2, 2, 3, 4, 4, 3]` — root `1` with two `2`-subtrees:\n\n" +
+        "- **Roots of the pair:** left `2` and right `2` — equal, continue.\n" +
+        "- **Outer pair:** left-2's left (`3`) vs right-2's right (`3`) — equal leaves, mirror ✓.\n" +
+        "- **Inner pair:** left-2's right (`4`) vs right-2's left (`4`) — equal leaves, mirror ✓.\n\n" +
+        "All pairs match, so the tree is symmetric. A value mismatch or a shape mismatch (one child present, the " +
+        "other null) at any pair returns `false` immediately.",
+    },
+    {
+      kind: "callout",
+      tone: "info",
+      items: [
+        "The mechanic is a structural cross-comparison of two subtrees, which a single scanned lane can't depict — the trace narrates the outer/inner pairing instead.",
+        "The base cases carry the shape check: both-null is a match; exactly-one-null is a mismatch (the two sides have different shapes there).",
+      ],
+    },
+  ],
+
+  "binary-tree-vertical-order-traversal": [
+    {
+      kind: "prose",
+      body:
+        "Assign the root column `0`; a left child sits one column left (`col - 1`), a right child one column right " +
+        "(`col + 1`). The output groups node values by column, left to right, and within a column lists them top to " +
+        "bottom. A direct approach does a DFS recording each node's `(column, row)`, then sorts everything into " +
+        "buckets at the end.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — DFS collecting (col, row, val), then sort each column by row: O(n log n).",
+      source:
+        "function verticalOrder(root) {\n" +
+        "  const seen = [];\n" +
+        "  // Record every node with its column and depth (row).\n" +
+        "  const dfs = (node, col, row) => {\n" +
+        "    if (!node) return;\n" +
+        "    seen.push({ col, row, val: node.val });\n" +
+        "    dfs(node.left, col - 1, row + 1);\n" +
+        "    dfs(node.right, col + 1, row + 1);\n" +
+        "  };\n" +
+        "  dfs(root, 0, 0);\n" +
+        "  // Group by column; within a column sort by row, then by insertion order.\n" +
+        "  const byCol = new Map();\n" +
+        "  for (const { col, row, val } of seen) {\n" +
+        "    if (!byCol.has(col)) byCol.set(col, []);\n" +
+        "    byCol.get(col).push({ row, val });\n" +
+        "  }\n" +
+        "  return [...byCol.keys()].sort((a, b) => a - b).map((col) =>\n" +
+        "    byCol.get(col).sort((a, b) => a.row - b.row).map((e) => e.val));\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This works but the per-column sort makes it O(n log n), and a DFS visits a same-column node out of top-to-" +
+        "bottom order, which is why the sort was needed at all. Can we do better?\n\n" +
+        "The key observation: the required within-column order — *top to bottom, then left to right on a tie* — is " +
+        "**exactly the order a breadth-first traversal visits nodes**. So if we BFS and carry each node's column index, " +
+        "appending into per-column buckets, every bucket comes out already correct. No sorting, just a final read from " +
+        "the smallest column to the largest. This is the level-order / [queue](/learn/queues) pattern with an extra " +
+        "piece of state riding along.\n\n" +
+        "Tracing `[3, 9, 20, null, null, 15, 7]`. BFS visits `3 (col 0)`, `9 (col -1)`, `20 (col 1)`, `15 (col 0)`, " +
+        "`7 (col 2)`. The lane below is the BFS *visit order*; each `action` shows which column bucket the value drops " +
+        "into:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "BFS visit order — each node dropped into its column bucket",
+      lane: [3, 9, 20, 15, 7],
+      frames: [
+        { pointers: [{ name: "bfs", at: 0 }], action: "3 → col 0", caption: "Root enters column 0. Queue its children with cols -1 and +1." },
+        { pointers: [{ name: "bfs", at: 1 }], action: "9 → col -1", caption: "Left child of 3: column -1, the leftmost so far." },
+        { pointers: [{ name: "bfs", at: 2 }], action: "20 → col 1", caption: "Right child of 3: column +1. Its children will be cols 0 and 2." },
+        { pointers: [{ name: "bfs", at: 3 }], action: "15 → col 0", caption: "15 shares column 0 with the root — and BFS reaches it after 3, so it lands below 3 in the bucket." },
+        { pointers: [{ name: "bfs", at: 4 }], action: "7 → col 2", caption: "Buckets: col -1=[9], col 0=[3,15], col 1=[20], col 2=[7] → [[9],[3,15],[20],[7]]." },
+      ],
+    },
+  ],
+
+  "construct-binary-tree-from-preorder-and-inorder-traversal": [
+    {
+      kind: "prose",
+      body:
+        "Two facts drive the reconstruction. In **preorder** (node, left, right) the very first value is the root. In " +
+        "**inorder** (left, node, right) the root splits the array: everything to its left is the left subtree, " +
+        "everything to its right is the right subtree. Recurse on each side. A direct version searches inorder for the " +
+        "root each time and slices fresh arrays for the recursion.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — linear search for the root + array slicing at every node: O(n²) time and space.",
+      source:
+        "function buildTree(preorder, inorder) {\n" +
+        "  if (preorder.length === 0) return null;\n" +
+        "  const rootVal = preorder[0];          // preorder's first value is the root\n" +
+        "  const mid = inorder.indexOf(rootVal); // O(n) search splits inorder\n" +
+        "  const node = new TreeNode(rootVal);\n" +
+        "  // Left subtree: the first `mid` preorder values after the root, and inorder[0..mid).\n" +
+        "  node.left = buildTree(preorder.slice(1, mid + 1), inorder.slice(0, mid));\n" +
+        "  // Right subtree: the rest.\n" +
+        "  node.right = buildTree(preorder.slice(mid + 1), inorder.slice(mid + 1));\n" +
+        "  return node;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "Correct, but two things make it O(n²): the `indexOf` search at every node, and the `slice` calls that copy " +
+        "subarrays. Can we do better?\n\n" +
+        "Two optimizations: (1) precompute a **value → inorder-index map** so the split is O(1) instead of a linear " +
+        "search; (2) stop slicing — instead, pass the inorder *range* `[lo, hi]` and consume preorder left-to-right " +
+        "with a single shared cursor. Because preorder is root, then *all* of the left subtree, then *all* of the " +
+        "right, advancing the cursor as we recurse left-first hands each subtree its own root automatically.\n\n" +
+        "Tracing `preorder = [3, 9, 20, 15, 7]`, `inorder = [9, 3, 15, 20, 7]`:\n\n" +
+        "- **Cursor at `3`** (root). In inorder, `3` is at index 1 → left subtree is inorder `[9]`, right is `[15, 20, 7]`.\n" +
+        "- **Recurse left, cursor advances to `9`.** Inorder range is just `[9]` → a leaf. Left and right ranges are empty.\n" +
+        "- **Recurse right, cursor advances to `20`.** In inorder, `20` sits between `15` (left) and `7` (right).\n" +
+        "- **Cursor `15`** then **`7`** fill `20`'s two leaves. The cursor has walked preorder exactly once.\n\n" +
+        "The rebuilt tree is `[3, 9, 20, null, null, 15, 7]`.",
+    },
+    {
+      kind: "callout",
+      tone: "info",
+      items: [
+        "The stored solution's `mid` is the root's index *in inorder* (from the precomputed map); `pre` is the shared preorder cursor — there's no lane because the reconstruction is a recursive split, not a scan.",
+        "Left-first recursion is essential: it consumes the preorder cursor in the same order the values appear, so each recursive call's first preorder value is its subtree's root.",
+      ],
+    },
+  ],
+
+  "kth-smallest-element-in-a-bst": [
+    {
+      kind: "prose",
+      body:
+        "In a binary search tree an **in-order** traversal (left, node, right) visits values in ascending order. So " +
+        "the most direct solution does a full in-order walk into an array and returns the element at index `k - 1`.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — materialize the full sorted in-order array, then index it: O(n) time and space.",
+      source:
+        "function kthSmallest(root, k) {\n" +
+        "  const sorted = [];\n" +
+        "  // In-order traversal of a BST yields values in ascending order.\n" +
+        "  const inorder = (node) => {\n" +
+        "    if (!node) return;\n" +
+        "    inorder(node.left);\n" +
+        "    sorted.push(node.val);\n" +
+        "    inorder(node.right);\n" +
+        "  };\n" +
+        "  inorder(root);\n" +
+        "  return sorted[k - 1]; // 1-indexed\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(n) time, but it always walks the *entire* tree and builds a full array even when `k` is tiny. Can " +
+        "we do better?\n\n" +
+        "The key observation: we don't need the whole sorted sequence — only its `k`-th element. Walk in-order but " +
+        "**count as we go and stop the moment the count hits `k`**. Using an explicit [stack](/learn/stacks) makes the " +
+        "early exit clean: dive left pushing nodes, then pop-and-count; the `k`-th pop is the answer.\n\n" +
+        "The lane below is the in-order *output sequence* of the BST `[5, 3, 6, 2, 4, null, null, 1]` — i.e. " +
+        "`[1, 2, 3, 4, 5, 6]` — with the counter walking it; we stop at `k = 3`:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "in-order output of the BST: [1, 2, 3, 4, 5, 6], counting up to k = 3",
+      lane: [1, 2, 3, 4, 5, 6],
+      showIndices: true,
+      frames: [
+        { pointers: [{ name: "count", at: 0 }], action: "pop 1 → count = 1", caption: "Dive to the leftmost node (1). First pop: count 1, not yet k." },
+        { pointers: [{ name: "count", at: 1 }], action: "pop 2 → count = 2", caption: "Next in-order value. count 2 < 3, keep going." },
+        { pointers: [{ name: "count", at: 2 }], action: "pop 3 → count = 3 = k", caption: "Third pop: count reaches k. Return 3 — the rest of the tree is never visited." },
+        { marked: [3, 4, 5], action: "stop early", caption: "Values 4, 5, 6 are never popped: the O(h + k) early exit beats walking all n nodes." },
+      ],
+    },
+  ],
+
+  "lowest-common-ancestor-of-a-binary-tree": [
+    {
+      kind: "prose",
+      body:
+        "The lowest common ancestor of `p` and `q` is the deepest node having both somewhere in its subtree (a node " +
+        "may be its own ancestor). A direct approach finds the root-to-`p` path and the root-to-`q` path as lists, " +
+        "then walks both from the top and returns the last node they share.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — find both root-to-node paths, then compare them for the last common node: O(n) time, O(n) space.",
+      source:
+        "function lowestCommonAncestor(root, p, q) {\n" +
+        "  // Build the list of values from root down to a target.\n" +
+        "  const pathTo = (node, target, trail) => {\n" +
+        "    if (!node) return null;\n" +
+        "    trail.push(node.val);\n" +
+        "    if (node.val === target) return [...trail];\n" +
+        "    const found = pathTo(node.left, target, trail) || pathTo(node.right, target, trail);\n" +
+        "    trail.pop(); // backtrack before trying the sibling\n" +
+        "    return found;\n" +
+        "  };\n" +
+        "  const pathP = pathTo(root, p, []);\n" +
+        "  const pathQ = pathTo(root, q, []);\n" +
+        "  // The last position where the two paths agree is the LCA.\n" +
+        "  let lca = root.val;\n" +
+        "  for (let i = 0; i < Math.min(pathP.length, pathQ.length); i++) {\n" +
+        "    if (pathP[i] === pathQ[i]) lca = pathP[i];\n" +
+        "    else break;\n" +
+        "  }\n" +
+        "  return lca;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "That's two full traversals plus two stored paths. Can we do it in one pass with no path lists?\n\n" +
+        "The key observation: a single post-order recursion can report, for each node, whether `p` or `q` (or their " +
+        "join point) lies in its subtree. A node is the LCA exactly when **one target is found in its left subtree and " +
+        "the other in its right** — or when the node itself is a target and the other lies below it. Because the " +
+        "recursion bubbles up the *first* node that sees both, that node is the lowest such ancestor.\n\n" +
+        "Tracing `[3, 5, 1, 6, 2, 0, 8, null, null, 7, 4]` with `p = 5`, `q = 1`:\n\n" +
+        "- **Left subtree (rooted at 5):** the search finds `5` here → the left call returns non-null (`5`).\n" +
+        "- **Right subtree (rooted at 1):** the search finds `1` here → the right call returns non-null (`1`).\n" +
+        "- **At the root 3:** both children returned non-null → the targets split across the two sides, so `3` is the LCA.\n\n" +
+        "For `p = 5`, `q = 4` instead: `4` lies inside `5`'s subtree, so the recursion finds `5` first (at the top of " +
+        "that subtree) and never needs to look deeper — `5` is its own answer.",
+    },
+    {
+      kind: "callout",
+      tone: "info",
+      items: [
+        "The mechanic is \"which side did each target come back on\" — a branching decision over subtrees, not a scan, so the trace narrates the bubble-up rather than using a lane.",
+        "This reframe returns the LCA node's *value* (values are unique by constraint); LeetCode returns the node itself, but the recursion is identical.",
+      ],
+    },
+  ],
+
+  "binary-tree-maximum-path-sum": [
+    {
+      kind: "prose",
+      body:
+        "A path is any chain of nodes connected by parent–child edges; it can start and end anywhere and may *turn* " +
+        "at a single node (rise up one child, peak, descend the other). We want the maximum sum over all such paths. " +
+        "A brute force fixes each node as the path's peak and explores the best downward run on each side.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — for every node, recompute the best downward arm on each side: O(n²).",
+      source:
+        "function maxPathSum(root) {\n" +
+        "  let best = -Infinity;\n" +
+        "  // Best sum of a straight downward path starting at node.\n" +
+        "  const downward = (node) => {\n" +
+        "    if (!node) return 0;\n" +
+        "    const left = Math.max(0, downward(node.left));\n" +
+        "    const right = Math.max(0, downward(node.right));\n" +
+        "    return node.val + Math.max(left, right);\n" +
+        "  };\n" +
+        "  // Try every node as the path's turning point (peak).\n" +
+        "  const visit = (node) => {\n" +
+        "    if (!node) return;\n" +
+        "    const left = Math.max(0, downward(node.left));\n" +
+        "    const right = Math.max(0, downward(node.right));\n" +
+        "    best = Math.max(best, node.val + left + right);\n" +
+        "    visit(node.left);\n" +
+        "    visit(node.right);\n" +
+        "  };\n" +
+        "  visit(root);\n" +
+        "  return best;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This recomputes `downward` from scratch at every node — O(n²). Can we fuse the two passes?\n\n" +
+        "The key observation: the downward gain a node needs is computable bottom-up in the *same* traversal that " +
+        "updates the global best. So do one post-order pass where each call returns `node.val + max(0, leftGain, " +
+        "rightGain)` — the most it can contribute to a parent, which can only descend through *one* child. Separately, " +
+        "before returning, update a global best with `node.val + leftGain + rightGain` — the best path that *turns* at " +
+        "this node and uses *both* children. Clamping each side at `0` drops a negative arm.\n\n" +
+        "Tracing `[-10, 9, 20, null, null, 15, 7]`:\n\n" +
+        "- **Leaves 9, 15, 7** return their own values as downward gains (`9`, `15`, `7`).\n" +
+        "- **At node 20:** turn-here candidate is `20 + 15 + 7 = 42` → updates the global best to `42`. It returns " +
+        "`20 + max(15, 7) = 35` upward.\n" +
+        "- **At the root -10:** turn-here candidate is `-10 + max(0, 9) + max(0, 35) = 34` — less than `42`. The negative " +
+        "root can't improve on the `15 → 20 → 7` path, so the answer stays **42**.",
+    },
+    {
+      kind: "callout",
+      tone: "info",
+      items: [
+        "The model bridge: the recursion returns a *one-sided* downward gain (what a parent can use), while the answer tracks a *two-sided* turn-here sum in the global `best` — two distinct quantities computed at the same node.",
+        "Clamping negatives at 0 (`Math.max(0, gain)`) is how a subtree that would only hurt the sum is dropped — equivalent to not extending the path into it.",
+        "There's no lane: the value flows *up* the recursion and a global is updated as a side effect, which a single scanned row can't represent.",
+      ],
+    },
+  ],
+
+  "binary-tree-right-side-view": [
+    {
+      kind: "prose",
+      body:
+        "Standing to the right of the tree, you see the **last** node on each level. A direct solution does a " +
+        "breadth-first traversal collecting every level into its own array, then takes the last value of each.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — full level-order into arrays, then take each level's last element: O(n) time and space.",
+      source:
+        "function rightSideView(root) {\n" +
+        "  if (!root) return [];\n" +
+        "  const levels = [];\n" +
+        "  let queue = [root];\n" +
+        "  while (queue.length) {\n" +
+        "    const level = [];\n" +
+        "    const next = [];\n" +
+        "    for (const node of queue) {\n" +
+        "      level.push(node.val);\n" +
+        "      if (node.left) next.push(node.left);\n" +
+        "      if (node.right) next.push(node.right);\n" +
+        "    }\n" +
+        "    levels.push(level);\n" +
+        "    queue = next;\n" +
+        "  }\n" +
+        "  return levels.map((level) => level[level.length - 1]); // last of each level\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(n) but stores every level in full just to keep one value from each. Can we trim the memory?\n\n" +
+        "The key observation: we only need the *last* node of each level, so during the level scan we just push the " +
+        "node we happen to be on when it's the final one in the queue — no per-level array needed. This is the " +
+        "level-order / [queue](/learn/queues) pattern, taking one value per level.\n\n" +
+        "Note the visible node may be a *left* child if its level has nothing further right. Tracing " +
+        "`[1, 2, 3, null, 5, null, 4]` — root `1`; level 1 is `2, 3`; level 2 is `5` (2's right) and `4` (3's right). " +
+        "The lane is the BFS visit order; each `action` marks whether the node is its level's last (visible) node:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "BFS visit order — the last node of each level is the visible one",
+      lane: [1, 2, 3, 5, 4],
+      frames: [
+        { pointers: [{ name: "scan", at: 0 }], action: "level 0 ends → see 1", caption: "Root is alone on its level, so it's the last — visible." },
+        { pointers: [{ name: "scan", at: 1 }], action: "level 1: 2 not last", caption: "2 is the first of level 1; another node (3) follows, so 2 is hidden." },
+        { pointers: [{ name: "scan", at: 2 }], action: "level 1 ends → see 3", caption: "3 is the last of level 1 — visible." },
+        { pointers: [{ name: "scan", at: 3 }], action: "level 2: 5 not last", caption: "5 is the first of level 2; 4 still follows." },
+        { pointers: [{ name: "scan", at: 4 }], action: "level 2 ends → see 4", caption: "4 is the last of level 2 — visible. Right-side view: [1, 3, 4]." },
+      ],
+    },
+  ],
+
+  "maximum-width-of-binary-tree": [
+    {
+      kind: "prose",
+      body:
+        "The width of a level is the distance between its leftmost and rightmost *non-null* nodes, counting the empty " +
+        "slots that would sit between them in a complete tree. The trick is to give nodes the **heap index** they'd " +
+        "have in a complete tree: the root is `i`, its children are `2i` and `2i + 1`. Then a level's width is just " +
+        "`rightmostIndex - leftmostIndex + 1`.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — BFS pushing null placeholders for missing children, then measure each padded level.",
+      source:
+        "function widthOfBinaryTree(root) {\n" +
+        "  if (!root) return 0;\n" +
+        "  let best = 0;\n" +
+        "  let queue = [root];\n" +
+        "  while (queue.some((node) => node)) {  // stop when a level is all nulls\n" +
+        "    // Trim leading/trailing nulls; the span between real ends is the width.\n" +
+        "    let lo = 0;\n" +
+        "    let hi = queue.length - 1;\n" +
+        "    while (queue[lo] === null) lo++;\n" +
+        "    while (queue[hi] === null) hi--;\n" +
+        "    best = Math.max(best, hi - lo + 1);\n" +
+        "    const next = [];\n" +
+        "    for (const node of queue) {        // pad both children, even nulls\n" +
+        "      next.push(node ? node.left : null, node ? node.right : null);\n" +
+        "    }\n" +
+        "    queue = next;\n" +
+        "  }\n" +
+        "  return best;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "Padding every null doubles the queue each level — on a sparse, deep tree that's exponential blow-up. Can we " +
+        "avoid materializing the gaps?\n\n" +
+        "The key observation: we never need the empty slots themselves, only the *index arithmetic*. Carry each real " +
+        "node's heap index alongside it in the [queue](/learn/queues); a level's width is the last index minus the " +
+        "first plus one. To stop indices from overflowing on deep trees, re-base each level so its first node starts " +
+        "at `0` — only the differences matter.\n\n" +
+        "Tracing `[1, 3, 2, 5, 3, null, 9]`. Indices (re-based per level): root `1@0`; level 1 is `3@0, 2@1`; level 2 " +
+        "is `5@0, 3@1` (under 3) and `9@3` (under 2's right). The lane shows the bottom level's occupied indices — the " +
+        "gap at index 2 is the empty slot that widens the span:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "bottom level heap indices: 5@0, 3@1, (gap), 9@3 — span 0..3",
+      lane: ["5", "3", "·", "9"],
+      showIndices: true,
+      frames: [
+        { pointers: [{ name: "first", at: 0 }], action: "leftmost = index 0", caption: "5 is the level's first real node, at re-based index 0." },
+        { pointers: [{ name: "first", at: 0 }, { name: "i", at: 1 }], action: "3 at index 1", caption: "3 (the other child of node 3) sits at index 1." },
+        { marked: [2], action: "index 2 empty", caption: "Node 2's left child is null — index 2 is a gap, but it still counts toward the span." },
+        { pointers: [{ name: "first", at: 0 }, { name: "last", at: 3 }], action: "width = 3 - 0 + 1 = 4", caption: "9 (node 2's right child) lands at index 3. Leftmost 0, rightmost 3 → width 4." },
+      ],
+    },
+  ],
+
+  "serialize-and-deserialize-binary-tree": [
+    {
+      kind: "prose",
+      body:
+        "A codec needs two halves that are perfect inverses: **serialize** turns a tree into a string, **deserialize** " +
+        "rebuilds the identical tree from that string. The naive instinct — serialize just the node values in order — " +
+        "fails, because values alone don't pin down the *shape*: `[1, 2]` could be `2` as a left child or a right child.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force attempt — values only, no null markers: ambiguous, can't reconstruct the shape.",
+      source:
+        "// Serializing values without recording the gaps loses the structure.\n" +
+        "function serialize(root) {\n" +
+        "  const out = [];\n" +
+        "  const walk = (node) => { if (!node) return; out.push(node.val); walk(node.left); walk(node.right); };\n" +
+        "  walk(root);\n" +
+        "  return out.join(',');\n" +
+        "}\n" +
+        "// '1,2' — was 2 a left child or a right child? Deserialize can't know. Broken.",
+    },
+    {
+      kind: "prose",
+      body:
+        "The fix is to **record the nulls**. The key observation: a preorder walk that emits a sentinel (say `#`) for " +
+        "every absent child captures the shape unambiguously — the sentinels mark exactly where each subtree ends, so " +
+        "deserialize can rebuild by consuming the tokens in the same order.\n\n" +
+        "Because the sandbox runs one function, the stored solution does the whole round trip in " +
+        "`serializeDeserialize(root)`: serialize to the preorder-with-sentinels string, then parse it straight back " +
+        "into a tree and return it. A correct codec reproduces the original exactly.\n\n" +
+        "Tracing `[1, 2, 3, null, null, 4, 5]` — root `1`, left leaf `2`, right node `3` with children `4, 5`:\n\n" +
+        "- **Serialize (preorder):** `1`, then into `2`: `2, #, #` (two null children); then into `3`: `3`, then " +
+        "`4, #, #`, then `5, #, #`. String: `1,2,#,#,3,4,#,#,5,#,#`.\n" +
+        "- **Deserialize:** read `1` (root), recurse left → read `2`, its two `#`s make it a leaf; recurse right → " +
+        "read `3`, then `4` (leaf), then `5` (leaf). The token order *is* the preorder, so the shape comes back exactly.",
+    },
+    {
+      kind: "callout",
+      tone: "info",
+      items: [
+        "The sentinel `#` is what carries the structure — without a marker for each null child, the value stream is ambiguous and no deserializer can recover the original shape.",
+        "There's no lane: the mechanic is a recursive write/read of a token stream, not a scan over a fixed sequence.",
+        "This is the design→single-function reframe: LeetCode ships a two-method `Codec` class, but a round-trip function exercises both halves and is what the harness can run.",
+      ],
+    },
+  ],
+
+  "same-tree": [
+    {
+      kind: "prose",
+      body:
+        "Two trees are the same when they have identical shape and every corresponding pair of nodes holds the same " +
+        "value. The structure of the check mirrors the structure of a tree: compare the two roots, then recursively " +
+        "compare their left subtrees and their right subtrees.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — serialize both trees (with null markers) and compare the strings: O(n) time and space.",
+      source:
+        "function isSameTree(p, q) {\n" +
+        "  // Preorder serialization with '#' for nulls captures both value and shape.\n" +
+        "  const encode = (node) =>\n" +
+        "    node ? `${node.val},${encode(node.left)},${encode(node.right)}` : '#';\n" +
+        "  return encode(p) === encode(q);\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "That's correct, but it builds two full strings before comparing a single character — and it can't stop early " +
+        "when the trees differ at the very first node. Can we do better?\n\n" +
+        "The key observation: compare the two trees *in lockstep* and short-circuit. At each step, both nodes null " +
+        "means this branch matches; exactly one null means the shapes differ; otherwise the values must match and both " +
+        "child-pairs must match recursively. The first disagreement returns `false` immediately.\n\n" +
+        "Tracing `p = [1, 2, 3]` against `q = [1, 2, 3]`:\n\n" +
+        "- **Roots:** both `1` — equal, recurse on both child-pairs.\n" +
+        "- **Left pair:** both `2`, and both their children are null-pairs → match.\n" +
+        "- **Right pair:** both `3`, likewise → match. Every pair agrees, so the trees are the same.\n\n" +
+        "Against `q = [1, 2, null]` the right pair would be `3` vs `null` — one present, one absent — returning " +
+        "`false` at that step without touching the rest.",
+    },
+    {
+      kind: "callout",
+      tone: "info",
+      items: [
+        "The base cases do the shape check: both-null matches, exactly-one-null is an immediate mismatch.",
+        "This is the structural cousin of [Symmetric Tree](/learn/guide/algos/problem/symmetric-tree), which compares one tree against its own mirror by crossing the child comparisons; here the comparisons are straight (left-with-left, right-with-right).",
+        "No lane — the comparison descends two trees together, which a single scanned row can't show.",
+      ],
+    },
+  ],
+
+  "binary-tree-inorder-traversal": [
+    {
+      kind: "prose",
+      body:
+        "In-order traversal visits the left subtree, then the node, then the right subtree. The most direct " +
+        "implementation is the literal recursion: recurse left, record the value, recurse right.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — straightforward recursion, appending into a shared array: O(n) time, O(h) stack.",
+      source:
+        "function inorderTraversal(root) {\n" +
+        "  const result = [];\n" +
+        "  const visit = (node) => {\n" +
+        "    if (!node) return;\n" +
+        "    visit(node.left);     // left subtree first\n" +
+        "    result.push(node.val); // then the node\n" +
+        "    visit(node.right);    // then the right subtree\n" +
+        "  };\n" +
+        "  visit(root);\n" +
+        "  return result;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "The recursion is clean and O(n), but it leans on the call stack — interviewers often ask for it *iteratively*, " +
+        "and a very deep tree can overflow that stack. Can we do it without recursion?\n\n" +
+        "The key observation: an explicit [stack](/learn/stacks) can stand in for the call stack. Walk left as far as " +
+        "possible, pushing every node; when you can't go left, pop a node, record it (that's the in-order moment), and " +
+        "step into its right child. Repeat until both the stack and the current pointer are exhausted.\n\n" +
+        "The lane is the in-order *output* of `[1, null, 2, 3]` — root `1`, right child `2`, and `2`'s left child `3` — " +
+        "which is `[1, 3, 2]`:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "in-order output of [1, null, 2, 3] → [1, 3, 2]",
+      lane: [1, 3, 2],
+      frames: [
+        { pointers: [{ name: "out", at: 0 }], action: "push 1; left is null → pop, record 1", caption: "Start at root 1. No left child, so 1 is recorded first." },
+        { pointers: [{ name: "out", at: 0 }], action: "step right to 2, then left to 3", caption: "Move into 1's right (2), then dive left to 3, pushing as we go." },
+        { pointers: [{ name: "out", at: 1 }], action: "pop, record 3", caption: "3 has no left child → it's the next in-order value." },
+        { pointers: [{ name: "out", at: 2 }], action: "pop, record 2", caption: "Back up to 2 and record it. Result: [1, 3, 2]." },
+      ],
+    },
+  ],
+
+  "validate-binary-search-tree": [
+    {
+      kind: "prose",
+      body:
+        "A BST requires that for *every* node, all left-subtree values are smaller and all right-subtree values are " +
+        "larger — a global rule, not just parent-to-child. The cleanest brute force leans on that: an in-order " +
+        "traversal of a valid BST is strictly increasing, so collect the in-order values and check they're sorted.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — in-order into an array, then verify it's strictly increasing: O(n) time, O(n) space.",
+      source:
+        "function isValidBST(root) {\n" +
+        "  const vals = [];\n" +
+        "  const inorder = (node) => {\n" +
+        "    if (!node) return;\n" +
+        "    inorder(node.left);\n" +
+        "    vals.push(node.val);\n" +
+        "    inorder(node.right);\n" +
+        "  };\n" +
+        "  inorder(root);\n" +
+        "  // A valid BST's in-order sequence is strictly increasing.\n" +
+        "  for (let i = 1; i < vals.length; i++) {\n" +
+        "    if (vals[i] <= vals[i - 1]) return false;\n" +
+        "  }\n" +
+        "  return true;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "Correct and O(n), but it materializes the whole value array and can't bail out the instant it sees a " +
+        "violation high in the tree. Can we validate in place?\n\n" +
+        "The key observation: each node lives inside an open interval `(low, high)` set by its ancestors. Descending " +
+        "*left* tightens the upper bound to the parent's value; descending *right* tightens the lower bound. A node is " +
+        "valid iff it lies strictly inside its interval — strict comparisons reject duplicates. This catches the " +
+        "global-violation case (a node that respects its parent but breaks a distant ancestor's bound) that a naive " +
+        "parent-only check misses.\n\n" +
+        "Tracing `[5, 1, 4, null, null, 3, 6]` — root `5`, left `1`, right `4` with children `3, 6`:\n\n" +
+        "- **Root 5:** interval `(-∞, +∞)` — fine.\n" +
+        "- **Left child 1:** interval `(-∞, 5)` — `1 < 5`, fine.\n" +
+        "- **Right child 4:** interval `(5, +∞)` — but `4` is **not** `> 5`. Violation: `4` sits in `5`'s right subtree " +
+        "yet is smaller than `5`. Return `false` immediately, without inspecting `3` or `6`.",
+    },
+    {
+      kind: "callout",
+      tone: "info",
+      items: [
+        "The bound is *inherited*, not local: a node deep in a right subtree must still exceed every ancestor it descended right from — that's why a parent-only check is wrong.",
+        "Strict `<`/`>` (not `<=`/`>=`) is what rejects duplicate values, which a BST disallows.",
+        "No lane — the validity test threads a shrinking `(low, high)` interval down the recursion, a per-node bound a single scanned row can't carry.",
+      ],
+    },
+  ],
+
   "container-with-most-water": [
     {
       kind: "prose",
@@ -2790,6 +3642,576 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
   ],
 
   // (next-larger-element et al. above are the Stacks chapter)
+
+  "merge-intervals": [
+    {
+      kind: "prose",
+      body:
+        "A first pass treats merging as a repeated scan: keep sweeping the whole list, and whenever two intervals " +
+        "overlap, fuse them into one and start over — repeating until a full pass makes no change.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — re-scan and fuse any overlapping pair until stable: O(n²) (or worse).",
+      source:
+        "function merge(intervals) {\n" +
+        "  const result = intervals.map((iv) => [...iv]); // work on a copy\n" +
+        "  let merged = true;\n" +
+        "  // Keep looping until a whole pass finds nothing left to fuse.\n" +
+        "  while (merged) {\n" +
+        "    merged = false;\n" +
+        "    outer:\n" +
+        "    for (let i = 0; i < result.length; i++) {\n" +
+        "      for (let j = i + 1; j < result.length; j++) {\n" +
+        "        // Two intervals overlap if neither ends before the other starts.\n" +
+        "        if (result[i][0] <= result[j][1] && result[j][0] <= result[i][1]) {\n" +
+        "          // Fuse j into i, drop j, and restart the scan.\n" +
+        "          result[i] = [Math.min(result[i][0], result[j][0]), Math.max(result[i][1], result[j][1])];\n" +
+        "          result.splice(j, 1);\n" +
+        "          merged = true;\n" +
+        "          break outer;\n" +
+        "        }\n" +
+        "      }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return result.sort((a, b) => a[0] - b[0]); // present in start order\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "Re-scanning the whole list after every fuse is O(n²) work — far more than necessary. Can we do better?\n\n" +
+        "The key observation: if the intervals are **sorted by start**, then any interval that overlaps a given one " +
+        "must come *right after* it — so a single left-to-right pass is enough. We never have to look backward, " +
+        "because everything earlier already starts no later.\n\n" +
+        "So sort by start, then sweep while holding only the **last interval in the output** as a running *frontier*. " +
+        "For each next interval: if its start is at or before the frontier's end they overlap, so widen the frontier's " +
+        "end to the larger of the two; otherwise there's a gap, so push it as a new frontier.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "sorted by start: [[1, 3], [2, 6], [8, 10], [15, 18]]",
+      lane: ["[1,3]", "[2,6]", "[8,10]", "[15,18]"],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "i", at: 0 }],
+          marked: [0],
+          action: "output = [[1, 3]]",
+          caption: "The first interval seeds the frontier — there's nothing before it to overlap.",
+        },
+        {
+          pointers: [{ name: "i", at: 1 }],
+          action: "2 ≤ 3 → overlap → end = max(3, 6) = 6",
+          caption: "[2,6] starts at 2, within the frontier's end 3, so they overlap. Frontier widens to [1, 6].",
+        },
+        {
+          pointers: [{ name: "i", at: 2 }],
+          action: "8 > 6 → gap → push [8, 10]",
+          caption: "[8,10] starts past the frontier's end 6, so it's disjoint. output = [[1, 6], [8, 10]].",
+        },
+        {
+          pointers: [{ name: "i", at: 3 }],
+          action: "15 > 10 → gap → push [15, 18]",
+          caption: "[15,18] clears the frontier 10 as well, so it becomes its own interval.",
+        },
+        {
+          action: "done → [[1, 6], [8, 10], [15, 18]]",
+          caption: "One pass over the sorted list collapsed four intervals into three non-overlapping ranges.",
+        },
+      ],
+    },
+  ],
+
+  "interval-intersections": [
+    {
+      kind: "prose",
+      body:
+        "The intersections are the ranges covered by *both* lists, so a first pass simply tests every interval from " +
+        "the first list against every interval from the second, recording any overlap it finds.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — every pair across the two lists: O(m × n).",
+      source:
+        "function intervalIntersection(firstList, secondList) {\n" +
+        "  const result = [];\n" +
+        "  // Compare each interval in A against each interval in B.\n" +
+        "  for (const [aStart, aEnd] of firstList) {\n" +
+        "    for (const [bStart, bEnd] of secondList) {\n" +
+        "      // The overlap of two closed intervals is [max start, min end].\n" +
+        "      const lo = Math.max(aStart, bStart);\n" +
+        "      const hi = Math.min(aEnd, bEnd);\n" +
+        "      if (lo <= hi) result.push([lo, hi]); // non-empty → it's a real intersection\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return result.sort((a, b) => a[0] - b[0]); // present in start order\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "Checking every pair is O(m × n), and it ignores a gift the input already hands us: **both lists are sorted " +
+        "by start**. Can we do better?\n\n" +
+        "Because the lists are sorted, we can sweep them together with one pointer each — the same " +
+        "[two-pointer](/learn/guide/algos/topic/two-pointers) merge posture as combining two sorted arrays. At each " +
+        "step the only candidate intersection is between the *current* interval of each list: `[max(starts), " +
+        "min(ends)]`, emitted when that range is non-empty.\n\n" +
+        "Then comes the one insight that makes it linear: advance the pointer of whichever interval **ends first**. " +
+        "That interval can't possibly intersect anything later in the other list (everything there starts even " +
+        "further right), while the one that ends later might still meet the other list's *next* interval — so it " +
+        "stays put.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "list A (pointer i) — A = [[0,2], [5,10], [13,23]]",
+      lane: ["[0,2]", "[5,10]", "[13,23]"],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "i", at: 0 }],
+          action: "A[0]=[0,2] vs B[0]=[1,5] → [1,2] ✓ → A ends first → i++",
+          caption: "Step 1: overlap of [0,2] and [1,5] is [max(0,1), min(2,5)] = [1,2]. A ends sooner, so advance i.",
+        },
+        {
+          pointers: [{ name: "i", at: 1 }],
+          action: "A[1]=[5,10] vs B[0]=[1,5] → [5,5] ✓ → B ends first → j++",
+          caption: "Step 2: [5,10] meets [1,5] at the single point 5. B ends sooner now, so j advances (i stays).",
+        },
+        {
+          pointers: [{ name: "i", at: 1 }],
+          action: "A[1]=[5,10] vs B[1]=[8,12] → [8,10] ✓ → A ends first → i++",
+          caption: "Step 3: [5,10] and [8,12] overlap on [8,10]. A ends sooner, so advance i.",
+        },
+        {
+          pointers: [{ name: "i", at: 2 }],
+          marked: [2],
+          action: "i out of work vs remaining B → no more overlaps",
+          caption: "Step 4: [13,23] sits past B's frontier; nothing left intersects. Collected: [[1,2], [5,5], [8,10]].",
+        },
+      ],
+    },
+    {
+      kind: "walkthrough",
+      heading: "list B (pointer j) — B = [[1,5], [8,12], [15,24]] — same four steps, B's side",
+      lane: ["[1,5]", "[8,12]", "[15,24]"],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "j", at: 0 }],
+          action: "step 1: B[0]=[1,5] still has room → stays",
+          caption: "B's [1,5] ends at 5, later than A's [0,2] (ends 2), so j holds while i advances.",
+        },
+        {
+          pointers: [{ name: "j", at: 0 }],
+          action: "step 2: B[0]=[1,5] ends first → j++",
+          caption: "After A moves to [5,10], B's [1,5] is the one that ends first (5 < 10), so j finally advances.",
+        },
+        {
+          pointers: [{ name: "j", at: 1 }],
+          action: "step 3: B[1]=[8,12] outlives A's [5,10] → stays",
+          caption: "[8,12] ends at 12, past A's [5,10] (ends 10), so j holds while i advances again.",
+        },
+        {
+          pointers: [{ name: "j", at: 1 }],
+          marked: [],
+          action: "step 4: A exhausted → sweep ends",
+          caption: "With A's pointer off the end, the loop stops — B's remaining intervals can't intersect anything.",
+        },
+      ],
+    },
+    {
+      kind: "prose",
+      body:
+        "*Reading the two lanes:* they show the **same four steps** from each list's side — pointer `i` over A on top, " +
+        "`j` over B below. A single lane can't draw the cross-list comparison, so the decision lives in each step's " +
+        "`action`: the candidate overlap `[max(starts), min(ends)]` and the rule that whichever interval **ends " +
+        "first** advances. Each pointer only ever moves forward, so the whole sweep is linear in the two lengths.",
+    },
+  ],
+
+  "max-overlapping-intervals": [
+    {
+      kind: "prose",
+      body:
+        "The answer is the busiest single point, so a first pass picks a set of candidate points — every interval's " +
+        "start is enough — and, for each one, counts how many intervals cover it.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — for each start point, count covering intervals: O(n²).",
+      source:
+        "function largestOverlap(intervals) {\n" +
+        "  let max = 0;\n" +
+        "  // A peak overlap always occurs at some interval's start point.\n" +
+        "  for (const [point] of intervals) {\n" +
+        "    let active = 0;\n" +
+        "    // Count how many intervals cover this candidate point.\n" +
+        "    for (const [start, end] of intervals) {\n" +
+        "      if (start <= point && point <= end) active++;\n" +
+        "    }\n" +
+        "    if (active > max) max = active;\n" +
+        "  }\n" +
+        "  return max;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "Re-counting every interval at every candidate point is O(n²). Can we do better?\n\n" +
+        "The key observation: the active count only ever changes at an **endpoint** — it ticks **up** by one when an " +
+        "interval starts and **down** by one just after one ends. So instead of probing points, turn each interval " +
+        "into two events: a `+1` at its start and a `-1` at `end + 1` (just past the close, so a closed interval is " +
+        "still counted at its own end). Sort all `2n` events by position and sweep a running counter; its peak is " +
+        "the answer.\n\n" +
+        "At a tie in position, process the **close (`-1`) before the open (`+1`)** — an event sitting at `end + 1` " +
+        "means that interval is already gone, so it shouldn't be counted alongside one opening there.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "events sorted by position: +1@1, +1@2, -1@6(=5+1), +1@8, -1@9(=8+1), -1@10(=9+1)",
+      lane: ["+1@1", "+1@2", "-1@6", "+1@8", "-1@9", "-1@10"],
+      frames: [
+        {
+          pointers: [{ name: "sweep", at: 0 }],
+          action: "+1 → active = 1, max = 1",
+          caption: "Process the events for [1,5] and [2,6]. The first start opens an interval; count rises to 1.",
+        },
+        {
+          pointers: [{ name: "sweep", at: 1 }],
+          action: "+1 → active = 2, max = 2",
+          caption: "The second start (from [2,6]) opens while the first is still active — two intervals overlap.",
+        },
+        {
+          pointers: [{ name: "sweep", at: 2 }],
+          action: "-1 → active = 1",
+          caption: "At position 6 the close of [1,5] fires (its end 5, +1). The count drops back to 1; max stays 2.",
+        },
+        {
+          pointers: [{ name: "sweep", at: 3 }],
+          action: "+1 → active = 2, max still 2",
+          caption: "The disjoint interval [8,9] opens. Count returns to 2, but never exceeds the earlier peak.",
+        },
+        {
+          pointers: [{ name: "sweep", at: 5 }],
+          action: "closes → active = 0",
+          caption: "The remaining closes drain the count to 0. The peak seen anywhere was 2 — the answer.",
+        },
+      ],
+    },
+    {
+      kind: "prose",
+      body:
+        "The lane above shows the sorted **event stream** for `[[1, 5], [2, 6], [8, 9]]`, not the intervals " +
+        "themselves — each cell is a `+1`/`-1` delta at a position, and the `sweep` pointer accumulates them. The " +
+        "running `active` count is the number of intervals open at that moment; its maximum over the whole sweep is " +
+        "the largest overlap.",
+    },
+  ],
+
+  "range-sum-query-immutable": [
+    {
+      kind: "prose",
+      body:
+        "The most direct approach answers each query on its own: walk from index `i` to index `j`, adding up the " +
+        "elements, and report the total. Correct, but every query re-walks its whole range.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — sum each query's range from scratch: O(n) per query, O(n·q) overall.",
+      source:
+        "function rangeSum(nums, queries) {\n" +
+        "  // For every query, re-add the elements between its two endpoints.\n" +
+        "  return queries.map(([i, j]) => {\n" +
+        "    let total = 0;\n" +
+        "    for (let k = i; k <= j; k++) {\n" +
+        "      total += nums[k]; // inclusive of both i and j\n" +
+        "    }\n" +
+        "    return total;\n" +
+        "  });\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "With `q` queries this is O(n·q) — and since the array never changes, we keep re-summing the same overlapping " +
+        "stretches. Can we do better?\n\n" +
+        "The key observation: **a range sum is a difference of two running totals**. If `prefix[k]` holds the sum of " +
+        "the first `k` elements (with `prefix[0] = 0`), then the inclusive range `[i, j]` is `prefix[j + 1] - " +
+        "prefix[i]` — the total through `j`, minus everything strictly before `i`. That's the core [Prefix sums]" +
+        "(/learn/guide/algos/topic/prefix-sum) idea.\n\n" +
+        "So pay O(n) **once** to build the prefix array, then answer each query in O(1). The leading zero and the " +
+        "`+1` offset are what keep the subtraction boundary-safe — `prefix[j + 1]` includes `nums[j]`, and " +
+        "`prefix[i]` excludes `nums[i]`.\n\n" +
+        "Walking the build then a query through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "nums = [2, 4, 6, 8] → prefix = [0, 2, 6, 12, 20]; query [1, 2]",
+      lane: [2, 4, 6, 8],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "k", at: 0 }],
+          action: "prefix[1] = prefix[0] + 2 = 2",
+          caption: "Start the build. prefix[0] = 0 is the empty prefix; fold in nums[0] = 2.",
+        },
+        {
+          pointers: [{ name: "k", at: 1 }],
+          action: "prefix[2] = 2 + 4 = 6",
+          caption: "Each step carries the running total forward by one element.",
+        },
+        {
+          pointers: [{ name: "k", at: 3 }],
+          action: "prefix[4] = 12 + 8 = 20",
+          caption: "Build finished: prefix = [0, 2, 6, 12, 20]. One O(n) pass, done once.",
+        },
+        {
+          pointers: [{ name: "i", at: 1 }, { name: "j", at: 2 }],
+          range: [1, 2],
+          action: "prefix[3] − prefix[1] = 12 − 2 = 10",
+          caption: "Query [1, 2]: total through index 2 (12) minus everything before index 1 (2). Answer 10 = 4 + 6.",
+        },
+        {
+          pointers: [{ name: "i", at: 0 }, { name: "j", at: 3 }],
+          range: [0, 3],
+          action: "prefix[4] − prefix[0] = 20 − 0 = 20",
+          caption: "Any later query is the same O(1) subtraction — here the full range sums to 20.",
+        },
+      ],
+    },
+  ],
+
+  "subarray-sum-equals-k": [
+    {
+      kind: "prose",
+      body:
+        "The most direct approach fixes a start index, then extends an end index, tracking the running sum of that " +
+        "window and counting every time it equals `k`. Two nested loops cover all `O(n²)` contiguous subarrays.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — every start/end pair, count the windows summing to k: O(n²).",
+      source:
+        "function subarraySum(nums, k) {\n" +
+        "  let count = 0;\n" +
+        "  // Fix each start index...\n" +
+        "  for (let start = 0; start < nums.length; start++) {\n" +
+        "    let sum = 0;\n" +
+        "    // ...and extend the end, accumulating as we go.\n" +
+        "    for (let end = start; end < nums.length; end++) {\n" +
+        "      sum += nums[end];\n" +
+        "      if (sum === k) count++; // this contiguous block hits k\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return count;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(n²), and a [[sliding-window|sliding window]] can't rescue it: `nums` may contain negatives, so " +
+        "extending the window can *lower* the sum — there's no monotonic shrink rule. Can we still do better?\n\n" +
+        "The key observation reuses prefix sums: let `prefix` be the running sum up to the current index. A subarray " +
+        "ending here sums to `k` exactly when some **earlier** prefix equals `prefix − k`, because subtracting that " +
+        "earlier prefix leaves a contiguous block summing to `k`. So instead of searching for the start, we ask: " +
+        "*how many earlier prefixes had the value `prefix − k`?*\n\n" +
+        "Counting occurrences of a value in O(1) is what a [Hash map](/learn/guide/algos/topic/hash-maps) does. Keep " +
+        "a map of `prefix value → times seen`, seeded with `{0: 1}` so a subarray starting at index 0 counts itself. " +
+        "At each element add `count[prefix − k]` to the answer, then record the current prefix. One pass, O(n).\n\n" +
+        "*(The stored solution carries the running total in a variable named `prefix` and the map in `counts`.)*\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "nums = [1, 2, 1, 2, 1], k = 3  ·  running prefix + counts {0:1}",
+      lane: [1, 2, 1, 2, 1],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "i", at: 0 }],
+          action: "prefix = 1 · need 1−3 = −2 (absent) → +0",
+          caption: "No earlier prefix is −2, so nothing ends here at sum 3. Record prefix 1. counts = {0:1, 1:1}.",
+        },
+        {
+          pointers: [{ name: "i", at: 1 }],
+          action: "prefix = 3 · need 3−3 = 0 (seen ×1) → +1",
+          caption: "Seeded prefix 0 means the block [1,2] sums to 3. total = 1. Record 3.",
+        },
+        {
+          pointers: [{ name: "i", at: 2 }],
+          action: "prefix = 4 · need 4−3 = 1 (seen ×1) → +1",
+          caption: "Earlier prefix 1 (after index 0) means [2,1] sums to 3. total = 2. Record 4.",
+        },
+        {
+          pointers: [{ name: "i", at: 3 }],
+          action: "prefix = 6 · need 6−3 = 3 (seen ×1) → +1",
+          caption: "Earlier prefix 3 means [1,2] (indices 2–3) sums to 3. total = 3. Record 6.",
+        },
+        {
+          pointers: [{ name: "i", at: 4 }],
+          action: "prefix = 7 · need 7−3 = 4 (seen ×1) → +1",
+          caption: "Earlier prefix 4 means [2,1] (indices 3–4) sums to 3. total = 4. Sweep done.",
+        },
+      ],
+    },
+  ],
+
+  "product-of-array-except-self": [
+    {
+      kind: "prose",
+      body:
+        "The obvious approach computes the product of the whole array, then divides out each element to get its " +
+        "except-self value. But the problem forbids division (and division breaks on a zero anyway), so the honest " +
+        "baseline is: for each index, multiply every *other* element — two nested loops.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — for each index, multiply all the others: O(n²).",
+      source:
+        "function productExceptSelf(nums) {\n" +
+        "  const answer = new Array(nums.length);\n" +
+        "  // For each slot, walk the array and multiply in every element except itself.\n" +
+        "  for (let i = 0; i < nums.length; i++) {\n" +
+        "    let product = 1;\n" +
+        "    for (let j = 0; j < nums.length; j++) {\n" +
+        "      if (j !== i) product *= nums[j]; // skip the slot we're filling\n" +
+        "    }\n" +
+        "    answer[i] = product;\n" +
+        "  }\n" +
+        "  return answer;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(n²), and division is off the table. Can we do better?\n\n" +
+        "The key observation: the product of everything except `nums[i]` is **(everything to its left) × (everything " +
+        "to its right)**. Those are a prefix product and a suffix product — the same running-accumulation idea behind " +
+        "[Prefix sums](/learn/guide/algos/topic/prefix-sum), with multiplication instead of addition.\n\n" +
+        "So do two sweeps over one output array. First left to right, writing into `answer[i]` the product of " +
+        "everything *before* `i` (a running `prefix`, starting at 1). Then right to left, multiplying each " +
+        "`answer[i]` by a running `suffix` product of everything *after* `i`. No division, O(n) time, and the only " +
+        "extra space is the output itself.\n\n" +
+        "Walking the two passes through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "nums = [1, 2, 3, 4]  ·  pass 1 fills prefix, pass 2 folds in suffix",
+      lane: [1, 2, 3, 4],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "i", at: 0 }],
+          action: "answer = [1, _, _, _] · prefix → 1",
+          caption: "Pass 1 (left→right). answer[0] = 1 (nothing to its left). Then prefix becomes 1·1 = 1.",
+        },
+        {
+          pointers: [{ name: "i", at: 2 }],
+          action: "answer[2] = prefix 2 · prefix → 6",
+          caption: "Mid pass 1: answer = [1, 1, 2, 6-to-be]. answer[2] = 1·2 (the product of nums[0..1]).",
+        },
+        {
+          pointers: [{ name: "i", at: 3 }],
+          action: "answer = [1, 1, 2, 6] · prefix done",
+          caption: "Pass 1 complete: each slot holds the product of everything strictly to its left.",
+        },
+        {
+          pointers: [{ name: "i", at: 3 }],
+          action: "answer[3] ×= suffix 1 = 6 · suffix → 4",
+          caption: "Pass 2 (right→left), suffix starts at 1. answer[3] stays 6 (nothing to its right). suffix → 4.",
+        },
+        {
+          pointers: [{ name: "i", at: 0 }],
+          action: "answer[0] ×= suffix 24 = 24",
+          caption: "By the last step suffix = 2·3·4 = 24, so answer[0] = 1·24 = 24. Final: [24, 12, 8, 6].",
+        },
+      ],
+    },
+  ],
+
+  "range-sum-query-2d-immutable": [
+    {
+      kind: "prose",
+      body:
+        "The most direct approach answers each rectangle query by scanning it: loop over every row from `r1` to `r2` " +
+        "and every column from `c1` to `c2`, summing the cells inside. Correct, but a large rectangle is re-summed " +
+        "in full for every query.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — sum each query's rectangle cell by cell: O(m·n) per query.",
+      source:
+        "function rangeSum2D(matrix, queries) {\n" +
+        "  // For each query, add up every cell inside its rectangle.\n" +
+        "  return queries.map(([r1, c1, r2, c2]) => {\n" +
+        "    let total = 0;\n" +
+        "    for (let r = r1; r <= r2; r++) {\n" +
+        "      for (let c = c1; c <= c2; c++) {\n" +
+        "        total += matrix[r][c]; // inclusive of all four edges\n" +
+        "      }\n" +
+        "    }\n" +
+        "    return total;\n" +
+        "  });\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "Each query is O(m·n); with many queries this re-sums the same overlapping regions. Can we do better?\n\n" +
+        "Lift the 1D [Prefix sums](/learn/guide/algos/topic/prefix-sum) idea one dimension. Build a table `pre` where " +
+        "`pre[r+1][c+1]` is the sum of the whole rectangle from the origin `(0, 0)` to `(r, c)`. Each entry folds in " +
+        "the cell, the rectangle **above**, and the rectangle to the **left**, then subtracts their doubly-counted " +
+        "**overlap**: `pre[r+1][c+1] = matrix[r][c] + pre[r][c+1] + pre[r+1][c] − pre[r][c]`.\n\n" +
+        "Once that O(m·n) table exists, any sub-rectangle is read off its **four corners** by inclusion–exclusion: " +
+        "the big rectangle to the bottom-right corner, minus the strip above it, minus the strip to its left, plus " +
+        "the top-left corner added back (it was subtracted twice). The padding row and column of zeros remove every " +
+        "boundary check.\n\n" +
+        "Walking the table build, then a query, over the board:",
+    },
+    {
+      kind: "gridWalkthrough",
+      showIndices: true,
+      grid: [
+        [3, 0, 1],
+        [5, 6, 3],
+        [1, 2, 0],
+      ],
+      frames: [
+        {
+          cursor: [0, 0],
+          action: "pre[1][1] = 3 + 0 + 0 − 0 = 3",
+          caption: "Build starts top-left. With the zero padding row/column, the first cell just copies its value.",
+        },
+        {
+          cursor: [1, 1],
+          active: [[0, 0], [0, 1], [1, 0]],
+          action: "pre[2][2] = 6 + (above 3) + (left 8) − (overlap 3) = 14",
+          caption: "Each cell = its value + rectangle above (sum 3) + rectangle left (sum 8) − the overlap counted twice (3).",
+        },
+        {
+          cursor: [2, 2],
+          action: "pre[3][3] = 0 + 18 + 18 − 15 = 21",
+          caption: "Bottom-right of the table holds the whole grid's sum, 21. The full O(m·n) table is now built.",
+        },
+        {
+          active: [[1, 1], [1, 2], [2, 1], [2, 2]],
+          action: "query (1,1)-(2,2): 21 − 4 − 9 + 3 = 11",
+          caption: "Read the 2×2 bottom-right rectangle by four corners: whole(21) − above strip(4) − left strip(9) + top-left(3) = 11 = 6+3+2+0.",
+        },
+      ],
+    },
+  ],
 };
 
 /**
@@ -2809,6 +4231,481 @@ const emptyBoard = () => Array.from({ length: 9 }, () => Array<string>(9).fill("
  * so the page can't be used to game the judge). Keyed by problem id, same enrichment posture as PROBLEM_GUIDES.
  */
 export const PROBLEM_EXTRAS: Record<string, { complexity?: Section[]; testCases?: GuideTestCase[] }> = {
+  "invert-binary-tree": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- The recursion visits each of the `n` nodes exactly once.\n" +
+          "- At each node it does O(1) work — swap two child references.\n\n" +
+          "So the total is `n × O(1)` = **O(n)**.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(h). Here's why:\n\n" +
+          "- The only extra space is the recursion call stack, which is as deep as the tree's height `h`.\n\n" +
+          "That's O(log n) for a balanced tree and **O(n)** for a degenerate (single-chain) tree. The output reuses " +
+          "the input nodes, so it isn't counted separately.",
+      },
+    ],
+    testCases: [
+      { args: [[]], expected: [], note: "Empty tree — nothing to invert." },
+      { args: [[8]], expected: [8], note: "Single node — its (absent) children swap to no effect." },
+      { args: [[6, 4, 9]], expected: [6, 9, 4], note: "Root's two children swap left for right." },
+      { args: [[2, 1, null, 0]], expected: [2, null, 1, null, 0], note: "A left-only spine inverts into a right-only spine." },
+      { args: [[3, 3, 3, 3]], expected: [3, 3, 3, null, null, null, 3], note: "Duplicate values: only the positions swap, the structure mirrors." },
+    ],
+  },
+  "balanced-binary-tree": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- The bottom-up height function visits each node once and does O(1) work per node.\n" +
+          "- The `-1` sentinel makes it short-circuit, so it never does *more* than one pass.\n\n" +
+          "That's **O(n)**, down from the brute force's O(n²) of recomputing heights at every ancestor.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(h). Here's why:\n\n" +
+          "- Only the recursion stack, as deep as the tree height `h`.\n\n" +
+          "O(log n) balanced, **O(n)** for a degenerate tree. No auxiliary structure is built.",
+      },
+    ],
+    testCases: [
+      { args: [[]], expected: true, note: "Empty tree is vacuously balanced." },
+      { args: [[7]], expected: true, note: "Single node — both subtrees are height 0." },
+      { args: [[8, 4, 12, 2, 6, 10, 14]], expected: true, note: "A perfect tree is balanced everywhere." },
+      { args: [[9, 5, 13, 3]], expected: true, note: "Left subtree height 2, right height 1: differ by exactly 1, still balanced." },
+      { args: [[5, 6, null, 7, null, 8]], expected: false, note: "A left-leaning chain of depth 3 is unbalanced at the root (2 vs 0)." },
+    ],
+  },
+  "symmetric-tree": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- The paired recursion compares each node against its mirror partner exactly once.\n" +
+          "- Each comparison is O(1).\n\n" +
+          "So **O(n)** overall, and it short-circuits to less on the first mismatch.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(h). Here's why:\n\n" +
+          "- The recursion descends both sides in lockstep, so the stack depth is the tree height `h`.\n\n" +
+          "O(log n) balanced, **O(n)** worst case. Unlike the brute force, no mirror copy is allocated.",
+      },
+    ],
+    testCases: [
+      { args: [[7]], expected: true, note: "Single node — trivially symmetric." },
+      { args: [[9, 4, 4]], expected: true, note: "Two equal leaves mirror each other." },
+      { args: [[6, 2, 2, 8, null, null, 8]], expected: true, note: "Outer children cross-match (left-2's left mirrors right-2's right)." },
+      { args: [[6, 2, 2, 8, null, 8, null]], expected: false, note: "Left-2 has a left child, right-2 a left child too — they don't mirror." },
+      { args: [[5, 7, 9]], expected: false, note: "Root's two children differ in value." },
+    ],
+  },
+  "binary-tree-vertical-order-traversal": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- The BFS visits each of the `n` nodes once, doing O(1) work (a map lookup and an append).\n" +
+          "- Reading the buckets out spans `c` columns where `c ≤ n`.\n\n" +
+          "So **O(n)** — no per-column sort is needed, because BFS already delivers each column in the required order.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(n). Here's why:\n\n" +
+          "- The queue and the column buckets together hold every node — O(n).\n\n" +
+          "The output array also holds `n` values, but it's the unavoidable result; the extra working space is **O(n)**.",
+      },
+    ],
+    testCases: [
+      { args: [[]], expected: [], note: "Empty tree — no columns." },
+      { args: [[9]], expected: [[9]], note: "Single node sits alone in column 0." },
+      { args: [[5, 6, null, 7]], expected: [[7], [6], [5]], note: "A left spine spreads one column further left at each step." },
+      { args: [[2, 4, 6, 8, 10, 12, 14]], expected: [[8], [4], [2, 10, 12], [6], [14]], note: "Column 0 collects the root then both inner grandchildren, in BFS order." },
+      { args: [[0, -5, 5]], expected: [[-5], [0], [5]], note: "Negative values are grouped by column, not by magnitude." },
+    ],
+  },
+  "construct-binary-tree-from-preorder-and-inorder-traversal": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- Building the value→inorder-index map is one pass — O(n).\n" +
+          "- The recursion creates each of the `n` nodes once, finding its split point via the map in O(1).\n\n" +
+          "So **O(n)**, versus the brute force's O(n²) from repeated `indexOf` searches and array slicing.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(n). Here's why:\n\n" +
+          "- The index map holds `n` entries.\n" +
+          "- The recursion stack is O(h), at most O(n) for a skewed tree.\n\n" +
+          "So **O(n)**. The output tree reuses freshly built nodes — the unavoidable result.",
+      },
+    ],
+    testCases: [
+      { args: [[9], [9]], expected: [9], note: "Single node." },
+      { args: [[7, 8, 9], [7, 8, 9]], expected: [7, null, 8, null, 9], note: "Preorder == inorder → a pure right spine." },
+      { args: [[9, 8, 7], [7, 8, 9]], expected: [9, 8, null, 7], note: "Preorder reversed of inorder → a pure left spine." },
+      { args: [[10, 20, 40, 50, 30, 60, 70], [40, 20, 50, 10, 60, 30, 70]], expected: [10, 20, 30, 40, 50, 60, 70], note: "A perfect tree reconstructed from its two traversals." },
+      { args: [[8, 4, 2, 6], [2, 4, 6, 8]], expected: [8, 4, null, 2, 6], note: "A left-leaning shape: 4 has two children, 8 only a left subtree." },
+    ],
+  },
+  "kth-smallest-element-in-a-bst": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(h + k). Here's why:\n\n" +
+          "- The walk descends to the leftmost node — O(h) pushes.\n" +
+          "- Then it pops in-order until the count reaches `k` — O(k) more pops.\n\n" +
+          "So **O(h + k)**, which beats the brute force's full O(n) traversal when `k` is small.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(h). Here's why:\n\n" +
+          "- The explicit stack holds at most one root-to-leaf path at a time — O(h).\n\n" +
+          "O(log n) balanced, **O(n)** for a degenerate tree. No full array of values is built.",
+      },
+    ],
+    testCases: [
+      { args: [[8], 1], expected: 8, note: "Single node, k = 1." },
+      { args: [[4, 2, 6], 1], expected: 2, note: "k = 1 returns the leftmost (smallest) value." },
+      { args: [[4, 2, 6], 3], expected: 6, note: "k at the maximum returns the largest value." },
+      { args: [[6, 4, 8, 2, 5, 7, 9], 4], expected: 6, note: "In-order [2,4,5,6,7,8,9]; the 4th is the root, 6." },
+      { args: [[20, 10, 30, 5, 15, 25, 35], 5], expected: 25, note: "In-order [5,10,15,20,25,30,35]; the 5th is 25." },
+    ],
+  },
+  "lowest-common-ancestor-of-a-binary-tree": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- One post-order pass visits each node at most once, doing O(1) work.\n\n" +
+          "So **O(n)** — a single traversal, versus the brute force's two path-finding passes.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(h). Here's why:\n\n" +
+          "- Only the recursion stack, depth equal to the tree height `h`.\n\n" +
+          "O(log n) balanced, **O(n)** worst case. No path lists are stored.",
+      },
+    ],
+    testCases: [
+      { args: [[9, 5], 9, 5], expected: 9, note: "The root is an ancestor of its child, so it's the LCA." },
+      { args: [[10, 20, 30, 40, 50, 60, 70], 40, 50], expected: 20, note: "40 and 50 are the two children of 20 — their LCA." },
+      { args: [[10, 20, 30, 40, 50, 60, 70], 40, 70], expected: 10, note: "Targets in opposite subtrees → the root." },
+      { args: [[8, null, 6, null, 4, null, 2], 6, 2], expected: 6, note: "On a right spine, the shallower target 6 is the ancestor of 2." },
+      { args: [[10, 20, 30, 40, 50, 60, 70], 60, 70], expected: 30, note: "60 and 70 are 30's two children, so 30 is their LCA." },
+    ],
+  },
+  "binary-tree-maximum-path-sum": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- One post-order pass; each node returns its downward gain and updates the global best in O(1).\n\n" +
+          "So **O(n)**, fusing the brute force's two O(n) passes (which made it O(n²)) into one.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(h). Here's why:\n\n" +
+          "- Only the recursion stack — depth `h`.\n\n" +
+          "O(log n) balanced, **O(n)** for a chain. The single `best` accumulator is O(1).",
+      },
+    ],
+    testCases: [
+      { args: [[7]], expected: 7, note: "A single node — the path is just itself." },
+      { args: [[-5]], expected: -5, note: "All-negative: a non-empty path must take the one node." },
+      { args: [[-8, -3]], expected: -3, note: "Best is the lone less-negative node, not the sum." },
+      { args: [[4, 5, 6]], expected: 15, note: "The path turns at the root: 5 → 4 → 6." },
+      { args: [[3, -4, -5]], expected: 3, note: "Both children are negative and dropped; the root alone wins." },
+    ],
+  },
+  "binary-tree-right-side-view": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- The level-order traversal visits each node once, doing O(1) work.\n\n" +
+          "So **O(n)**.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(w). Here's why:\n\n" +
+          "- The queue holds at most one level at a time — its width `w`, up to ~n/2 at the bottom of a full tree.\n\n" +
+          "So **O(n)** in the worst case. Unlike the brute force, no per-level array is retained.",
+      },
+    ],
+    testCases: [
+      { args: [[]], expected: [], note: "Empty tree — nothing visible." },
+      { args: [[9]], expected: [9], note: "Single node is visible." },
+      { args: [[5, 6, 7]], expected: [5, 7], note: "Level 1's rightmost is 7." },
+      { args: [[5, 6, null, 7]], expected: [5, 6, 7], note: "A left-only spine: each node is its level's rightmost." },
+      { args: [[5, 6, 7, 8]], expected: [5, 7, 8], note: "Level 2's only node (left child 8) becomes visible." },
+    ],
+  },
+  "maximum-width-of-binary-tree": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- The BFS carries an index with each node and visits each node once.\n\n" +
+          "So **O(n)** — the per-level re-basing keeps the index arithmetic O(1) and avoids the brute force's " +
+          "exponential null-padding.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(w). Here's why:\n\n" +
+          "- The queue holds one level of real nodes (with indices) at a time — its width `w`.\n\n" +
+          "So **O(n)** worst case, without ever materializing the empty slots between nodes.",
+      },
+    ],
+    testCases: [
+      { args: [[9]], expected: 1, note: "Single node — width 1." },
+      { args: [[2, 4, 6, 8, 10, 12, 14]], expected: 4, note: "A perfect tree: the bottom level has 4 nodes, no gaps." },
+      { args: [[5, 6, 7, 8, null, null, 9]], expected: 4, note: "Bottom level: 8 at index 0, 9 at index 3 → width 4 across the gap." },
+      { args: [[5, 6, 7, 8]], expected: 2, note: "Level 1 (two nodes) reaches width 2; the bottom node is alone." },
+      { args: [[5, null, 6, null, 7]], expected: 1, note: "A right-only spine never exceeds width 1." },
+    ],
+  },
+  "serialize-and-deserialize-binary-tree": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- Serialize walks every node once, emitting its value or a `#` sentinel.\n" +
+          "- Deserialize consumes every token once.\n\n" +
+          "So the round trip is **O(n)**.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(n). Here's why:\n\n" +
+          "- The serialized string has one token per node plus its null markers — O(n).\n" +
+          "- The recursion stack is O(h) on each side.\n\n" +
+          "So **O(n)** overall, dominated by the string.",
+      },
+    ],
+    testCases: [
+      { args: [[]], expected: [], note: "Empty tree round-trips to empty." },
+      { args: [[9]], expected: [9], note: "Single node." },
+      { args: [[8, 4, 9, null, null, 6, 10]], expected: [8, 4, 9, null, null, 6, 10], note: "Interior gaps must survive the round trip exactly." },
+      { args: [[-7, -8, -9]], expected: [-7, -8, -9], note: "Negative values must serialize and parse back correctly." },
+      { args: [[5, 6, null, 7, null, 8]], expected: [5, 6, null, 7, null, 8], note: "A left spine: the sentinels pin down the missing right children." },
+    ],
+  },
+  "same-tree": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- The lockstep recursion compares each pair of corresponding nodes once.\n\n" +
+          "So **O(n)** (n = the size of the smaller tree at most), short-circuiting on the first mismatch.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(h). Here's why:\n\n" +
+          "- Only the recursion stack — depth equal to the tree height `h`.\n\n" +
+          "O(log n) balanced, **O(n)** worst case. No serialization strings are built.",
+      },
+    ],
+    testCases: [
+      { args: [[], []], expected: true, note: "Two empty trees are the same." },
+      { args: [[9], []], expected: false, note: "One node vs none — shapes differ." },
+      { args: [[7, 8, 9], [7, 8, 9]], expected: true, note: "Identical shape and values." },
+      { args: [[5, 6], [5, null, 6]], expected: false, note: "Same values, different shape (left vs right child)." },
+      { args: [[4, 5, 4], [4, 4, 5]], expected: false, note: "Same shape, mismatched values." },
+    ],
+  },
+  "binary-tree-inorder-traversal": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- Each node is pushed and popped exactly once.\n\n" +
+          "So **O(n)**.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(h). Here's why:\n\n" +
+          "- The explicit stack holds at most one root-to-leaf path — O(h).\n\n" +
+          "O(log n) balanced, **O(n)** for a skewed tree. The output array is the unavoidable result.",
+      },
+    ],
+    testCases: [
+      { args: [[]], expected: [], note: "Empty tree." },
+      { args: [[9]], expected: [9], note: "Single node." },
+      { args: [[5, 3, 8]], expected: [3, 5, 8], note: "A balanced BST: in-order is sorted." },
+      { args: [[5, null, 6, null, 7]], expected: [5, 6, 7], note: "A right spine: still left-node-right order." },
+      { args: [[7, 6, null, 5]], expected: [5, 6, 7], note: "A left spine yields ascending order too." },
+    ],
+  },
+  "validate-binary-search-tree": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- The bounded recursion visits each node once, doing an O(1) interval check.\n\n" +
+          "So **O(n)**, short-circuiting on the first violation.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(h). Here's why:\n\n" +
+          "- Only the recursion stack — depth `h`.\n\n" +
+          "O(log n) balanced, **O(n)** worst case. No in-order array is materialized.",
+      },
+    ],
+    testCases: [
+      { args: [[9]], expected: true, note: "Single node is a valid BST." },
+      { args: [[8, 4, 12]], expected: true, note: "4 < 8 < 12 — valid." },
+      { args: [[8, 2, 7, null, null, 6, 9]], expected: false, note: "7 is in 8's right subtree but 7 < 8 — global violation." },
+      { args: [[3, 3, 3]], expected: false, note: "Duplicates break the strict ordering." },
+      { args: [[20, 10, 30, null, null, 15, 40]], expected: false, note: "15 sits in 20's right subtree but is less than 20." },
+    ],
+  },
+  "range-sum-query-immutable": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n + q). Here's why:\n\n" +
+          "- Building the prefix array is one pass over `nums` — O(n).\n" +
+          "- After that, each of the `q` queries is a single subtraction `prefix[j+1] - prefix[i]` — O(1) apiece, " +
+          "O(q) in total.\n\n" +
+          "So the whole batch is O(n) + O(q) = **O(n + q)**, versus the brute force's O(n·q) of re-summing each " +
+          "range. The precompute pays for itself as soon as there's more than one query.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(n). Here's why:\n\n" +
+          "- The prefix array holds `n + 1` running totals — O(n).\n" +
+          "- The answer array holds one number per query — O(q), the unavoidable output.\n\n" +
+          "Not counting the output, the extra space is the prefix array, **O(n)**.",
+      },
+    ],
+    testCases: [
+      { args: [[], []], expected: [], note: "Empty array and no queries — nothing to build, nothing to answer." },
+      { args: [[42], [[0, 0]]], expected: [42], note: "Single element; the only valid range returns it." },
+      { args: [[3, 1, 4, 1, 5], [[2, 2]]], expected: [4], note: "Single-element range i === j returns just nums[i]." },
+      { args: [[-5, -5, -5], [[0, 2]]], expected: [-15], note: "All-negative array — prefix subtraction handles signs." },
+      { args: [[2, -1, 3, -2], [[0, 3], [1, 2]]], expected: [2, 2], note: "Mixed signs; overlapping ranges off one prefix array." },
+    ],
+  },
+  "subarray-sum-equals-k": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- The algorithm makes a single pass over `nums`.\n" +
+          "- Each step does O(1) work: one map lookup for `prefix - k` and one map insert.\n\n" +
+          "So the whole scan is `n × O(1)` = **O(n)** — a clean linear pass, down from the brute force's O(n²) of " +
+          "trying every start/end pair.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(n). Here's why:\n\n" +
+          "- The counts map can hold up to one entry per distinct prefix value, and there are at most `n + 1` " +
+          "prefixes — O(n).\n\n" +
+          "The worst case (all distinct prefixes) keeps every prefix in the map, so the extra space is **O(n)**. " +
+          "There's no output array — the answer is a single count.",
+      },
+    ],
+    testCases: [
+      { args: [[1], 1], expected: 1, note: "Single element equal to k — one subarray." },
+      { args: [[1], 2], expected: 0, note: "Single element, no subarray sums to k." },
+      { args: [[0, 0, 0, 0], 0], expected: 10, note: "All zeros, k = 0 — every subarray qualifies: 4·5/2 = 10." },
+      { args: [[-2, 1, 1, -2], 0], expected: 2, note: "Negatives and a zero-sum target: [-2,1,1] and [1,1,-2]." },
+      { args: [[3, 3, 3], 3], expected: 3, note: "Repeated value — each single 3 counts once." },
+      { args: [[2, -2, 2, -2], 0], expected: 4, note: "Alternating signs; multiple revisited prefixes." },
+    ],
+  },
+  "product-of-array-except-self": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- The left-to-right pass writes each prefix product into the output — O(n).\n" +
+          "- The right-to-left pass folds in each suffix product — another O(n).\n\n" +
+          "Two sequential linear passes give `2 × O(n)` = **O(n)**, replacing the brute force's O(n²) of multiplying " +
+          "all the others for each slot.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1). Here's why:\n\n" +
+          "- Both prefix and suffix are tracked in single scalar accumulators, not arrays.\n" +
+          "- The output array is required by the problem, so it isn't counted as extra space.\n\n" +
+          "Beyond the output, only two running products are kept, so the extra space is **O(1)**.",
+      },
+    ],
+    testCases: [
+      { args: [[3, 4]], expected: [4, 3], note: "Two elements — each slot is just the other." },
+      { args: [[0, 1, 2]], expected: [2, 0, 0], note: "One zero — only the zero's slot is non-zero." },
+      { args: [[0, 0, 5]], expected: [0, 0, 0], note: "Two zeros — every slot becomes 0." },
+      { args: [[-1, 2, -3]], expected: [-6, 3, -2], note: "Negatives — sign tracks through both passes." },
+      { args: [[2, 2, 2, 2]], expected: [8, 8, 8, 8], note: "All equal — each slot is the product of the other three." },
+    ],
+  },
+  "range-sum-query-2d-immutable": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(m·n + q). Here's why:\n\n" +
+          "- Building the 2D prefix table touches every cell once — O(m·n).\n" +
+          "- Each of the `q` queries reads four table entries and combines them — O(1) apiece, O(q) total.\n\n" +
+          "So the batch is O(m·n) + O(q) = **O(m·n + q)**, versus the brute force's O(m·n) *per query*. The table " +
+          "build is amortized across every query.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(m·n). Here's why:\n\n" +
+          "- The prefix table is `(m + 1) × (n + 1)` — one extra padding row and column — so O(m·n).\n\n" +
+          "Not counting the per-query output array, the dominant extra space is the table itself, **O(m·n)**.",
+      },
+    ],
+    testCases: [
+      { args: [[[7]], [[0, 0, 0, 0]]], expected: [7], note: "Single cell — the only rectangle is that cell." },
+      { args: [[[2, 3], [4, 5]], [[0, 0, 1, 1]]], expected: [14], note: "Whole 2×2 matrix — the full sum (2+3+4+5)." },
+      { args: [[[1, 2, 3], [4, 5, 6]], [[0, 1, 1, 2]]], expected: [16], note: "A 2×2 sub-rectangle: 2+3+5+6." },
+      { args: [[[-1, -2], [-3, -4]], [[0, 0, 1, 1], [1, 1, 1, 1]]], expected: [-10, -4], note: "All-negative; whole matrix then a single cell." },
+      { args: [[[2, 0], [0, 2]], [[0, 0, 0, 1], [0, 1, 1, 1]]], expected: [2, 2], note: "Row strip then column strip off the same table." },
+    ],
+  },
   "set-matrix-zeroes": {
     complexity: [
       {
@@ -3917,6 +5814,98 @@ export const PROBLEM_EXTRAS: Record<string, { complexity?: Section[]; testCases?
       { args: [[3, 3, 3], 1], expected: [3, 3, 3], note: "All equal — order is stable and unchanged." },
       { args: [[0, -1, -2], 2], expected: [-2, -1, 0], note: "Negatives, fully reversed within the k = 2 window." },
       { args: [[2, 4, 1, 3, 5], 2], expected: [1, 2, 3, 4, 5], note: "Each value within two slots of home; a size-3 heap pops them in order." },
+    ],
+  },
+
+  "merge-intervals": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n log n). Here's why:\n\n" +
+          "- Sorting the `n` intervals by start takes O(n log n).\n" +
+          "- The sweep that follows visits each interval once, doing O(1) work per step — O(n).\n\n" +
+          "The sort dominates the linear sweep, so the overall time is **O(n log n)**, where `n` is the number of " +
+          "intervals.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(n). Here's why:\n\n" +
+          "- We sort a copy of the input rather than mutating the caller's array — O(n).\n" +
+          "- The sweep keeps only a reference to the last output interval — O(1) beyond the output.\n\n" +
+          "The merged output isn't counted as auxiliary space; in the worst case (nothing overlaps) it holds all " +
+          "`n` intervals.",
+      },
+    ],
+    testCases: [
+      { args: [[]], expected: [], note: "Empty input — nothing to merge." },
+      { args: [[[1, 4]]], expected: [[1, 4]], note: "A single interval passes through unchanged." },
+      { args: [[[1, 4], [4, 5]]], expected: [[1, 5]], note: "Touching endpoints count as overlapping (closed intervals)." },
+      { args: [[[1, 10], [2, 3], [4, 5]]], expected: [[1, 10]], note: "Fully nested intervals are absorbed without widening the frontier." },
+      { args: [[[1, 3], [1, 3], [2, 4]]], expected: [[1, 4]], note: "Duplicate intervals collapse, then [2,4] extends the end." },
+      { args: [[[8, 10], [1, 3], [5, 6]]], expected: [[1, 3], [5, 6], [8, 10]], note: "Unsorted, already-disjoint input — sort decides the output order." },
+    ],
+  },
+
+  "interval-intersections": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(m + n). Here's why:\n\n" +
+          "- Each step of the sweep advances exactly one of the two pointers.\n" +
+          "- A pointer only ever moves forward and stops at the end of its list, so the total number of steps is at " +
+          "most `m + n`.\n\n" +
+          "No sorting is needed — the inputs arrive sorted — so the whole sweep is **O(m + n)**, where `m` and `n` " +
+          "are the two list lengths.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1). Here's why:\n\n" +
+          "- The sweep keeps only the two pointers and a handful of scalars.\n\n" +
+          "That's **O(1)** auxiliary space. The result list isn't counted; it can hold up to O(m + n) intersection " +
+          "intervals in the worst case.",
+      },
+    ],
+    testCases: [
+      { args: [[], []], expected: [], note: "Both lists empty — no intersections." },
+      { args: [[[1, 3]], []], expected: [], note: "One list empty — nothing to intersect against." },
+      { args: [[[1, 2]], [[3, 4]]], expected: [], note: "Disjoint single intervals — no overlap." },
+      { args: [[[2, 6]], [[6, 10]]], expected: [[6, 6]], note: "Touching at one point yields the single-point intersection [6,6]." },
+      { args: [[[1, 10]], [[2, 3], [4, 5]]], expected: [[2, 3], [4, 5]], note: "One interval fully contains two from the other list." },
+      { args: [[[0, 4], [7, 11]], [[3, 8]]], expected: [[3, 4], [7, 8]], note: "One B interval spans the gap, overlapping both A intervals." },
+    ],
+  },
+
+  "max-overlapping-intervals": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n log n). Here's why:\n\n" +
+          "- We build `2n` events (a start and an end per interval) — O(n).\n" +
+          "- Sorting those events by position takes O(n log n).\n" +
+          "- The final sweep over the sorted events is O(n).\n\n" +
+          "The sort dominates, so the overall time is **O(n log n)**, where `n` is the number of intervals.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(n). Here's why:\n\n" +
+          "- The event list holds `2n` entries — O(n).\n" +
+          "- The sweep itself keeps only the running count and its max — O(1).\n\n" +
+          "So the extra space is **O(n)** for the event list; the result is a single integer.",
+      },
+    ],
+    testCases: [
+      { args: [[]], expected: 0, note: "No intervals — peak overlap is 0." },
+      { args: [[[1, 5]]], expected: 1, note: "A single interval is active over its whole range." },
+      { args: [[[1, 2], [3, 4]]], expected: 1, note: "Disjoint intervals never stack — peak is 1." },
+      { args: [[[2, 4], [4, 7]]], expected: 2, note: "Closed intervals touching at 4 are both active there." },
+      { args: [[[1, 10], [2, 9], [3, 8]]], expected: 3, note: "Fully nested — all three cover the middle at once." },
+      { args: [[[1, 5], [2, 6], [8, 9]]], expected: 2, note: "Two overlap early; the disjoint [8,9] doesn't raise the peak." },
     ],
   },
 };

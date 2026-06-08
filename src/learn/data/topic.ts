@@ -161,6 +161,40 @@ export type MergeWalkthroughFrame = {
   caption?: string;
 };
 
+/**
+ * One node in a {@link Section} `treeWalkthrough` — addressed by a stable `id` (not array position) so frames
+ * can reference it through structural changes. `left`/`right` are child ids; omit for an absent child. The
+ * section's first node is the root. This explicit id'd shape (vs. the problem's level-order io array) stays
+ * unambiguous for skewed trees and lets a frame re-shape the tree (invert, incremental build) by id.
+ */
+export type TreeNodeSpec = { id: string; val: number | string; left?: string; right?: string };
+
+/** A named pointer over a {@link TreeWalkthroughFrame} — a labeled arrow above the node with id `at`, colored by first-appearance order. */
+export type TreePointer = { name: string; at: string };
+
+/**
+ * One step of a {@link Section} `treeWalkthrough` — the tree/recursion analogue of {@link WalkthroughFrame}.
+ * The tree is the section's `nodes`; a frame moves pointers over it, can override the structure (to show an
+ * in-place rewire or an incremental build), highlights the subtree under inspection, and attaches per-node
+ * badges (a returned value / height / valid-range — the thing recursion actually computes at each node).
+ */
+export type TreeWalkthroughFrame = {
+  /** Tree structure this step. Defaults to the section's `nodes`; override to depict a rewire (invert) or a build. */
+  nodes?: TreeNodeSpec[];
+  /** Pointers to draw above nodes this step. A pointer keeps its color across frames by `name`. */
+  pointers?: TreePointer[];
+  /** Node ids softly highlighted as the subtree/region under inspection (e.g. the call's current subtree). */
+  active?: string[];
+  /** Node ids resolved/pruned this step — dimmed and struck. */
+  marked?: string[];
+  /** Per-node badge text by node id — the value the recursion computes/returns there (height, gain, range, "✓"). */
+  badges?: Record<string, string>;
+  /** The decision for this step, shown in a dashed callout beside the tree. */
+  action?: string;
+  /** One-line narration shown under the frame. */
+  caption?: string;
+};
+
 /** Fields shared by every section, regardless of kind — the spine of the discriminated union. */
 type SectionBase = {
   /** Optional sub-heading rendered above the section body. */
@@ -232,6 +266,12 @@ export type Section = SectionBase &
         /** The k sorted lists being merged, stacked as rows; each gets a stable color shared with its heap pill. */
         lists: MergeList[];
         frames: MergeWalkthroughFrame[];
+      }
+    | {
+        kind: "treeWalkthrough";
+        /** The binary tree as an id'd node list; the first entry is the root. Frames may override the structure. */
+        nodes: TreeNodeSpec[];
+        frames: TreeWalkthroughFrame[];
       }
     /** A bulleted aside in one of three tones — pitfalls (warn), corner cases (info), interview tips (tip). */
     | { kind: "callout"; tone: CalloutTone; items: string[] }

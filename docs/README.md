@@ -35,7 +35,7 @@ These docs persist design decisions across sessions — they're as much for the 
 ### What goes where
 
 - **`features/<area>.md`** — _current_ state of one feature: components, data flow, state shape, the why behind non-obvious choices. Updated when the feature changes. Self-contained — a contributor reading just this doc should be able to work in the area.
-- **`architecture/<topic>.md`** — _cross-cutting_ principles that aren't owned by one feature (e.g. how custom components extend shadcn primitives, how server-side judging is wired). Stable; rarely needs editing. Examples reference features but don't duplicate their detail.
+- **`architecture/<topic>.md`** — _cross-cutting_ principles that aren't owned by one feature (e.g. how custom components extend shadcn primitives, how the in-browser judge is wired). Stable; rarely needs editing. Examples reference features but don't duplicate their detail.
 - **`improvements/<topic>.md`** — _punch lists_ of what's left to do. 1–3 lines per item: location, fix, severity. **No prose explaining how things work** (that's features/architecture). When an item lands, delete the entry — git has the history; the new state lives in features/.
 
 ### CLAUDE.md vs docs

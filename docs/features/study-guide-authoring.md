@@ -8,6 +8,8 @@ The bar is the ByteByteGo *Coding Interview Patterns* problem chapter (statement
 
 **Building a whole chapter at once?** The `study-guide-section-builder` agent orchestrates the entire flow for one chapter — sourcing the problem set from ByteByteGo, importing gaps, redoing the topic intro, running author → auditor for every problem, and batching all checks to the end. The per-problem author/auditor rules below are what it dispatches; read them as the contract that agent relies on.
 
+**Problem manifest cache.** The per-chapter ByteByteGo problem lists for every algos chapter are cached in [docs/study-guide-problem-manifest.md](../study-guide-problem-manifest.md) (sourced from the BBG repo tree). The section-builder should read the relevant chapter table there **instead of re-sourcing from the web** — it gives the BBG problem names, suggested bank ids, in-bank status, and per-row mapping confidence / sandbox concerns. Re-source only if a chapter's row is flagged low-confidence.
+
 ## 1. Page anatomy — derived vs authored
 
 A problem page is assembled from three sources. **The agent only writes the "authored" rows.** Everything else is pulled from the problem bank automatically.
@@ -120,7 +122,7 @@ For 2-D board problems (Sudoku validation, matrix striping, grid scans) author a
 
 `{ kind: "gridWalkthrough", grid, showIndices?, frames }`:
 
-- **`grid`** — the 2-D board `(string | number)[][]`. Rendered by the shared [BoardGrid](../../src/learn/article/sections/BoardGrid.tsx) primitive (same one the Example and Test-case inputs use, so a board reads identically everywhere). Empty cells (`"."` or `0`) render dimmed.
+- **`grid`** — the 2-D board `(string | number)[][]`. Rendered by the shared [BoardGrid](../../src/components/dataViews/BoardGrid.tsx) primitive (same one the Example and Test-case inputs use, so a board reads identically everywhere). Empty cells (`"."` or `0`) render dimmed.
 - **`showIndices: true`** for any coordinate-reasoned problem (Sudoku, matrix) — draws row/col index gutters.
 - **`frames`** — **4–6** curated key steps (not every cell). Each: `cursor?: [row, col]` (the cell being scanned, orange highlight), `marked?: [row, col][]` (conflicts / cells about to be zeroed, rose), `active?: [row, col][]` (the region under inspection — current row/col/box, soft highlight), `action?`, `caption?`. Coordinates must be in-bounds for the board.
 - **Per-frame `grid` override** — for an **in-place** problem where the board mutates (e.g. set-matrix-zeroes), give a frame its own `grid` to show the board's state at that step; otherwise frames reuse the section `grid` (e.g. Sudoku, where the board never changes and only the cursor moves).
@@ -158,7 +160,7 @@ For problems whose insight is a **cut across two (or more) sorted arrays** — t
 
 This is for whoever **builds a new visual primitive** for a data type (the next tree-node, interval, or graph render), not for per-problem authoring — once a primitive exists, example/test-case rendering is automatic and needs nothing from the author (see below).
 
-A data type that gets a custom diagram should render **the same way wherever that value appears** — inside walkthroughs *and* in the Example / Test-case Input/Output cells — so the value reads identically across the page. The Example and Test-case cells are rendered by `ArgValues` / `ResultValue` in [ProblemGuide](../../src/learn/guide/ProblemGuide.tsx), which pick a renderer **from the problem's `io` shape** (`io.params[i]` / `io.result`), not from the value's JS shape — a list `head` and a plain `nums` array are both arrays, so only the io shape disambiguates. Precedent: `"linked-list"` → [NodeChain](../../src/learn/article/sections/NodeChain.tsx) (raw `[…]` + chain, stacked); 2-D grids → [BoardGrid](../../src/learn/article/sections/BoardGrid.tsx).
+A data type that gets a custom diagram should render **the same way wherever that value appears** — inside walkthroughs *and* in the Example / Test-case Input/Output cells — so the value reads identically across the page. The Example and Test-case cells are rendered by `ArgValues` / `ResultValue` in [CallValues](../../src/components/dataViews/CallValues.tsx) (shared by the guide and the problem-page Description tab, so a value reads identically in both), which pick a renderer **from the problem's `io` shape** (`io.params[i]` / `io.result`), not from the value's JS shape — a list `head` and a plain `nums` array are both arrays, so only the io shape disambiguates. Precedent: `"linked-list"` → [NodeChain](../../src/components/dataViews/NodeChain.tsx) (raw `[…]` + chain, stacked); `"binary-tree"` → [TreeView](../../src/components/dataViews/TreeView.tsx) (raw level-order `[…]` + tidy tree, stacked — the static sibling of `treeWalkthrough`, sharing [treeLayout](../../src/components/dataViews/treeLayout.tsx)); 2-D grids → [BoardGrid](../../src/components/dataViews/BoardGrid.tsx).
 
 When you add a primitive: build a static, server-rendered render (the non-interactive sibling of the walkthrough diagram), then teach `ArgValues`/`ResultValue` to dispatch to it on the matching `IoShape`. **Don't** leave a new render usable only inside walkthroughs while examples fall back to a raw `JSON.stringify`.
 
@@ -179,6 +181,24 @@ For problems whose insight is **merging `k` sorted sequences by repeatedly takin
 - **Don't restate the heap contents as if you computed them** — the renderer derives the heap strip and the chosen min from `cursors` + `popped`; use `action`/`caption` for the *decision* (which list's head won, which list advances).
 - **Same "teach the whole mechanic" rule** as §8: the seed step, a couple of pop-and-advance steps (including one where a *different* list wins), and a final drain frame showing the completed result.
 - **Bridge if the stored solution differs.** Merge-k's canonical teaching model is the heap; if the stored `solutions[]` uses divide-and-conquer pairwise merging instead, keep the §4 model bridge prose — the diagram traces the heap, the bridge explains the equivalent route the code takes.
+
+### 8f. Binary-tree / recursion problems — use `treeWalkthrough`, not a 1-D lane or prose
+
+For binary-tree problems whose insight is a **recursion over the tree** (invert, balanced/height, symmetry, build-from-traversals, LCA, max-path-sum, validate-BST, serialize) author a **`treeWalkthrough`** Section ([TreeWalkthroughDiagram](../../src/learn/article/sections/TreeWalkthroughDiagram.tsx)). A 1-D `lane` can't show a hierarchy or a `next`-style structure, and the `graph` kind lays nodes on a *circle* in a single static frame — so before this primitive existed, tree pages fell back to prose traces. The tree renderer lays the tree out tidily (in-order x, depth y), draws labeled pointer arrows above nodes, softly highlights the **subtree under inspection**, dims resolved nodes, and shows the value the recursion **returns at each node** as a badge — which is the thing these problems actually compute (a height, a gain, a valid range, a `-1` sentinel). A frame can also **override the structure** to depict an in-place rewire or an incremental build. Server-rendered, no client JS; shares the `WalkthroughDiagram` pointer palette.
+
+`{ kind: "treeWalkthrough", nodes, frames }`:
+
+- **`nodes`** — the tree as an **id'd node list**: `{ id, val, left?, right? }[]`, where `left`/`right` are child *ids* (omit for an absent child). **The first entry is the root.** This is deliberately *not* the problem's level-order io array — addressing nodes by stable id (not array position) keeps frame references unambiguous for skewed trees and lets a frame re-shape the tree. Use short readable ids (`"r"`, `"a"`, `"a1"`).
+- **`frames`** — **4–6** curated steps. Each:
+  - **`nodes?`** — a full structural override for this step (same shape). Use it to show a rewire (invert swapping children) or an incremental build; omit to reuse the section `nodes`.
+  - **`pointers?: { name, at }[]`** — labeled arrows above nodes; `at` is a node **id**. Colored by first appearance (orange, sky, violet, emerald). Reuse a verb/role name that matches the code (`height`, `invert`, `curr`, `L`/`R`).
+  - **`active?: string[]`** — node ids softly highlighted as the subtree/region the current call owns.
+  - **`marked?: string[]`** — node ids resolved/pruned this step (dimmed, struck) — e.g. a subtree the short-circuit never visits.
+  - **`badges?: Record<string, string>`** — per-node text for the value computed/returned there (`"h=3"`, `"gain 9"`, `"−1"`, `"✓"`). This is the heart of a recursion diagram — show what bubbles up, not just where the cursor is.
+  - **`action?`** / **`caption?`** — same as §8 (terse decision beside the tree; plain-English why under it).
+- **Match the stored solution's model** — badge the same quantity the code returns (height, gain, sentinel) and name pointers after the code's variables, so a reader moving into the Optimization code meets the same names.
+- **Same "teach the whole mechanic" rule** as §8: a leaf/base-case return, an internal node combining its children's returns, and the decisive step (the imbalance/short-circuit, the LCA split, the structural swap).
+- **Two trees?** (same-tree, or comparing against a built mirror) — stack **two** `treeWalkthrough` Sections, one per tree, the way Valid Palindrome stacks two lanes; one section draws one tree. Symmetry checks fit a *single* tree with two pointers (`L`/`R`) hopping mirrored nodes.
 
 ## 9. Code & comments
 

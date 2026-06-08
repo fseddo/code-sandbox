@@ -1,8 +1,9 @@
 import { useState } from "react";
 import type { ClientProblem, SupportedLanguage } from "@/problems/data/problem";
+import { deriveParamNames } from "@/problems/data/problem";
 import { Prose } from "@/problems/shared/Prose";
 import { SolutionsTab } from "@/problems/algo/SolutionsTab";
-import { stringify } from "@/problems/shared/format";
+import { ArgValues, ResultValue } from "@/components/dataViews/CallValues";
 import { CollapsiblePane, type CollapsiblePaneLayout } from "@/components/CollapsiblePane";
 import { UnderlineTabs } from "@/components/UnderlineTabs";
 
@@ -14,47 +15,56 @@ const TAB_LABEL: Record<ProblemTab, string> = {
   solutions: "Solutions",
 };
 
-const DescriptionTab = ({ problem }: { problem: ClientProblem }) => (
-  <div className="flex flex-col gap-6">
-    <Prose text={problem.prompt} />
+const DescriptionTab = ({ problem }: { problem: ClientProblem }) => {
+  const paramNames = deriveParamNames(
+    problem.starterCode.javascript,
+    problem.functionName,
+    problem.examples[0]?.args.length ?? 0,
+  );
+  const paramShapes = problem.io?.params;
+  const resultShape = problem.io?.result;
+  return (
+    <div className="flex flex-col gap-6">
+      <Prose text={problem.prompt} />
 
-    <section className="flex flex-col gap-2">
-      <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Example cases</h2>
-      <ul className="flex flex-col gap-2">
-        {problem.examples.map((example, index) => (
-          <li
-            key={index}
-            className="rounded-md border border-border bg-background p-3 font-mono text-xs text-foreground"
-          >
-            <div className="text-muted-foreground">{example.name ?? `case ${index + 1}`}</div>
-            <div>
-              <span className="text-muted-foreground">in </span>
-              {example.args.map(stringify).join(", ")}
-            </div>
-            <div>
-              <span className="text-muted-foreground">out </span>
-              {stringify(example.expected)}
-            </div>
-            {example.explanation ? (
-              <div className="mt-1 font-sans text-muted-foreground">{example.explanation}</div>
-            ) : null}
-          </li>
-        ))}
-      </ul>
-    </section>
-
-    {problem.constraints.length > 0 ? (
       <section className="flex flex-col gap-2">
-        <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Constraints</h2>
-        <ul className="flex flex-col gap-1 font-mono text-xs text-muted-foreground">
-          {problem.constraints.map((constraint, index) => (
-            <li key={index}>{constraint}</li>
+        <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Example cases</h2>
+        <ul className="flex flex-col gap-2">
+          {problem.examples.map((example, index) => (
+            <li
+              key={index}
+              className="rounded-md border border-border bg-background p-3 font-mono text-xs text-foreground"
+            >
+              <div className="text-muted-foreground">{example.name ?? `case ${index + 1}`}</div>
+              <div>
+                <span className="text-muted-foreground">in </span>
+                <ArgValues args={example.args} paramNames={paramNames} paramShapes={paramShapes} />
+              </div>
+              <div>
+                <span className="text-muted-foreground">out </span>
+                <ResultValue value={example.expected} shape={resultShape} />
+              </div>
+              {example.explanation ? (
+                <div className="mt-1 font-sans text-muted-foreground">{example.explanation}</div>
+              ) : null}
+            </li>
           ))}
         </ul>
       </section>
-    ) : null}
-  </div>
-);
+
+      {problem.constraints.length > 0 ? (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Constraints</h2>
+          <ul className="flex flex-col gap-1 font-mono text-xs text-muted-foreground">
+            {problem.constraints.map((constraint, index) => (
+              <li key={index}>{constraint}</li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+    </div>
+  );
+};
 
 type ProblemPanelProps = CollapsiblePaneLayout & {
   problem: ClientProblem;

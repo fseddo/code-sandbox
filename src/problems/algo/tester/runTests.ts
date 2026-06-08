@@ -1,20 +1,10 @@
 import path from "node:path";
 import { Worker } from "node:worker_threads";
 import type { AlgoProblem, RunMode, SubmissionOutcome, SupportedLanguage } from "@/problems/data/problem";
+import { WALL_CLOCK_LIMIT_MS, testsForMode } from "./testPlan";
 
-/**
- * Per-mode wall-clock budget for the *whole* submission (all cases share one worker). Run hits only the
- * exposed examples, so it stays tight for snappy feedback; Submit adds the hidden set — including scale /
- * runtime cases — so it gets real headroom. The worker is terminated at the limit, so a runaway (or a
- * too-slow algorithm) is still bounded; raising Submit trades a longer per-request worker-hold for it.
- */
-const WALL_CLOCK_LIMIT_MS: Record<RunMode, number> = {
-  run: 2000,
-  submit: 8000,
-};
-
-// Resolved at runtime, not bundled: the worker is plain JS Node runs directly.
-// Works under `next dev`; `next build` needs outputFileTracingIncludes to ship the file.
+// Node-only grader, used by the test/verify tooling (the live app grades client-side — see runTestsClient.ts).
+// The worker is plain JS Node runs directly, resolved at runtime, not bundled.
 const workerPath = path.join(process.cwd(), "src/problems/algo/tester/problemTester.worker.mjs");
 
 export type Submission = {
@@ -24,17 +14,9 @@ export type Submission = {
   mode: RunMode;
 };
 
-/** The exposed examples, plus the hidden set when submitting. Each case is tagged so the worker can mask hidden output. */
-const testsForMode = ({ examples, hiddenTests }: AlgoProblem, mode: RunMode) => [
-  ...examples.map((example, index) => ({ name: example.name ?? `case ${index + 1}`, args: example.args, expected: example.expected, hidden: false })),
-  ...(mode === "submit"
-    ? hiddenTests.map((test, index) => ({ name: `hidden case ${index + 1}`, args: test.args, expected: test.expected, hidden: true }))
-    : []),
-];
-
 /**
- * Run a submission in a terminable worker thread, racing it against a wall-clock limit.
- * `worker.terminate()` is what catches infinite loops — sync or async — that a bare vm timeout can't.
+ * Run a submission in a terminable Node worker thread, racing it against a wall-clock limit.
+ * `worker.terminate()` is what catches infinite loops — sync or async — that a bare timeout can't.
  */
 export const runTests = ({ problem, language, source, mode }: Submission): Promise<SubmissionOutcome> =>
   new Promise((resolve) => {

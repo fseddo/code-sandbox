@@ -141,9 +141,10 @@ export type ProblemBase = {
  * signature drives the case types: every `args` tuple and `expected` is checked against it.
  *
  * - `examples` are the visible cases (Run uses them; they render in the Description tab).
- * - `hiddenTests` are server-only — they never cross into `ClientProblem`, so the inputs that probe
- *   robustness aren't shipped to the browser. Submit adds them.
- * - `checker` (server-only) overrides deep-equal for problems with multiple valid answers.
+ * - `hiddenTests` are the robustness set Submit adds. Grading runs client-side (see
+ *   [algo.md](../../docs/features/algo.md)), so these now ship to the browser — the deliberate trade for
+ *   removing the server-side code-execution surface; restoring secrecy is a documented future step.
+ * - `checker` overrides deep-equal for problems with multiple valid answers.
  */
 export type AlgoProblem<Args extends unknown[] = unknown[], Result = unknown> = ProblemBase & {
   kind: "algo";
@@ -192,11 +193,12 @@ export type ProblemHeaderData = {
   companies: readonly string[];
 };
 
-/** The client-safe projection of an algo problem: drops the server-only hidden tests and answer-checker. */
-export type ClientProblem<Args extends unknown[] = unknown[], Result = unknown> = Omit<
-  AlgoProblem<Args, Result>,
-  "hiddenTests" | "checker"
->;
+/**
+ * The algo-problem shape handed to the client workspace. Client-side grading needs the full problem
+ * (hidden tests + checker), so this is now the whole `AlgoProblem` — the historical server-only
+ * projection is gone. Kept as a named alias so the workspace components read intent at a glance.
+ */
+export type ClientProblem<Args extends unknown[] = unknown[], Result = unknown> = AlgoProblem<Args, Result>;
 
 /**
  * Author an algo problem with the solution signature pinned, so case `args`/`expected` are
@@ -230,11 +232,13 @@ export const deriveParamNames = (source: string, functionName: string, arity: nu
 };
 
 /**
- * The wire shape the runner reports back per test case. For hidden cases the runner masks
- * `expected`/`actual`/`logs` (they'd leak the probing inputs) — only pass/fail, error, and timing survive.
+ * The wire shape the runner reports back per test case. Hidden cases carry the same data as visible
+ * ones (`args`/`expected`/`actual`/`logs`); the UI keeps them behind a reveal gate rather than masking
+ * on the wire. Revealing will be permission-scoped later.
  */
 export type TestResult = {
   name: string;
+  args: unknown[];
   passed: boolean;
   expected: unknown;
   actual: unknown;
