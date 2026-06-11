@@ -9,10 +9,11 @@ logic stay under [`src/problems/`](../../src/problems/).
 ## Routes
 
 ```
-/                 src/app/page.tsx — landing: three cards → /learn, /problems, /pad
+/                 src/app/page.tsx — landing: four cards → /concepts, /study-guide, /problems, /pad
 /problems         src/app/problems/page.tsx — the catalog = AppHeader + <ProblemCatalog> (server; lists summaries)
 /problems/[id]    src/app/problems/[id]/page.tsx — one problem (algo → AlgoWorkspace, build → BuildLoader)
-/learn            src/app/learn/page.tsx — searchable topic list; /learn/[slug] — one topic. See learn.md
+/concepts         src/app/concepts/page.tsx — searchable topic list; /concepts/[slug] — one topic. See learn.md
+/study-guide      src/app/study-guide/page.tsx — track picker; /study-guide/[track]/{topic,problem}/[…] — curriculum. See learn.md
 /pads             src/app/pads/page.tsx — searchable scratchpad list (<PadsCatalog>) + New pad action
 /pad              src/app/pad/page.tsx — force-dynamic; mints a fresh pad id and redirects to /pad/[id]
 /pad/[id]         src/app/pad/[id]/page.tsx — a blank scratchpad (redirects to /problems/[id] if the id is a problem)
@@ -22,8 +23,8 @@ There are **no API routes** — grading runs in a client-side browser Web Worker
 
 ## App shell — [AppHeader](../../src/components/AppHeader.tsx)
 
-Browse pages (`/problems`, `/learn`) render a slim top bar: a **breadcrumb** (the **noodle** brand → landing `/`,
-then the current area passed as `crumb` — "Problems" / "Learn") and the ⌘K search trigger. There are no nav links
+Browse pages (`/problems`, `/concepts`, `/study-guide`) render a slim top bar: a **breadcrumb** (the **noodle** brand → landing `/`,
+then the current area passed as `crumb` — "Problems" / "Concepts" / "Interview Study Guide") and the ⌘K search trigger. There are no nav links
 or pads menu — the landing is the front door and ⌘K is the navigator. It's a reusable component (not a root
 layout), so the full-height workspaces (`AlgoWorkspace` / `BuildWorkspace`) keep their own chrome and opt out.
 

@@ -126,9 +126,20 @@ const RichText = ({ text }: { text: string }) => (
 
 // --- Server view ----------------------------------------------------------
 
+// Vite's "Local:" / "Network:" banner advertises a loopback URL that only exists inside
+// the in-browser Node sandbox — unreachable from the host, so it's dropped as noise.
+const BANNER_LINE_RE = /^\s*(?:➜\s*)?(?:Local|Network):/;
+const ANSI_STRIP_RE = /\x1b\[[\d;]*m/g;
+
+const stripBanner = (stdout: string): string =>
+  stdout
+    .split("\n")
+    .filter((line) => !BANNER_LINE_RE.test(line.replace(ANSI_STRIP_RE, "")))
+    .join("\n");
+
 const ServerView = () => {
   const { logs } = useSandpackShellStdout({ resetOnPreviewRestart: true });
-  const segments = parseAnsi(logs.map((l) => l.data).join(""));
+  const segments = parseAnsi(stripBanner(logs.map((l) => l.data).join("")));
   return (
     <div className="h-full overflow-auto">
       {segments.length === 0 ? (

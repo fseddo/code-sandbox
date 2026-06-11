@@ -22,7 +22,7 @@ const GuideLayout = async ({
   return (
     <div className="flex h-screen flex-col">
       <AppHeader
-        crumb={[{ label: "Learn", href: "/learn" }, { label: "Study guide", href: "/learn/guide" }, { label: meta.title }]}
+        crumb={[{ label: "Interview Study Guide", href: "/study-guide" }, { label: meta.title }]}
       />
       <div className="flex min-h-0 flex-1">
         <GuideSidebar trackTitle={meta.title} chapters={chapters} />

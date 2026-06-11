@@ -33,7 +33,8 @@ type CommandItem = {
 const PAGES: CommandItem[] = [
   { key: "page-home", title: "Home", href: "/", group: "Pages", keywords: [] },
   { key: "page-problems", title: "Problems", href: "/problems", group: "Pages", keywords: ["practice", "challenges"] },
-  { key: "page-learn", title: "Learn", href: "/learn", group: "Pages", keywords: ["study", "topics"] },
+  { key: "page-concepts", title: "Concepts", href: "/concepts", group: "Pages", keywords: ["learn", "study", "topics"] },
+  { key: "page-study-guide", title: "Interview Study Guide", href: "/study-guide", group: "Pages", keywords: ["learn", "curriculum", "track", "patterns"] },
   { key: "page-pads", title: "Pads", href: "/pads", group: "Pages", keywords: ["new", "free", "coding", "scratchpad"] },
 ];
 
@@ -62,7 +63,7 @@ export const CommandPalette = ({ problems, topics, isOpen, onOpenChange }: Comma
     const topicItems: CommandItem[] = topics.map((topic) => ({
       key: `topic-${topic.slug}`,
       title: topic.title,
-      href: `/learn/${topic.slug}`,
+      href: `/concepts/${topic.slug}`,
       group: "Topics",
       keywords: topic.tags ?? [],
       meta: CATEGORY_LABELS[topic.category],

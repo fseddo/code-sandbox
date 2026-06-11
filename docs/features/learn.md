@@ -1,6 +1,6 @@
 # Learn
 
-A sibling to the problems feature: a bank of typed DS&A study topics rendered as structured articles, cross-linked to practice problems. Code lives under [`src/learn/`](../../src/learn/); routes under [`src/app/learn/`](../../src/app/learn/).
+A sibling to the problems feature: a bank of typed DS&A study topics rendered as structured articles, cross-linked to practice problems. Code lives under [`src/learn/`](../../src/learn/) (the shared engine); routes under [`src/app/concepts/`](../../src/app/concepts/) and [`src/app/study-guide/`](../../src/app/study-guide/) — see "Two areas" below.
 
 The bank covers the standard interview curriculum (~30 topics — data structures, algorithm techniques, and Big-O), registered in study-plan order in [topics/index.ts](../../src/learn/data/topics/index.ts). Depth varies on purpose: some topics are fully authored (complexity tables, worked examples, diagrams), others are definition + when-to-use stubs to deepen over time. The `parts` model makes that gradient natural — a stub just omits the parts it doesn't have yet.
 
@@ -20,21 +20,23 @@ src/learn/
     SectionRenderer.tsx   dispatches a Section to its renderer (exhaustive switch)
     sections/             one component per Section kind
   catalog/
-    LearnCatalog.tsx      the /learn landing — searchable topic list (rows → article)
+    LearnCatalog.tsx      the /concepts landing — searchable topic list (rows → article)
 ```
 
-## Two views: catalog + study guide
+## Two areas: Concepts + Interview Study Guide
 
-Learn has **two reads of the same content**:
+`src/learn/` is the shared engine behind **two separate top-level areas** — two reads of the same content, each with its own home-page card and `BrandMenu` entry:
 
-- **Catalog** (`/learn`) — the flat, searchable/faceted "all topics" list ([LearnCatalog](../../src/learn/catalog/LearnCatalog.tsx)).
-- **Study guide** (`/learn/guide`) — a curated, *sequenced* curriculum à la ByteByteGo: pick a **track** (Algos / System design), then step through **chapters → entries** in a two-pane layout (curriculum sidebar + content). A "Study guide" button on the catalog links in.
+- **Concepts** (`/concepts`) — the flat, searchable/faceted "all topics" list ([LearnCatalog](../../src/learn/catalog/LearnCatalog.tsx)).
+- **Interview Study Guide** (`/study-guide`) — a curated, *sequenced* curriculum à la ByteByteGo: pick a **track** (Algos / System design), then step through **chapters → entries** in a two-pane layout (curriculum sidebar + content).
 
-The curriculum is a layer *over* the topic bank, not a restructuring of it ([curriculum.ts](../../src/learn/data/curriculum.ts)): a `Track` is an ordered list of chapters; a **chapter** is a pattern topic whose article is the intro, followed by that topic's practice problems as workable steps (`resolveTrack` derives the problem entries from each topic's `practice` section — no duplication). This expresses grouping/order without moving topic files, so the "should sliding-window live under two-pointers" question stays deferred. Routes: `/learn/guide` (track picker) → `/learn/guide/[track]` (redirects to first entry) with a shared [layout](../../src/app/learn/guide/[track]/layout.tsx) rendering the persistent [GuideSidebar](../../src/learn/guide/GuideSidebar.tsx) (numbered collapsible chapters, active highlight, `x/N` progress from the problem progress store). Authoring a problem page is its own rubric — see [study-guide-authoring.md](study-guide-authoring.md) (the authoring half of a two-agent author→audit pipeline). Two entry kinds: `topic/[slug]` reuses `LearnArticle`; `problem/[id]` renders [ProblemGuide](../../src/learn/guide/ProblemGuide.tsx) — statement/examples/constraints **derived** from the bank, an optional **authored teaching overlay** (`Section[]` keyed by id in [problemGuides.ts](../../src/learn/data/problemGuides.ts): intuition + a brute-force baseline + a walkthrough, rendered through the shared `SectionRenderer`), an **Optimization** section built automatically from the problem's stored `solutions` (approach write-up + Shiki-highlighted implementation — so every problem shows its canonical best, authored overlay or not), and an "Open in editor" CTA into `/problems/[id]`. The editor's own Solutions tab now highlights with the same Shiki themes via the client [HighlightedCode](../../src/problems/shared/HighlightedCode.tsx).
+The split is **navigational, not a code fork**: both areas share the whole content engine (`SectionRenderer`, `LearnArticle`, `article/sections/`, glossary, category themes), and the guide is *derived from* the topic bank — so the internal module + `Learn*` components keep their names. Old `/learn*` URLs 308-redirect to the new routes ([next.config.ts](../../next.config.ts)).
+
+The curriculum is a layer *over* the topic bank, not a restructuring of it ([curriculum.ts](../../src/learn/data/curriculum.ts)): a `Track` is an ordered list of chapters; a **chapter** is a pattern topic whose article is the intro, followed by that topic's practice problems as workable steps (`resolveTrack` derives the problem entries from each topic's `practice` section — no duplication). This expresses grouping/order without moving topic files, so the "should sliding-window live under two-pointers" question stays deferred. Routes: `/study-guide` (track picker) → `/study-guide/[track]` (redirects to first entry) with a shared [layout](../../src/app/study-guide/[track]/layout.tsx) rendering the persistent [GuideSidebar](../../src/learn/guide/GuideSidebar.tsx) (numbered collapsible chapters, active highlight, `x/N` progress from the problem progress store). Authoring a problem page is its own rubric — see [study-guide-authoring.md](study-guide-authoring.md) (the authoring half of a two-agent author→audit pipeline). Two entry kinds: `topic/[slug]` reuses `LearnArticle`; `problem/[id]` renders [ProblemGuide](../../src/learn/guide/ProblemGuide.tsx) — statement/examples/constraints **derived** from the bank, an optional **authored teaching overlay** (`Section[]` keyed by id in [problemGuides.ts](../../src/learn/data/problemGuides.ts): intuition + a brute-force baseline + a walkthrough, rendered through the shared `SectionRenderer`), an **Optimization** section built automatically from the problem's stored `solutions` (approach write-up + Shiki-highlighted implementation — so every problem shows its canonical best, authored overlay or not), and an "Open in editor" CTA into `/problems/[id]`. The editor's own Solutions tab now highlights with the same Shiki themes via the client [HighlightedCode](../../src/problems/shared/HighlightedCode.tsx).
 
 ## Catalog + detail routes
 
-Routes mirror problems: `/learn` (landing → `listTopicSummaries()`) and `/learn/[slug]` (one topic → `getTopic`, 404s on miss). Both render `AppHeader` with `crumb="Learn"`. The landing list ([LearnCatalog](../../src/learn/catalog/LearnCatalog.tsx)) follows the Problems list pattern — search now (reusing the generic `searchCatalog`), with filters/sidebar deferred and the shared generic `<Catalog>` extraction pending once Problems/Learn/Pads confirm the shape (see [improvements/learn.md](../improvements/learn.md)).
+The Concepts area mirrors problems: `/concepts` (landing → `listTopicSummaries()`) and `/concepts/[slug]` (one topic → `getTopic`, 404s on miss). Both render `AppHeader` with `crumb="Concepts"`. The landing list ([LearnCatalog](../../src/learn/catalog/LearnCatalog.tsx)) follows the Problems list pattern — search now (reusing the generic `searchCatalog`), with filters/sidebar deferred and the shared generic `<Catalog>` extraction pending once Problems/Learn/Pads confirm the shape (see [improvements/learn.md](../improvements/learn.md)).
 
 ## Two-level content model
 
@@ -73,6 +75,6 @@ A `LearnTopic` is **parts → sections**:
 
 ## Cross-link to problems
 
-`LearnTopic.tags` reuse the problem taxonomy (`TopicTag` from [problem.ts](../../src/problems/data/problem.ts)) deliberately — one vocabulary wires the two features. `exampleProblem` sections resolve against the problem bank: the `/learn/[slug]` route builds a `Record<id, ProblemSummary>` from `listProblemSummaries()` server-side and threads it to the renderer, so the link shows a real title + difficulty. The bank stays server-side; the learn article never imports the registry directly.
+`LearnTopic.tags` reuse the problem taxonomy (`TopicTag` from [problem.ts](../../src/problems/data/problem.ts)) deliberately — one vocabulary wires the two features. `exampleProblem` sections resolve against the problem bank: the `/concepts/[slug]` route builds a `Record<id, ProblemSummary>` from `listProblemSummaries()` server-side and threads it to the renderer, so the link shows a real title + difficulty. The bank stays server-side; the learn article never imports the registry directly.
 
 See [improvements/learn.md](../improvements/learn.md) for the roadmap (resources/videos, practice lists, priority + study-plan model) benchmarked against the Tech Interview Handbook.

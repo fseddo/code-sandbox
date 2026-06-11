@@ -238,6 +238,8 @@ Two tabs (**Server** | **Client**) with a `bg-primary` underline on the active t
 
 **Server view** renders Vite's stdout. The stdout often carries SGR escape sequences for color (`\x1b[32m` green for `VITE`, `\x1b[36m` cyan for hostnames, etc.); a tiny in-file parser splits the text into `{ text, color, bold, dim }` segments and renders them as `<span>`s with the matching Midnight palette utility class. URL detection runs on top of that via a `<RichText>` helper — anything matching `https?://\S+` becomes a `target="_blank"` `<a>` styled as `text-link`.
 
+`stripBanner` drops Vite's `Local:` / `Network:` lines before parsing: that loopback URL only exists inside the in-browser Node sandbox (Nodebox), so it's unreachable from the host and was only ever a dead link. The running app is the preview pane above; the build-error / HMR / install output is what makes this view worth keeping.
+
 **Client view** renders JS-runtime console messages from the running app. Each entry gets a row with a divider (`border-b border-border/40`) and a severity-based tint (`bg-danger/8` for `error`, `bg-warn/8` for `warn`, `bg-link/8` for `info`, plain for `log`). Non-string args go through `JSON.stringify(arg, null, 2)`. Same URL highlighting as Server.
 
 **Collapse.** `PadConsolePanel` is a [`CollapsiblePane`](#collapsible-panes) (`expandToward="up"`, `collapsedSize="6%"`) — the tabs are its `header`, **Restart server** is an `action`, and the two views are its children. Collapsing leaves the 6% tab strip reachable so the chevron stays clickable; the shared primitive owns the `panelRef`, the `onResize` threshold, and the slide animation, so `PadWorkspace` no longer threads any console state.

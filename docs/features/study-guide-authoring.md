@@ -1,6 +1,6 @@
 # Authoring a Study Guide problem page — rubric
 
-How to add a fully-taught **problem page** to a Study Guide chapter (e.g. 3Sum under "Two pointers" in the Algos track). This is the spec the problem-guide authoring agent follows. It complements [learn-authoring.md](learn-authoring.md) (which is for *topic* articles); this doc is for the *problem* pages rendered by [ProblemGuide](../../src/learn/guide/ProblemGuide.tsx). Feature overview: [learn.md](learn.md) → "Two views". The reference page is **3Sum** ([problemGuides.ts](../../src/learn/data/problemGuides.ts)) — read it before authoring a new one.
+How to add a fully-taught **problem page** to a Study Guide chapter (e.g. 3Sum under "Two pointers" in the Algos track). This is the spec the problem-guide authoring agent follows. It complements [learn-authoring.md](learn-authoring.md) (which is for *topic* articles); this doc is for the *problem* pages rendered by [ProblemGuide](../../src/learn/guide/ProblemGuide.tsx). Feature overview: [learn.md](learn.md) → "Two areas". The reference page is **3Sum** ([problemGuides.ts](../../src/learn/data/problemGuides.ts)) — read it before authoring a new one.
 
 The bar is the ByteByteGo *Coding Interview Patterns* problem chapter (statement → brute force → "can we do better?" → optimal walkthrough → implementation → complexity → test cases), with the deliberate adjustments noted under **Conventions** below. Don't reproduce ByteByteGo verbatim — match the *shape*, apply our conventions.
 
@@ -54,7 +54,7 @@ The Intuition section must move brute-force → optimal the way ByteByteGo does:
 3. **Retrospective** — the bridge. This is the part most worth getting right:
    - Name the flaw and ask the question: *"This is O(n³) — far more work than necessary. Can we do better?"*
    - State the **key observation** that unlocks the optimization (*"if we fix one number, the rest is just finding a pair…"*).
-   - Connect to a known pattern when one applies, as a **cross-link** (§7): *"…which is exactly the [Two pointers](/learn/guide/algos/topic/two-pointers) pair-sum problem."*
+   - Connect to a known pattern when one applies, as a **cross-link** (§7): *"…which is exactly the [Two pointers](/study-guide/algos/topic/two-pointers) pair-sum problem."*
    - **Bridge the model to the stored solution if they differ.** If the walkthrough teaches a different-but-equivalent variable model than the stored `solutions[]` actually uses (e.g. a `slow`/`fast` pair when the implementation tracks a `k`-as-count, or a walkthrough that never exercises an early-exit branch the code has), state the correspondence explicitly here — *"`slow` here is `k - 1` in the implementation"* — so a reader who scrolls from the walkthrough into the Optimization code never meets a variable that wasn't introduced. A faithful match is best; an explicit bridge is the fallback; an unexplained mismatch is a defect the auditor will flag.
    - Transition into the diagram, ending on a colon: *"Walking it through:"*
 4. **Walkthrough** — visualize the optimal idea frame by frame (§8).
@@ -87,7 +87,7 @@ These are the deliberate deltas. **Follow them; do not copy ByteByteGo's choices
 Supported in any `prose` body, `callout` item, or constraint:
 
 - `` `code` `` → inline code · `**bold**` → strong · `*italic*` → emphasis
-- `[label](/href)` → link (use for cross-linking related patterns/topics; internal hrefs like `/learn/guide/algos/topic/<slug>` or `/problems/<id>`)
+- `[label](/href)` → link (use for cross-linking related patterns/topics; internal hrefs like `/study-guide/algos/topic/<slug>` or `/problems/<id>`)
 - `[[glossary term]]` → glossary tooltip (falls back to plain text if unknown)
 - A blank-line-separated block whose **every** line starts with `- ` renders as a **bullet list** (used for complexity, §10)
 
@@ -269,7 +269,7 @@ Your job is to make that audit boring. So:
     "}" },
   { kind: "prose", body:
     "This is O(…) — far more work than necessary. Can we do better?\n\n" +
-    "<key observation>, which is exactly the [related pattern](/learn/guide/<track>/topic/<slug>).\n\n" +
+    "<key observation>, which is exactly the [related pattern](/study-guide/<track>/topic/<slug>).\n\n" +
     "<one-line transition>. Walking it through:" },
   { kind: "walkthrough", heading: "<sorted/labeled input>", showIndices: true, lane: [/* … */], frames: [
     /* 4–6 frames: a failing step, the dedup/edge step, the success step(s) */

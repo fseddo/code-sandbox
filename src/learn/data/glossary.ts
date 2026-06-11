@@ -38,7 +38,7 @@ export const resolveTerm = (raw: string): ResolvedTerm | null => {
   if ("topicSlug" in entry) {
     const topic = getTopic(entry.topicSlug);
     if (!topic) return { label: raw, blurb: "" };
-    return { label: raw, blurb: topic.summary, href: `/learn/${entry.topicSlug}` };
+    return { label: raw, blurb: topic.summary, href: `/concepts/${entry.topicSlug}` };
   }
   return { label: raw, blurb: entry.definition };
 };

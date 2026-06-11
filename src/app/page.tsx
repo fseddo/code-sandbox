@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { LuArrowRight, LuBookOpen, LuListChecks, LuSquareCode, LuWaves } from "react-icons/lu";
+import { LuArrowRight, LuBookOpen, LuGraduationCap, LuListChecks, LuSquareCode, LuWaves } from "react-icons/lu";
 
 const DESTINATIONS = [
-  { href: "/learn", title: "Learn", description: "Data structures & algorithms, explained with worked examples.", icon: LuBookOpen },
+  { href: "/concepts", title: "Concepts", description: "Data structures, algorithms & system design, explained with worked examples.", icon: LuBookOpen },
+  { href: "/study-guide", title: "Interview Study Guide", description: "A sequenced curriculum — read each pattern, then work its problems in order.", icon: LuGraduationCap },
   { href: "/problems", title: "Problems", description: "Coding and build challenges, auto-graded where possible.", icon: LuListChecks },
   { href: "/pads", title: "Pad", description: "Your free-coding scratchpads — open one or start fresh.", icon: LuSquareCode },
 ] as const;
@@ -15,7 +16,7 @@ const Home = () => (
       <p className="max-w-md text-muted-foreground">Learn it, practice it, or just start coding.</p>
     </div>
 
-    <div className="grid w-full max-w-3xl gap-4 sm:grid-cols-3">
+    <div className="grid w-full max-w-3xl gap-4 sm:grid-cols-2">
       {DESTINATIONS.map(({ href, title, description, icon: Icon }) => (
         <Link
           key={href}

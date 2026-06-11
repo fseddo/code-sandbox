@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LuBookOpen, LuChevronDown, LuHouse, LuListChecks, LuSquareCode, LuWaves } from "react-icons/lu";
+import { LuBookOpen, LuChevronDown, LuGraduationCap, LuHouse, LuListChecks, LuSquareCode, LuWaves } from "react-icons/lu";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,7 +13,8 @@ import {
 import { cn } from "@/lib/utils";
 
 const AREAS = [
-  { href: "/learn", label: "Learn", icon: LuBookOpen },
+  { href: "/concepts", label: "Concepts", icon: LuBookOpen },
+  { href: "/study-guide", label: "Interview Study Guide", icon: LuGraduationCap },
   { href: "/problems", label: "Problems", icon: LuListChecks },
   { href: "/pads", label: "Pads", icon: LuSquareCode },
 ];
@@ -30,7 +31,7 @@ export const BrandMenu = () => {
         <LuChevronDown className="size-3.5 text-muted-foreground" />
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="start" className="w-44">
+      <DropdownMenuContent align="start" className="w-56">
         {AREAS.map(({ href, label, icon: Icon }) => (
           <DropdownMenuItem
             key={href}

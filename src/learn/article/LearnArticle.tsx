@@ -30,12 +30,12 @@ export const LearnArticle = ({
       <article className="min-w-0 flex-1 space-y-8">
       <header className="space-y-3">
         <FilteredBackLink
-          base="/learn"
+          base="/concepts"
           cacheKey={FILTER_CACHE_KEY.learn}
           className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
         >
           <LuArrowLeft className="size-3.5" />
-          Learn
+          Concepts
         </FilteredBackLink>
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="mr-1 text-2xl font-semibold tracking-tight">{topic.title}</h1>

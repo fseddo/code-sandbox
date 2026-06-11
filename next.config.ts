@@ -34,8 +34,19 @@ const securityHeaders = [
   },
 ];
 
+// The Learn area was split into two top-level areas — Concepts (the topic bank) and the Interview
+// Study Guide (the curriculum). These keep old /learn* links/bookmarks alive. Guide rules precede the
+// /learn/:slug rule so `/learn/guide` isn't swallowed as a topic slug.
+const redirects = [
+  { source: "/learn", destination: "/concepts", permanent: true },
+  { source: "/learn/guide", destination: "/study-guide", permanent: true },
+  { source: "/learn/guide/:path*", destination: "/study-guide/:path*", permanent: true },
+  { source: "/learn/:slug", destination: "/concepts/:slug", permanent: true },
+];
+
 const nextConfig: NextConfig = {
   headers: () => Promise.resolve([{ source: "/:path*", headers: securityHeaders }]),
+  redirects: () => Promise.resolve(redirects),
 };
 
 export default nextConfig;

@@ -243,7 +243,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "their roots match **and** the left's *left* mirrors the right's *right* (the outer pair) **and** the left's " +
         "*right* mirrors the right's *left* (the inner pair). The two recursive calls cross over — that crossing is the " +
         "whole trick.\n\n" +
-        "This is the same paired-recursion idea as [Same Tree](/learn/guide/algos/problem/same-tree), but with the " +
+        "This is the same paired-recursion idea as [Same Tree](/study-guide/algos/problem/same-tree), but with the " +
         "child comparisons flipped.\n\n" +
         "Tracing `[1, 2, 2, 3, 4, 4, 3]` — root `1` with two `2`-subtrees:\n\n" +
         "- **Roots of the pair:** left `2` and right `2` — equal, continue.\n" +
@@ -304,7 +304,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "The key observation: the required within-column order — *top to bottom, then left to right on a tie* — is " +
         "**exactly the order a breadth-first traversal visits nodes**. So if we BFS and carry each node's column index, " +
         "appending into per-column buckets, every bucket comes out already correct. No sorting, just a final read from " +
-        "the smallest column to the largest. This is the level-order / [queue](/learn/queues) pattern with an extra " +
+        "the smallest column to the largest. This is the level-order / [queue](/concepts/queues) pattern with an extra " +
         "piece of state riding along.\n\n" +
         "Tracing `[3, 9, 20, null, null, 15, 7]`. BFS visits `3 (col 0)`, `9 (col -1)`, `20 (col 1)`, `15 (col 0)`, " +
         "`7 (col 2)`. The lane below is the BFS *visit order*; each `action` shows which column bucket the value drops " +
@@ -407,7 +407,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "This is O(n) time, but it always walks the *entire* tree and builds a full array even when `k` is tiny. Can " +
         "we do better?\n\n" +
         "The key observation: we don't need the whole sorted sequence — only its `k`-th element. Walk in-order but " +
-        "**count as we go and stop the moment the count hits `k`**. Using an explicit [stack](/learn/stacks) makes the " +
+        "**count as we go and stop the moment the count hits `k`**. Using an explicit [stack](/concepts/stacks) makes the " +
         "early exit clean: dive left pushing nodes, then pop-and-count; the `k`-th pop is the answer.\n\n" +
         "The lane below is the in-order *output sequence* of the BST `[5, 3, 6, 2, 4, null, null, 1]` — i.e. " +
         "`[1, 2, 3, 4, 5, 6]` — with the counter walking it; we stop at `k = 3`:",
@@ -583,7 +583,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "This is O(n) but stores every level in full just to keep one value from each. Can we trim the memory?\n\n" +
         "The key observation: we only need the *last* node of each level, so during the level scan we just push the " +
         "node we happen to be on when it's the final one in the queue — no per-level array needed. This is the " +
-        "level-order / [queue](/learn/queues) pattern, taking one value per level.\n\n" +
+        "level-order / [queue](/concepts/queues) pattern, taking one value per level.\n\n" +
         "Note the visible node may be a *left* child if its level has nothing further right. Tracing " +
         "`[1, 2, 3, null, 5, null, 4]` — root `1`; level 1 is `2, 3`; level 2 is `5` (2's right) and `4` (3's right). " +
         "The lane is the BFS visit order; each `action` marks whether the node is its level's last (visible) node:",
@@ -642,7 +642,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "Padding every null doubles the queue each level — on a sparse, deep tree that's exponential blow-up. Can we " +
         "avoid materializing the gaps?\n\n" +
         "The key observation: we never need the empty slots themselves, only the *index arithmetic*. Carry each real " +
-        "node's heap index alongside it in the [queue](/learn/queues); a level's width is the last index minus the " +
+        "node's heap index alongside it in the [queue](/concepts/queues); a level's width is the last index minus the " +
         "first plus one. To stop indices from overflowing on deep trees, re-base each level so its first node starts " +
         "at `0` — only the differences matter.\n\n" +
         "Tracing `[1, 3, 2, 5, 3, null, 9]`. Indices (re-based per level): root `1@0`; level 1 is `3@0, 2@1`; level 2 " +
@@ -751,7 +751,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
       tone: "info",
       items: [
         "The base cases do the shape check: both-null matches, exactly-one-null is an immediate mismatch.",
-        "This is the structural cousin of [Symmetric Tree](/learn/guide/algos/problem/symmetric-tree), which compares one tree against its own mirror by crossing the child comparisons; here the comparisons are straight (left-with-left, right-with-right).",
+        "This is the structural cousin of [Symmetric Tree](/study-guide/algos/problem/symmetric-tree), which compares one tree against its own mirror by crossing the child comparisons; here the comparisons are straight (left-with-left, right-with-right).",
         "No lane — the comparison descends two trees together, which a single scanned row can't show.",
       ],
     },
@@ -786,7 +786,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
       body:
         "The recursion is clean and O(n), but it leans on the call stack — interviewers often ask for it *iteratively*, " +
         "and a very deep tree can overflow that stack. Can we do it without recursion?\n\n" +
-        "The key observation: an explicit [stack](/learn/stacks) can stand in for the call stack. Walk left as far as " +
+        "The key observation: an explicit [stack](/concepts/stacks) can stand in for the call stack. Walk left as far as " +
         "possible, pushing every node; when you can't go left, pop a node, record it (that's the in-order moment), and " +
         "step into its right child. Repeat until both the stack and the current pointer are exhausted.\n\n" +
         "The lane is the in-order *output* of `[1, null, 2, 3]` — root `1`, right child `2`, and `2`'s left child `3` — " +
@@ -895,7 +895,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "only *shrink* it. Notice the area is capped by the shorter wall: moving the **taller** wall in keeps that " +
         "same cap while losing width, so it can never improve. The only move that might help is advancing the " +
         "**shorter** wall, hoping to trade a little width for a taller cap.\n\n" +
-        "That converging-from-both-ends sweep is the [Two pointers](/learn/guide/algos/topic/two-pointers) " +
+        "That converging-from-both-ends sweep is the [Two pointers](/study-guide/algos/topic/two-pointers) " +
         "pattern: one O(n) pass that safely discards a wall at every step instead of re-measuring every pair.\n\n" +
         "Walking it through:",
     },
@@ -963,7 +963,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "Notice that comparing a string to its reverse just pairs up the **first character with the last, the " +
         "second with the second-to-last**, and so on. We can check those pairs directly on the cleaned string with " +
         "two pointers — one at each end, walking inward — which is exactly the " +
-        "[Two pointers](/learn/guide/algos/topic/two-pointers) converging-ends pattern. The moment a pair " +
+        "[Two pointers](/study-guide/algos/topic/two-pointers) converging-ends pattern. The moment a pair " +
         "disagrees we can stop early and return `false`.\n\n" +
         "Cleaning still costs O(n) space here (we keep the cleaned string), but the comparison itself drops to " +
         "O(1) extra and short-circuits on the first mismatch instead of always building a full reversed copy.\n\n" +
@@ -1064,7 +1064,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "That works, but it walks the board three separate times and re-derives a fresh `Set` for every group. " +
         "Can we do it in one pass and keep it cleaner?\n\n" +
         "Notice the only thing each group cares about is: *has this digit already appeared in my row, my column, " +
-        "or my box?* A repeat is a [duplicate-detection](/learn/guide/algos/topic/hash-maps) problem, and a hash " +
+        "or my box?* A repeat is a [duplicate-detection](/study-guide/algos/topic/hash-maps) problem, and a hash " +
         "**set** answers \"have I seen this before?\" in O(1). So we don't need to gather groups at all — we can " +
         "scan the 81 cells once and, at each filled cell, test three memberships at once.\n\n" +
         "Keep three kinds of seen-marker, tagged so they can't collide: `row-r-d`, `col-c-d`, and `box-b-d`, where " +
@@ -1156,7 +1156,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
       body:
         "This is O(n³) — far more work than necessary. Can we do better?\n\n" +
         "Notice that if we **fix one number** `nums[i]`, the rest of the job is just finding a *pair* that sums " +
-        "to `-nums[i]` — which is exactly the [Two pointers](/learn/guide/algos/topic/two-pointers) pair-sum problem.\n\n" +
+        "to `-nums[i]` — which is exactly the [Two pointers](/study-guide/algos/topic/two-pointers) pair-sum problem.\n\n" +
         "Pair Sum's two-pointer trick only works on a **sorted** array, so sort the input first. Then, for each " +
         "fixed `i`, converge two pointers over the suffix: move `left` up when the pair sum is too small, `right` " +
         "down when it's too large, skipping equal neighbours so duplicates don't slip in.\n\n" +
@@ -1236,7 +1236,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "`(# of nums[j]/r on the left) × (# of nums[j]*r on the right)` — every left partner can pair with every " +
         "right partner.\n\n" +
         "Counting *how many* of a given value sit on each side is what a frequency map does in O(1), so this is a " +
-        "[Hash map](/learn/guide/algos/topic/hash-maps) problem. Keep two maps: `left` (values strictly before `j`) " +
+        "[Hash map](/study-guide/algos/topic/hash-maps) problem. Keep two maps: `left` (values strictly before `j`) " +
         "and `right` (values strictly after `j`). Seed `right` with the whole array, then sweep `j` left to right — " +
         "before counting, move `nums[j]` out of `right`; after counting, add it into `left`. Because the left partner " +
         "must be the *exact* integer `nums[j] / r`, guard the division with `nums[j] % r === 0`. (The stored " +
@@ -1315,7 +1315,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "This is O(n³) — far more work than necessary. Can we do better?\n\n" +
         "It's the same shape as 3Sum: if we **fix one number** `nums[i]`, the rest of the job is finding the *pair* " +
         "in the suffix whose sum brings `nums[i] + pair` closest to `target` — which is exactly the " +
-        "[Two pointers](/learn/guide/algos/topic/two-pointers) pair-sum problem.\n\n" +
+        "[Two pointers](/study-guide/algos/topic/two-pointers) pair-sum problem.\n\n" +
         "That two-pointer trick only works on a **sorted** array, so sort the input first. For each fixed `i`, " +
         "converge two pointers over the suffix: when the triple sum is below `target` move `left` up to grow it, " +
         "when it's above move `right` down to shrink it. The difference from 3Sum is the goal — instead of waiting " +
@@ -1391,7 +1391,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "is the one whose answer we can already commit. Whatever taller wall waits beyond the far pointer can only " +
         "*raise* the other side's max, never the shorter side's binding wall — so the shorter side's running max " +
         "is already its true left-or-right wall.\n\n" +
-        "That converge-from-both-ends move is the [Two pointers](/learn/guide/algos/topic/two-pointers) pattern: " +
+        "That converge-from-both-ends move is the [Two pointers](/study-guide/algos/topic/two-pointers) pattern: " +
         "advance whichever side is shorter, fold its bar into that side's running max, and bank `runningMax − " +
         "height` as trapped water. One linear pass, no rescans, O(1) space.\n\n" +
         "Walking it through:",
@@ -1463,7 +1463,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "need a `Set` to spot a duplicate — a value is new exactly when it differs from the one right before it. " +
         "That means we can compact in place with two same-direction pointers walking the array: a slow *write* " +
         "pointer marking the end of the unique prefix, and a fast *read* pointer scanning ahead for the next new " +
-        "value. This same-direction slow/fast pairing is the [Two pointers](/learn/guide/algos/topic/two-pointers) " +
+        "value. This same-direction slow/fast pairing is the [Two pointers](/study-guide/algos/topic/two-pointers) " +
         "pattern.\n\n" +
         "Seed `slow` at index 0 (the first element is always kept). Each time `fast` lands on a value different " +
         "from `nums[slow]`, advance `slow` and write that value there. The unique count is `slow + 1`.\n\n" +
@@ -1542,7 +1542,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "The key observation: as we extend a substring to the right, it stays valid until the *first* repeated " +
         "character. Once a duplicate appears, every substring that keeps the earlier copy is also invalid — so " +
         "instead of restarting, we can just move the left edge *past* that earlier copy. That's a " +
-        "[sliding window](/learn/guide/algos/topic/sliding-window): a window `[start, i]` that always holds " +
+        "[sliding window](/study-guide/algos/topic/sliding-window): a window `[start, i]` that always holds " +
         "distinct characters.\n\n" +
         "To know *where* the earlier copy was, store each character's most recent index in a map. When `s[i]` was " +
         "last seen at some index `>= start`, that copy is inside the window, so jump `start` to one past it. The " +
@@ -1632,7 +1632,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "letter in and one letter out**. Can we do better?\n\n" +
         "Keep a single `have` count and update it incrementally: as the window advances, increment the entering " +
         "letter and decrement the leaving one. That's a fixed-size " +
-        "[sliding window](/learn/guide/algos/topic/sliding-window) of width `p.length`.\n\n" +
+        "[sliding window](/study-guide/algos/topic/sliding-window) of width `p.length`.\n\n" +
         "Comparing all 26 counts each step would still cost O(26) per window. So track one number, `matches` — how " +
         "many of the 26 letter-counts currently *agree* with `p`. Each letter that enters or leaves changes only " +
         "its own slot, so `matches` is nudged up or down in O(1). The window is an anagram exactly when " +
@@ -1724,7 +1724,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "Re-counting every substring is O(n³). Can we do better?\n\n" +
         "The replaceability test for a window is `windowLength - maxFreq <= k`, where `maxFreq` is the count of " +
         "its most frequent letter. That's a property of a contiguous run — so use a " +
-        "[sliding window](/learn/guide/algos/topic/sliding-window) and maintain the letter counts incrementally " +
+        "[sliding window](/study-guide/algos/topic/sliding-window) and maintain the letter counts incrementally " +
         "as the edges move, instead of rebuilding them.\n\n" +
         "Grow `right` each step. When `windowLength - maxFreq > k` the window is too costly to make uniform, so " +
         "advance `left` by **one** — and that's the elegant part: we never need to shrink more than one step, " +
@@ -1848,7 +1848,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "works. So instead of scanning for it, we can remember every value we've passed in a hash map keyed by " +
         "value, and look the partner up in O(1).\n\n" +
         "Storing `value → index` lets that lookup also hand back *where* the partner was, which is what we need " +
-        "to return. This is the core [hash maps](/learn/guide/algos/topic/hash-maps) trick: trade O(n) space for " +
+        "to return. This is the core [hash maps](/study-guide/algos/topic/hash-maps) trick: trade O(n) space for " +
         "O(1) membership-and-recall, collapsing the nested scan into a single pass.\n\n" +
         "One pass suffices if we check **before** we insert: at index `i` we ask whether `target − nums[i]` is " +
         "already stored, and only then add `nums[i]` ourselves. Checking first means we never pair an element " +
@@ -1933,7 +1933,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "its **first row and first column**. Let `matrix[0][j]` stand in for `zeroCols.has(j)` and `matrix[i][0]` " +
         "for `zeroRows.has(i)`. Scanning the *interior* (rows and columns from index 1), whenever a cell is `0` " +
         "we stamp a `0` into its column's header `matrix[0][j]` and its row's header `matrix[i][0]`. That is the " +
-        "[hash maps](/learn/guide/algos/topic/hash-maps) marker idea — membership flags — pushed down to O(1) " +
+        "[hash maps](/study-guide/algos/topic/hash-maps) marker idea — membership flags — pushed down to O(1) " +
         "extra space by storing the flags inside the data itself.\n\n" +
         "The catch is the first row and first column overlap at `matrix[0][0]` and double as both data and " +
         "markers, so we can't let them encode their own fate. We track *those two* with a pair of booleans " +
@@ -2040,7 +2040,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "present, so we skip it rather than re-walking the same run from the inside. That guard means each run is " +
         "walked exactly once, and across all runs every value is visited at most twice — so despite the nested-looking " +
         "while loop, the total work is O(n). This trading of O(n) space for O(1) lookups is the core " +
-        "[hash maps](/learn/guide/algos/topic/hash-maps) move.\n\n" +
+        "[hash maps](/study-guide/algos/topic/hash-maps) move.\n\n" +
         "Walking it through:",
     },
     {
@@ -2186,7 +2186,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "reusable trick. Can we find the predecessor without first knowing `L`?\n\n" +
         "The key observation: fix a **gap** between two pointers. If `fast` is exactly `n + 1` nodes ahead of " +
         "`slow`, then when `fast` walks off the end, `slow` is sitting `n + 1` from the end — i.e. on the node " +
-        "*just before* the one to remove. This is the [Two pointers](/learn/guide/algos/topic/two-pointers) " +
+        "*just before* the one to remove. This is the [Two pointers](/study-guide/algos/topic/two-pointers) " +
         "gap technique applied to nodes.\n\n" +
         "Start both at a `dummy` before the head, advance `fast` by `n + 1`, then move both together until `fast` " +
         "is null. One splice and we're done.\n\n" +
@@ -2270,7 +2270,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "The key observation: to compare the front half against the back half we need to read the back half " +
         "*forward*. A list only goes one way — so **reverse the back half in place**, then walk the two halves " +
         "toward the middle.\n\n" +
-        "Two sub-techniques combine here, both from the [Two pointers](/learn/guide/algos/topic/two-pointers) " +
+        "Two sub-techniques combine here, both from the [Two pointers](/study-guide/algos/topic/two-pointers) " +
         "toolkit: **fast/slow** finds the midpoint (`fast` moves two nodes per one of `slow`, so when `fast` " +
         "hits the end, `slow` is at the middle), and the three-pointer **reversal** flips the second half. Then " +
         "compare the original front with the reversed back in lockstep.\n\n" +
@@ -2349,7 +2349,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "The key observation: if the lists merge, they share a common *tail*, so they have the same number of " +
         "nodes *after* the intersection. The only thing in the way is that the two lists can have different " +
         "lengths before the merge, so a node at distance `d` from head A isn't at distance `d` from head B.\n\n" +
-        "The elegant fix is the **length-alignment** [two-pointer](/learn/guide/algos/topic/two-pointers) walk: " +
+        "The elegant fix is the **length-alignment** [two-pointer](/study-guide/algos/topic/two-pointers) walk: " +
         "send pointer `pa` through A *then* B, and `pb` through B *then* A. Each covers `m + n` nodes total, so " +
         "after the switch they're aligned and arrive at the first shared node on the same step (or both hit " +
         "`null` together if there's no merge). No length pre-count, O(1) space.\n\n" +
@@ -2473,7 +2473,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "We want the two *ends* of that block, and each end is a **boundary**. The first occurrence is the " +
         "lower bound: the first index whose value is `>= target`. The last occurrence is one step before the " +
         "*upper* bound: the first index whose value is `> target`, minus one. So run the same " +
-        "[boundary search](/learn/guide/algos/topic/binary-search) twice — once for `target`, once for " +
+        "[boundary search](/study-guide/algos/topic/binary-search) twice — once for `target`, once for " +
         "`target + 1` — and bracket the run.\n\n" +
         "If the lower bound lands past the array or on a value that isn't the target, the target is absent and the " +
         "answer is `[-1, -1]`.\n\n" +
@@ -2544,7 +2544,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "half is fully sorted** (the pivot can only sit in one of them). Compare `nums[lo]` to `nums[mid]` to " +
         "learn which half is the clean, sorted one. Then check whether `target` falls inside that sorted half's " +
         "value range: if so, search there; if not, the target must be in the other half. Either way we discard " +
-        "half each step — ordinary [binary search](/learn/guide/algos/topic/binary-search), just with a " +
+        "half each step — ordinary [binary search](/study-guide/algos/topic/binary-search), just with a " +
         "which-half-is-sorted test layered on top.\n\n" +
         "This uses the inclusive `lo <= hi` exact-match shape (returning `mid` on a hit), not the half-open " +
         "boundary form — we want a specific value, not a boundary.\n\n" +
@@ -2700,7 +2700,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "the previous row ended. Can we do better?\n\n" +
         "That ordering means the rows, read end to end, form **one fully sorted sequence** of length `m·n`. So " +
         "treat the matrix as a *virtual* sorted array and run plain " +
-        "[binary search](/learn/guide/algos/topic/binary-search) over the flat indices `0 … m·n − 1`. Map a flat " +
+        "[binary search](/study-guide/algos/topic/binary-search) over the flat indices `0 … m·n − 1`. Map a flat " +
         "index `k` back to a cell with `matrix[Math.floor(k / n)][k % n]` (row = `k ÷ n`, column = `k mod n`), and " +
         "compare as usual. Each step halves the m·n cells, giving **O(log(m·n))**.\n\n" +
         "Walking it through over the flattened view:",
@@ -2769,7 +2769,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "neighbor. If `nums[mid] < nums[mid + 1]`, the values are climbing rightward — since the far-right edge " +
         "drops off to `-∞`, *some* peak must lie to the right, so move `lo = mid + 1`. Otherwise the slope falls " +
         "(or `mid` is itself a peak), and a peak lies at `mid` or to its left, so `hi = mid`. This is the half-open " +
-        "[boundary search](/learn/guide/algos/topic/binary-search) shape, applied to a *monotonic predicate* " +
+        "[boundary search](/study-guide/algos/topic/binary-search) shape, applied to a *monotonic predicate* " +
         "(\"is the slope still rising?\") rather than to sorted values.\n\n" +
         "When `lo === hi` the range is a single index, and the inward-sloping boundaries guarantee it's a peak.\n\n" +
         "Walking it through:",
@@ -2841,7 +2841,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "The trick is to **binary-search the answer, not the input.** The wood collected is *monotonic* in the " +
         "blade height: raise the blade and you collect strictly less (never more). So the candidate heights split " +
         "cleanly into a feasible low range (`wood >= k`) and an infeasible high range, with one boundary between " +
-        "them — exactly the [monotonic-predicate](/learn/guide/algos/topic/binary-search) setup. Search heights " +
+        "them — exactly the [monotonic-predicate](/study-guide/algos/topic/binary-search) setup. Search heights " +
         "in `[0, max]`: for a candidate `mid`, sum `max(0, h − mid)` over all trees in O(n); if that's `>= k`, the " +
         "blade can go at least this high, so record it and search higher; otherwise search lower.\n\n" +
         "That replaces the M outer steps with `log M`, giving **O(n log M)**.\n\n" +
@@ -2982,7 +2982,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "On a sorted-descending input every suffix scan runs to the end, so this is O(n²). Can we do better?\n\n" +
         "The key observation: when we reach a value, it can *immediately answer every earlier value it exceeds* — " +
         "and those earlier values are exactly the ones still waiting, in decreasing order. Holding “elements " +
-        "still waiting for a larger neighbour, most-recent on top” is a **[monotonic stack](/learn/guide/algos/topic/stacks)**.\n\n" +
+        "still waiting for a larger neighbour, most-recent on top” is a **[monotonic stack](/study-guide/algos/topic/stacks)**.\n\n" +
         "Keep a stack of *indices* whose values decrease down the stack. For each new value, pop every waiting " +
         "index whose value it beats — the current value is their next-larger — then push the current index. " +
         "Anything still on the stack at the end never met anything larger and keeps `-1`.\n\n" +
@@ -3057,7 +3057,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "Each `findIndex` + `splice` is O(n) and we do it O(n) times — O(n²), with array shuffling on top. Can we " +
         "do better?\n\n" +
         "The key observation: when you read an operator, its operands are *the two values produced most recently* " +
-        "— last produced is the first one you need. “Most recent, handled first” is a **[stack](/learn/guide/algos/topic/stacks)**. " +
+        "— last produced is the first one you need. “Most recent, handled first” is a **[stack](/study-guide/algos/topic/stacks)**. " +
         "Push every number. On an operator, pop the top two (the **second** pop is the left operand), apply it, " +
         "and push the result back. One left-to-right pass; the final lone value is the answer.\n\n" +
         "The lane below is the token stream being scanned; the caption tracks the **operand stack** after each " +
@@ -3141,7 +3141,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "do better?\n\n" +
         "The key observation: a character only ever cancels against the character *immediately before it in the " +
         "result so far* — the most recently kept one. “Compare against the most recent kept item, and remove it " +
-        "on a match” is a **[stack](/learn/guide/algos/topic/stacks)**. Push each character; but if it equals the " +
+        "on a match” is a **[stack](/study-guide/algos/topic/stacks)**. Push each character; but if it equals the " +
         "current top, the two are an adjacent pair — `pop` the top instead, cancelling both. A pop can expose a " +
         "new top, so the cascade is handled for free: the *next* character compares against whatever surfaced.\n\n" +
         "The characters left on the stack, in order, are the answer. The lane is the input being scanned; " +
@@ -3216,7 +3216,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "The key observation: if an earlier value is `≤` a later value that's still in the window, the earlier one " +
         "can *never* be a future maximum — it's dominated and dead. So keep a double-ended queue of *indices* " +
         "whose values strictly **decrease** front→back; the front is always the current window's max. This is the " +
-        "deque cousin of the **[monotonic stack](/learn/guide/algos/topic/stacks)**, with one extra move: evict " +
+        "deque cousin of the **[monotonic stack](/study-guide/algos/topic/stacks)**, with one extra move: evict " +
         "the front when it slides out of the window.\n\n" +
         "For each `i`: pop dominated values off the **back** (`nums[back] ≤ nums[i]`), push `i`, drop the **front** " +
         "if it's `≤ i - k`, and once the first window is full read the front. The lane below shows the array; " +
@@ -3298,7 +3298,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "`outStack` is empty**; that single pour flips the order so the oldest element sits on top of `outStack`. " +
         "After that, `pop` and `peek` read straight off `outStack`'s top with no reversal, until it drains and " +
         "you transfer again.\n\n" +
-        "This is the **two-stacks** technique (see the [Stacks](/learn/guide/algos/topic/stacks) intro). The " +
+        "This is the **two-stacks** technique (see the [Stacks](/study-guide/algos/topic/stacks) intro). The " +
         "magic is *amortized* cost: each element is moved between the stacks at most once over its lifetime, so " +
         "although one transfer is O(n), the cost spread across all operations is **O(1) amortized** each.\n\n" +
         "**Why it works, step by step** — say we push `1, 2, 3`. `inStack` holds `[1, 2, 3]` (top is 3). The first " +
@@ -3361,7 +3361,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "and popped once, at O(log k) each.\n\n" +
         "**Bridge to the stored solution:** the Optimization code below reaches the same O(N log k) bound by a " +
         "*divide-and-conquer* route instead — it pairs the lists up and merges them in `log k` rounds (the " +
-        "classic two-pointer [merge of two lists](/learn/guide/algos/topic/linked-lists)), which avoids " +
+        "classic two-pointer [merge of two lists](/study-guide/algos/topic/linked-lists)), which avoids " +
         "implementing a heap. The heap is the canonical Heaps-chapter framing; the pairwise merge is an " +
         "equivalent, heap-free way to get the same complexity. The walkthrough below traces the **heap** model.\n\n" +
         "Walking the heap through `[[1,4,5], [1,3,4], [2,6]]`:",
@@ -3446,7 +3446,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "weak* a candidate is — lowest frequency at the top, and on a frequency tie the lexicographically *larger* " +
         "string on top (because we want to keep the smaller one). Push each distinct string; whenever the heap " +
         "exceeds `k`, pop the weakest. Anything weaker than the current root never displaces it, so each push is " +
-        "O(log k). This is the bounded top-k heap from the [Heaps intro](/learn/guide/algos/topic/heaps).\n\n" +
+        "O(log k). This is the bounded top-k heap from the [Heaps intro](/study-guide/algos/topic/heaps).\n\n" +
         "The heap drains *weakest-first*, so reverse the drained order to present strongest-first.\n\n" +
         "Walking it through `strs = [go, coding, byte, byte, go, interview, go]`, `k = 2` (counts: `go`=3, " +
         "`byte`=2, `coding`=1, `interview`=1):",
@@ -3527,7 +3527,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "half. Keep two heaps — a **max-heap `low`** for the smaller half (its top is the largest small value) and " +
         "a **min-heap `high`** for the larger half (its top is the smallest large value) — balanced so `low` has " +
         "the same size as `high` or exactly one more. This is the two-heaps technique from the " +
-        "[Heaps intro](/learn/guide/algos/topic/heaps).\n\n" +
+        "[Heaps intro](/study-guide/algos/topic/heaps).\n\n" +
         "Each `addNum` pushes into `low`, hands `low`'s top to `high` (keeping every small value ≤ every large " +
         "value), then rebalances if `high` outgrew `low` — a constant number of O(log n) heap ops. `findMedian` " +
         "reads the tops in O(1): `low`'s top when the count is odd, else the average of both tops.\n\n" +
@@ -3597,7 +3597,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "unplaced element is always among the next `k + 1` elements**. So keep a **min-heap of size `k + 1`**: " +
         "seed it with the first `k + 1` elements, then for each remaining element pop the heap minimum (the next " +
         "sorted value) and push the newcomer. Drain the heap at the end. This is the bounded-heap idea from the " +
-        "[Heaps intro](/learn/guide/algos/topic/heaps), sized to the window the guarantee gives us.\n\n" +
+        "[Heaps intro](/study-guide/algos/topic/heaps), sized to the window the guarantee gives us.\n\n" +
         "Each of the `n` elements does one O(log k) push and one O(log k) pop — O(n log k), beating the full sort " +
         "when `k ≪ n`.\n\n" +
         "Walking through `nums = [4, 2, 1, 3, 6, 5]`, `k = 2` (heap of size `k + 1 = 3`):",
@@ -3757,7 +3757,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "Checking every pair is O(m × n), and it ignores a gift the input already hands us: **both lists are sorted " +
         "by start**. Can we do better?\n\n" +
         "Because the lists are sorted, we can sweep them together with one pointer each — the same " +
-        "[two-pointer](/learn/guide/algos/topic/two-pointers) merge posture as combining two sorted arrays. At each " +
+        "[two-pointer](/study-guide/algos/topic/two-pointers) merge posture as combining two sorted arrays. At each " +
         "step the only candidate intersection is between the *current* interval of each list: `[max(starts), " +
         "min(ends)]`, emitted when that range is non-empty.\n\n" +
         "Then comes the one insight that makes it linear: advance the pointer of whichever interval **ends first**. " +
@@ -3946,7 +3946,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "The key observation: **a range sum is a difference of two running totals**. If `prefix[k]` holds the sum of " +
         "the first `k` elements (with `prefix[0] = 0`), then the inclusive range `[i, j]` is `prefix[j + 1] - " +
         "prefix[i]` — the total through `j`, minus everything strictly before `i`. That's the core [Prefix sums]" +
-        "(/learn/guide/algos/topic/prefix-sum) idea.\n\n" +
+        "(/study-guide/algos/topic/prefix-sum) idea.\n\n" +
         "So pay O(n) **once** to build the prefix array, then answer each query in O(1). The leading zero and the " +
         "`+1` offset are what keep the subtraction boundary-safe — `prefix[j + 1]` includes `nums[j]`, and " +
         "`prefix[i]` excludes `nums[i]`.\n\n" +
@@ -4024,7 +4024,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "ending here sums to `k` exactly when some **earlier** prefix equals `prefix − k`, because subtracting that " +
         "earlier prefix leaves a contiguous block summing to `k`. So instead of searching for the start, we ask: " +
         "*how many earlier prefixes had the value `prefix − k`?*\n\n" +
-        "Counting occurrences of a value in O(1) is what a [Hash map](/learn/guide/algos/topic/hash-maps) does. Keep " +
+        "Counting occurrences of a value in O(1) is what a [Hash map](/study-guide/algos/topic/hash-maps) does. Keep " +
         "a map of `prefix value → times seen`, seeded with `{0: 1}` so a subarray starting at index 0 counts itself. " +
         "At each element add `count[prefix − k]` to the answer, then record the current prefix. One pass, O(n).\n\n" +
         "*(The stored solution carries the running total in a variable named `prefix` and the map in `counts`.)*\n\n" +
@@ -4097,7 +4097,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "This is O(n²), and division is off the table. Can we do better?\n\n" +
         "The key observation: the product of everything except `nums[i]` is **(everything to its left) × (everything " +
         "to its right)**. Those are a prefix product and a suffix product — the same running-accumulation idea behind " +
-        "[Prefix sums](/learn/guide/algos/topic/prefix-sum), with multiplication instead of addition.\n\n" +
+        "[Prefix sums](/study-guide/algos/topic/prefix-sum), with multiplication instead of addition.\n\n" +
         "So do two sweeps over one output array. First left to right, writing into `answer[i]` the product of " +
         "everything *before* `i` (a running `prefix`, starting at 1). Then right to left, multiplying each " +
         "`answer[i]` by a running `suffix` product of everything *after* `i`. No division, O(n) time, and the only " +
@@ -4169,7 +4169,7 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
       kind: "prose",
       body:
         "Each query is O(m·n); with many queries this re-sums the same overlapping regions. Can we do better?\n\n" +
-        "Lift the 1D [Prefix sums](/learn/guide/algos/topic/prefix-sum) idea one dimension. Build a table `pre` where " +
+        "Lift the 1D [Prefix sums](/study-guide/algos/topic/prefix-sum) idea one dimension. Build a table `pre` where " +
         "`pre[r+1][c+1]` is the sum of the whole rectangle from the origin `(0, 0)` to `(r, c)`. Each entry folds in " +
         "the cell, the rectangle **above**, and the rectangle to the **left**, then subtracts their doubly-counted " +
         "**overlap**: `pre[r+1][c+1] = matrix[r][c] + pre[r][c+1] + pre[r+1][c] − pre[r][c]`.\n\n" +

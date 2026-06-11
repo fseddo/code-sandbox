@@ -75,12 +75,12 @@ export const trees = {
       {
         kind: "prose",
         body:
-          "A tree is a [graph](/learn/guide/algos/topic/graphs) with no cycles and a designated root, so DFS and BFS " +
+          "A tree is a [graph](/study-guide/algos/topic/graphs) with no cycles and a designated root, so DFS and BFS " +
           "carry over directly — tree traversal is just graph traversal where you never need a `visited` set. BFS leans " +
-          "on a [queue](/learn/queues) and iterative DFS on a [stack](/learn/stacks); a balanced BST is the pointer-based " +
-          "cousin of the array-backed [heap](/learn/guide/algos/topic/heaps) — both are complete-ish binary trees with an " +
+          "on a [queue](/concepts/queues) and iterative DFS on a [stack](/concepts/stacks); a balanced BST is the pointer-based " +
+          "cousin of the array-backed [heap](/study-guide/algos/topic/heaps) — both are complete-ish binary trees with an " +
           "ordering invariant, but a heap only orders parent-vs-child, not left-vs-right. For prefix-style work over a " +
-          "tree of strings, see [tries](/learn/guide/algos/topic/tries).",
+          "tree of strings, see [tries](/study-guide/algos/topic/tries).",
       },
     ],
     implementation: [

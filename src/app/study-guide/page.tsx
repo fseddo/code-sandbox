@@ -8,11 +8,11 @@ const ICONS: Record<TrackId, IconType> = { algos: LuListChecks, "system-design":
 
 const GuidePicker = () => (
   <div className="flex h-screen flex-col">
-    <AppHeader crumb={[{ label: "Learn", href: "/learn" }, { label: "Study guide" }]} />
+    <AppHeader crumb={[{ label: "Interview Study Guide" }]} />
     <div className="flex-1 overflow-auto">
       <div className="mx-auto max-w-3xl space-y-8 px-6 py-16">
         <div className="space-y-2">
-          <h1 className="text-3xl font-semibold tracking-tight">Study guide</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">Interview Study Guide</h1>
           <p className="text-muted-foreground">
             Pick a track and work it end to end — read each pattern, then step through its problems.
           </p>
@@ -24,7 +24,7 @@ const GuidePicker = () => (
             return (
               <Link
                 key={track.id}
-                href={`/learn/guide/${track.id}`}
+                href={`/study-guide/${track.id}`}
                 className="group flex flex-col gap-3 rounded-xl border border-border bg-card p-6 transition-colors hover:border-primary/50"
               >
                 <Icon className="size-6 text-primary" />

@@ -91,17 +91,17 @@ export const resolveTrack = (trackId: TrackId): GuideChapterView[] =>
       kind: "topic",
       slug: chapter.topic,
       title: `Introduction to ${title}`,
-      href: `/learn/guide/${trackId}/topic/${chapter.topic}`,
+      href: `/study-guide/${trackId}/topic/${chapter.topic}`,
     };
     const problems = (chapter.problems ?? practiceProblemIds(chapter.topic)).flatMap((id): GuideEntry[] => {
       const problem = getProblem(id);
       return problem
-        ? [{ kind: "problem", id, title: problem.title, difficulty: problem.difficulty, href: `/learn/guide/${trackId}/problem/${id}` }]
+        ? [{ kind: "problem", id, title: problem.title, difficulty: problem.difficulty, href: `/study-guide/${trackId}/problem/${id}` }]
         : [];
     });
     return { number: index + 1, title, entries: [intro, ...problems] };
   });
 
-/** The first entry's href — where `/learn/guide/[track]` redirects so the stepped view always opens on content. */
+/** The first entry's href — where `/study-guide/[track]` redirects so the stepped view always opens on content. */
 export const firstEntryHref = (trackId: TrackId): string | undefined =>
   resolveTrack(trackId).find((chapter) => chapter.entries.length > 0)?.entries[0]?.href;
