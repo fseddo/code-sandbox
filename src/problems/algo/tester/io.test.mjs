@@ -4,6 +4,8 @@ import {
   listToArray,
   arrayToTree,
   treeToArray,
+  arrayToGraph,
+  graphToArray,
   hydrate,
   dehydrate,
 } from "./io.mjs";
@@ -50,6 +52,33 @@ describe("binary-tree conversion", () => {
   it("trims trailing nulls on the way out", () => {
     // A left-only chain serializes without the implicit trailing null children.
     expect(treeToArray(arrayToTree([1, 2, null, 3]))).toEqual([1, 2, null, 3]);
+  });
+});
+
+describe("graph conversion", () => {
+  it("round-trips a cyclic adjacency list (LeetCode clone-graph shape)", () => {
+    const adj = [[2, 4], [1, 3], [2, 4], [1, 3]];
+    expect(graphToArray(arrayToGraph(adj))).toEqual(adj);
+  });
+
+  it("builds real cyclic GraphNodes (val/neighbors), not a flat array", () => {
+    const entry = arrayToGraph([[2], [1]]);
+    expect(entry.val).toBe(1);
+    expect(entry.neighbors[0].val).toBe(2);
+    // The cycle closes: node 2's neighbor is the same object we started from.
+    expect(entry.neighbors[0].neighbors[0]).toBe(entry);
+  });
+
+  it("handles the empty graph and a lone node both directions", () => {
+    expect(arrayToGraph([])).toBeNull();
+    expect(graphToArray(null)).toEqual([]);
+    expect(graphToArray(arrayToGraph([[]]))).toEqual([[]]);
+  });
+
+  it("canonicalizes neighbor order on the way out", () => {
+    // Unsorted neighbors serialize sorted, so a correct clone deep-equals the input.
+    const entry = arrayToGraph([[3, 2], [1], [1]]);
+    expect(graphToArray(entry)).toEqual([[2, 3], [1], [1]]);
   });
 });
 

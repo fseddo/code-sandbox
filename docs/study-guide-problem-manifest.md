@@ -96,7 +96,7 @@ Per-chapter problem counts (deduped BBG problems): Intervals 3 · Prefix Sums 4 
 
 | BBG problem name | Suggested bank id/slug | In bank already? | Mapping confidence | Notes |
 | --- | --- | --- | --- | --- |
-| Graph Deep Copy | `clone-graph` | no | high | LC 133. **Graph reference type** — sandbox concern (node-graph build/serialize). |
+| Graph Deep Copy | `clone-graph` | **yes (#144)** | high | LC 133. Imported with the new `"graph"` `IoShape` (adjacency-list ↔ cyclic `GraphNode`, added to the io harness 2026-06). **Structure-only grading caveat** stated in the prompt: serialization erases object identity, so the tests verify the clone's shape but can't catch a solution returning the original graph. A bespoke identity `checker` is the documented follow-up. |
 | Count Islands | `number-of-islands` | no | high | LC 200. Grid DFS/BFS. Clean. |
 | Matrix Infection | `rotting-oranges` | no | high | LC 994. Multi-source BFS over grid. Clean. |
 | Bipartite Graph Validation | `is-graph-bipartite` | no | high | LC 785. Adjacency-list input. |

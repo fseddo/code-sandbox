@@ -4212,6 +4212,1027 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
       ],
     },
   ],
+
+  "implement-trie-prefix-tree": [
+    {
+      kind: "prose",
+      body:
+        "The crude way to back a trie's three operations is to skip the tree entirely: keep a plain set of every " +
+        "inserted word. `search` is then a set membership check, and `startsWith` scans *every* stored word asking " +
+        "whether it begins with the prefix.\n\n" +
+        "This is reframed as an **op-replay** function — `runTrieOps(operations, values)` applies each operation in " +
+        "order and returns one result per op (`null` for `insert`, a boolean for `search` / `startsWith`) — but the " +
+        "data structure inside is the real question.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — a flat set; startsWith scans every word: O(1) search, but O(W·L) per startsWith.",
+      source:
+        "function runTrieOps(operations, values) {\n" +
+        "  const words = new Set();        // every inserted word, verbatim\n" +
+        "  const result = [];\n" +
+        "  for (let i = 0; i < operations.length; i++) {\n" +
+        "    const arg = values[i][0];\n" +
+        "    if (operations[i] === \"insert\") {\n" +
+        "      words.add(arg);             // O(L) to hash the word\n" +
+        "      result.push(null);\n" +
+        "    } else if (operations[i] === \"search\") {\n" +
+        "      result.push(words.has(arg)); // exact membership, O(L)\n" +
+        "    } else {\n" +
+        "      // startsWith: no shared structure, so test every stored word.\n" +
+        "      let any = false;\n" +
+        "      for (const w of words) {\n" +
+        "        if (w.startsWith(arg)) { any = true; break; }\n" +
+        "      }\n" +
+        "      result.push(any);\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return result;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "`search` is fine, but `startsWith` is the weak spot: with `W` stored words it does `O(W · L)` work *per " +
+        "query*, because the set throws away the very thing the prefix question needs — the shared structure between " +
+        "words. Can we do better?\n\n" +
+        "The key observation: words that share a prefix should *share a path*. Store the words as a tree where each " +
+        "edge is one character, so `\"app\"` and `\"apple\"` walk the same `a → p → p` nodes and only diverge after. " +
+        "Then a prefix query is a single walk down that shared path — `O(L)`, no matter how many words are stored — " +
+        "and an end-of-word flag on a node distinguishes a *stored word* from a mere *prefix*. That tree is the " +
+        "[trie](/study-guide/algos/topic/tries) itself.\n\n" +
+        "There is no single-lane picture of a branching tree, so the walkthrough below traces **one path** through " +
+        "the trie — the `a → p → p → l → e` spine after inserting `\"apple\"` then `\"app\"` — to show how `search` " +
+        "and `startsWith` read the *same* path but disagree on the end flag. (`isEnd`, drawn as `•`, is the " +
+        "implementation's flag; a node with no `•` is a prefix only.) Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "one path after insert(\"apple\"), insert(\"app\") — • = end-of-word flag (isEnd)",
+      lane: ["root", "a", "p", "p•", "l", "e•"],
+      frames: [
+        {
+          pointers: [{ name: "node", at: 5 }],
+          range: [0, 5],
+          action: "insert \"apple\": flag e",
+          caption: "Inserting \"apple\" lays down the whole a-p-p-l-e path; only the final e node is flagged as a word end.",
+        },
+        {
+          pointers: [{ name: "node", at: 3 }],
+          range: [0, 3],
+          action: "insert \"app\": reuse a-p-p, flag the 2nd p",
+          caption: "\"app\" reuses the existing a-p-p prefix — no new nodes — and flags the second p as also being a word end.",
+        },
+        {
+          pointers: [{ name: "node", at: 5 }],
+          range: [0, 5],
+          action: "search \"apple\": walk to e, isEnd? ✓",
+          caption: "Exact search follows a-p-p-l-e and finds the end flag on e — \"apple\" is stored.",
+        },
+        {
+          pointers: [{ name: "node", at: 3 }],
+          range: [0, 3],
+          action: "startsWith \"app\": walk to 2nd p, node exists ✓",
+          caption: "Prefix search stops at the second p; the node exists, so some word starts with \"app\" — the flag is irrelevant here.",
+        },
+        {
+          pointers: [{ name: "node", at: 2 }],
+          range: [0, 2],
+          action: "search \"ap\": walk to 1st p, isEnd? ✗",
+          caption: "Same path, shorter: \"ap\" lands on the first p, which carries no flag — so \"ap\" is a prefix but not a stored word.",
+        },
+        {
+          pointers: [{ name: "node", at: 1 }],
+          range: [0, 1],
+          action: "startsWith \"b\": no child at root ✗",
+          caption: "A prefix the trie never saw falls off the root immediately (no \"b\" edge) and returns false.",
+        },
+      ],
+    },
+  ],
+
+  "design-add-and-search-words-data-structure": [
+    {
+      kind: "prose",
+      body:
+        "Without the wildcard, this is an exact-match dictionary — a set of words would do. The twist is that a " +
+        "`search` pattern may contain `.`, which matches *any single letter*, and the pattern matches only a word of " +
+        "the **same length** where every other position agrees.\n\n" +
+        "The brute force leans on that: store the words in a set bucketed by length, and for each `search` compare the " +
+        "pattern against every stored word of that length, character by character, treating `.` as a free match. " +
+        "(As with the trie, this is an **op-replay** function — `runWordOps` returns `null` for each `addWord` and a " +
+        "boolean for each `search`.)",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — compare the pattern to every stored word of the same length: O(W·L) per search.",
+      source:
+        "function runWordOps(operations, values) {\n" +
+        "  const words = [];               // every added word\n" +
+        "  const result = [];\n" +
+        "  const matches = (pattern, word) => {\n" +
+        "    if (pattern.length !== word.length) return false;\n" +
+        "    for (let k = 0; k < word.length; k++) {\n" +
+        "      // A '.' matches anything; a literal must match exactly.\n" +
+        "      if (pattern[k] !== \".\" && pattern[k] !== word[k]) return false;\n" +
+        "    }\n" +
+        "    return true;\n" +
+        "  };\n" +
+        "  for (let i = 0; i < operations.length; i++) {\n" +
+        "    const arg = values[i][0];\n" +
+        "    if (operations[i] === \"addWord\") {\n" +
+        "      words.push(arg);\n" +
+        "      result.push(null);\n" +
+        "    } else {\n" +
+        "      // Test the pattern against every stored word.\n" +
+        "      result.push(words.some((w) => matches(arg, w)));\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return result;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "Every `search` rescans the whole dictionary — `O(W · L)` per query — and a pattern like `\".at\"` re-derives " +
+        "from scratch what a shared structure could remember. Can we do better?\n\n" +
+        "The key observation: store the words in a [trie](/study-guide/algos/topic/tries) so words sharing a prefix " +
+        "share a path. A literal character then follows its one matching child, pruning every other branch at once. " +
+        "The `.` is the only complication — since it could be any letter, it can't pick one child, so it **branches " +
+        "into all of them** and succeeds if any branch matches the rest of the pattern. That turns `search` into a " +
+        "[depth-first recursion](/study-guide/algos/topic/graphs) over the trie that backtracks across a node's " +
+        "children at each wildcard.\n\n" +
+        "A branching trie has no single-lane picture, so the walkthrough traces the wildcard search `\".ad\"` against a " +
+        "trie holding `\"bad\"`, `\"dad\"`, `\"mad\"` as a **decision sequence**: the dot at position 0 tries each root " +
+        "child in turn, and within each it must still match `a` then `d` and land on an end node (`•`). The lane is " +
+        "the *recursion's path*, one branch attempt per frame. (`dfs(word, i, node)` in the code is this recursion — " +
+        "`i` is the lane position, `node` the trie node it currently sits on.) Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "search \".ad\" over { bad, dad, mad } — each frame is one branch the wildcard tries",
+      showIndices: true,
+      lane: [".", "a", "d", "•"],
+      frames: [
+        {
+          pointers: [{ name: "i", at: 0 }],
+          range: [0, 0],
+          action: "i=0 is '.' → try every root child: b, d, m",
+          caption: "The pattern starts with a wildcard, so the recursion must try the b-, d-, and m-branches in turn.",
+        },
+        {
+          pointers: [{ name: "i", at: 2 }],
+          range: [0, 2],
+          action: "branch b: b-a-d, isEnd? ✓ → return true",
+          caption: "First branch tried, b: match 'a' then 'd', land on an end node. \"bad\" matches — the search can stop and return true.",
+        },
+        {
+          pointers: [{ name: "i", at: 2 }],
+          range: [0, 2],
+          action: "(branch d would also work: d-a-d ✓)",
+          caption: "Had b failed, the d-branch spells \"dad\" and also reaches an end node — any one match suffices.",
+        },
+        {
+          pointers: [{ name: "i", at: 1 }],
+          marked: [0],
+          action: "search \"a.\": 'a' has no root child → false",
+          caption: "A contrasting query: the literal 'a' at position 0 finds no a-edge at the root, so the whole search fails immediately — no branching needed.",
+        },
+        {
+          pointers: [{ name: "i", at: 3 }],
+          range: [0, 3],
+          action: "search \"...\": match any 3 letters, isEnd? ✓",
+          caption: "An all-wildcard \"...\" walks any length-3 path; every stored word is length 3 and flagged, so it matches.",
+        },
+        {
+          pointers: [{ name: "i", at: 0 }],
+          action: "search \"....\": no length-4 word → false",
+          caption: "But \"....\" needs a length-4 word; every branch runs off the end before consuming the pattern, so it returns false.",
+        },
+      ],
+    },
+  ],
+
+  "word-search-ii": [
+    {
+      kind: "prose",
+      body:
+        "The obvious approach searches each word independently: for every word in the list, scan the board for a " +
+        "starting cell and run a depth-first search that tries to spell it out, stepping only to adjacent cells and " +
+        "never reusing a cell within one path.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — an independent board DFS per word: O(W · m·n · 4^L).",
+      source:
+        "function findWords(board, words) {\n" +
+        "  const rows = board.length, cols = board[0].length;\n" +
+        "  const found = [];\n" +
+        "  // Try to spell word[k..] starting at cell (r, c).\n" +
+        "  const dfs = (r, c, word, k) => {\n" +
+        "    if (k === word.length) return true;            // whole word spelled\n" +
+        "    if (r < 0 || c < 0 || r >= rows || c >= cols) return false;\n" +
+        "    if (board[r][c] !== word[k]) return false;     // letter mismatch\n" +
+        "    const ch = board[r][c];\n" +
+        "    board[r][c] = \"#\";                             // mark visited\n" +
+        "    const ok = dfs(r + 1, c, word, k + 1) || dfs(r - 1, c, word, k + 1)\n" +
+        "            || dfs(r, c + 1, word, k + 1) || dfs(r, c - 1, word, k + 1);\n" +
+        "    board[r][c] = ch;                              // restore (backtrack)\n" +
+        "    return ok;\n" +
+        "  };\n" +
+        "  for (const word of words) {\n" +
+        "    let here = false;\n" +
+        "    for (let r = 0; r < rows && !here; r++)\n" +
+        "      for (let c = 0; c < cols && !here; c++)\n" +
+        "        if (dfs(r, c, word, 0)) here = true;\n" +
+        "    if (here) found.push(word);\n" +
+        "  }\n" +
+        "  return found;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "That re-walks the entire board once per word, and two words sharing a prefix (`\"oath\"`, `\"oats\"`) re-trace " +
+        "that prefix's paths from scratch. With `W` words it's `O(W · m·n · 4^L)`. Can we do better?\n\n" +
+        "The key observation: flip the loop. Instead of asking *\"where is each word?\"*, build a " +
+        "[trie](/study-guide/algos/topic/tries) of all the words, then DFS the board **once**, walking the board and " +
+        "the trie in lockstep — at cell `(r, c)` you may only descend trie child `board[r][c]`. The moment the trie " +
+        "has no such child, that branch is dead and *every word sharing that prefix is pruned together*. When the walk " +
+        "reaches a trie node that ends a word, record it. This is " +
+        "[backtracking](/study-guide/algos/topic/backtracking) steered by the trie.\n\n" +
+        "The walk happens on the 2-D board, so the diagram below is a `gridWalkthrough`: it traces one productive path " +
+        "spelling `\"oath\"`, then a dead branch the trie prunes. Visited cells are marked; the cell under the cursor is " +
+        "the current trie/board step. Walking it through:",
+    },
+    {
+      kind: "gridWalkthrough",
+      heading: "board scan steered by a trie of [\"oath\", \"eat\"] — one path spells \"oath\", a dead branch prunes",
+      showIndices: true,
+      grid: [
+        ["o", "a", "a", "n"],
+        ["e", "t", "a", "e"],
+        ["i", "h", "k", "r"],
+        ["i", "f", "l", "v"],
+      ],
+      frames: [
+        {
+          cursor: [0, 0],
+          active: [[0, 0]],
+          action: "start (0,0)='o'; trie has child 'o' ✓",
+          caption: "Begin a DFS at every cell. At (0,0)='o' the trie has an 'o' edge (the start of \"oath\"), so descend.",
+        },
+        {
+          cursor: [0, 1],
+          active: [[0, 0], [0, 1]],
+          action: "(0,1)='a'; trie 'o'→'a' ✓",
+          caption: "Step right to (0,1)='a'. The trie node for 'o' has an 'a' child, so the prefix \"oa\" is still alive.",
+        },
+        {
+          cursor: [1, 1],
+          active: [[0, 0], [0, 1], [1, 1]],
+          action: "(1,1)='t'; trie 'oa'→'t' ✓",
+          caption: "Down to (1,1)='t'. \"oat\" is a valid trie path — keep going toward a possible word end.",
+        },
+        {
+          cursor: [2, 1],
+          active: [[0, 0], [0, 1], [1, 1], [2, 1]],
+          action: "(2,1)='h'; trie node ends \"oath\" → record",
+          caption: "Down to (2,1)='h'. The trie node for \"oath\" is flagged as a word end — collect \"oath\" and clear its flag so it can't be reported twice.",
+        },
+        {
+          cursor: [0, 2],
+          marked: [[0, 2]],
+          action: "from \"oa\", try (0,2)='a'; trie has no 'a'→'a' child ✗",
+          caption: "A different branch from \"oa\": cell (0,2)='a' would extend to \"oaa\", but the trie has no such path — prune the whole branch at once.",
+        },
+        {
+          cursor: [1, 3],
+          active: [[1, 3], [1, 2], [1, 1]],
+          action: "start (1,3)='e'; spell \"eat\" → record",
+          caption: "A fresh start at (1,3)='e': the trie's other word \"eat\" traces e(1,3)→a(1,2)→t(1,1), ending on a flagged node — collect \"eat\".",
+        },
+      ],
+    },
+  ],
+
+  "number-of-islands": [
+    {
+      kind: "prose",
+      body:
+        "We need to count *connected groups* of land. The most literal approach: every time we want to know which " +
+        "cells belong together, re-scan from each land cell and gather everything reachable from it — but that " +
+        "re-walks the same component over and over, once per cell it contains.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — re-derive each cell's component label by repeated scanning: wasteful, super-linear.",
+      source:
+        "function numIslands(grid) {\n" +
+        "  const rows = grid.length, cols = grid[0].length;\n" +
+        "  const label = Array.from({ length: rows }, () => new Array(cols).fill(0));\n" +
+        "  let next = 0;\n" +
+        "  for (let r = 0; r < rows; r++) {\n" +
+        "    for (let c = 0; c < cols; c++) {\n" +
+        "      if (grid[r][c] !== '1' || label[r][c] !== 0) continue;\n" +
+        "      next++;\n" +
+        "      // Re-flood from here to paint the whole component with this label...\n" +
+        "      const stack = [[r, c]];\n" +
+        "      label[r][c] = next;\n" +
+        "      while (stack.length) {\n" +
+        "        const [cr, cc] = stack.pop();\n" +
+        "        for (const [nr, nc] of [[cr+1,cc],[cr-1,cc],[cr,cc+1],[cr,cc-1]]) {\n" +
+        "          if (nr<0||nc<0||nr>=rows||nc>=cols) continue;\n" +
+        "          if (grid[nr][nc] !== '1' || label[nr][nc] !== 0) continue;\n" +
+        "          label[nr][nc] = next;\n" +
+        "          stack.push([nr, nc]);\n" +
+        "        }\n" +
+        "      }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return next;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "Maintaining the `label` grid is busywork — we never actually need the labels, only the *count*. Can we do " +
+        "better?\n\n" +
+        "The key observation: the grid is a [graph](/study-guide/algos/topic/graphs) in disguise — each land cell is " +
+        "a vertex, each pair of orthogonally adjacent land cells an edge — and counting islands is just counting " +
+        "**connected components**. So scan once; the first time we touch an un-sunk land cell, that's a *new* island, " +
+        "and a single flood fill ([DFS](/study-guide/algos/topic/depth-first-search)) sinks its entire component to " +
+        "`\"0\"` so it's never recounted. The grid itself doubles as the visited marker.\n\n" +
+        "The walk happens on the 2-D board, so the diagram is a `gridWalkthrough`. Sunk cells are marked; the cursor " +
+        "is the cell the flood is currently sinking. Walking it through:",
+    },
+    {
+      kind: "gridWalkthrough",
+      heading: "scan + flood-fill — sinking each island so the next scan can't recount it",
+      showIndices: true,
+      grid: [
+        ["1", "1", "0", "0", "1"],
+        ["1", "0", "0", "0", "1"],
+        ["0", "0", "1", "0", "0"],
+        ["0", "0", "1", "1", "0"],
+      ],
+      frames: [
+        {
+          cursor: [0, 0],
+          active: [[0, 0]],
+          action: "scan hits (0,0)='1' → island #1, flood",
+          caption: "The first land cell is the start of island #1. Launch a flood fill from it.",
+        },
+        {
+          cursor: [1, 0],
+          marked: [[0, 0], [0, 1], [1, 0]],
+          grid: [
+            ["0", "0", "0", "0", "1"],
+            ["0", "0", "0", "0", "1"],
+            ["0", "0", "1", "0", "0"],
+            ["0", "0", "1", "1", "0"],
+          ],
+          action: "sink (0,0),(0,1),(1,0)",
+          caption: "The flood reaches every cell connected to (0,0) — the L-shaped trio — sinking each to '0'. Island #1 is now erased from the grid.",
+        },
+        {
+          cursor: [0, 4],
+          marked: [[0, 4], [1, 4]],
+          grid: [
+            ["0", "0", "0", "0", "0"],
+            ["0", "0", "0", "0", "0"],
+            ["0", "0", "1", "0", "0"],
+            ["0", "0", "1", "1", "0"],
+          ],
+          action: "scan resumes → (0,4)='1' → island #2, flood",
+          caption: "The scan continues from where it left off and finds (0,4), still land: island #2. Flood sinks it and (1,4) below it.",
+        },
+        {
+          cursor: [2, 2],
+          marked: [[2, 2], [3, 2], [3, 3]],
+          grid: [
+            ["0", "0", "0", "0", "0"],
+            ["0", "0", "0", "0", "0"],
+            ["0", "0", "0", "0", "0"],
+            ["0", "0", "0", "0", "0"],
+          ],
+          action: "scan → (2,2)='1' → island #3, flood",
+          caption: "Lower down, (2,2) is the seed of island #3; the flood sinks the connected (3,2) and (3,3).",
+        },
+        {
+          action: "scan finishes — no land left",
+          caption: "The rest of the scan finds only water. Three flood-fills launched, so three islands. The diagonal gap between island #2 and the rest never merged them — adjacency is orthogonal only.",
+        },
+      ],
+    },
+  ],
+
+  "rotting-oranges": [
+    {
+      kind: "prose",
+      body:
+        "Each minute, every fresh orange touching rot turns rotten. The literal simulation: sweep the whole grid " +
+        "once per minute, marking which fresh oranges have a rotten neighbour, then flip them all — and repeat until " +
+        "a full sweep changes nothing.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — re-scan the entire grid every minute: O((m·n)²) in the worst case.",
+      source:
+        "function orangesRotting(grid) {\n" +
+        "  const rows = grid.length, cols = grid[0].length;\n" +
+        "  let minutes = 0;\n" +
+        "  while (true) {\n" +
+        "    const toRot = [];\n" +
+        "    // Full sweep: find every fresh orange adjacent to a rotten one.\n" +
+        "    for (let r = 0; r < rows; r++)\n" +
+        "      for (let c = 0; c < cols; c++)\n" +
+        "        if (grid[r][c] === 1)\n" +
+        "          for (const [nr, nc] of [[r+1,c],[r-1,c],[r,c+1],[r,c-1]])\n" +
+        "            if (nr>=0&&nc>=0&&nr<rows&&nc<cols && grid[nr][nc] === 2)\n" +
+        "              { toRot.push([r, c]); break; }\n" +
+        "    if (toRot.length === 0) break;          // a minute with no change → stop\n" +
+        "    for (const [r, c] of toRot) grid[r][c] = 2;\n" +
+        "    minutes++;\n" +
+        "  }\n" +
+        "  for (const row of grid) if (row.includes(1)) return -1;  // some fresh orange stranded\n" +
+        "  return minutes;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "Re-scanning the entire grid every single minute is the waste — most cells aren't near the action. Can we do " +
+        "better?\n\n" +
+        "The key observation: the rot spreads outward one ring per minute from *all* current rotten oranges at once. " +
+        "That is exactly a **multi-source [BFS](/study-guide/algos/topic/breadth-first-search)** — seed the queue with " +
+        "every rotten orange, then expand level by level, where **each BFS level is one minute**. A fresh orange's " +
+        "rotting time is simply its grid distance to the nearest rot source, which BFS measures for free. Track the " +
+        "count of fresh oranges; if any remain after the queue drains, they were unreachable, so return `-1`.\n\n" +
+        "The diagram is a `gridWalkthrough` over the real board (`2`=rotten, `1`=fresh, `0`=empty). Newly-rotted cells " +
+        "are marked each frame; the section grid is overridden per frame to show the spread. Walking it through:",
+    },
+    {
+      kind: "gridWalkthrough",
+      heading: "multi-source BFS — the rotten frontier (marked) grows one ring per minute",
+      showIndices: true,
+      grid: [
+        [2, 1, 1],
+        [1, 1, 0],
+        [0, 1, 1],
+      ],
+      frames: [
+        {
+          active: [[0, 0]],
+          action: "minute 0: seed queue with all rotten = {(0,0)}",
+          caption: "Only (0,0) is rotten at the start, and there are 6 fresh oranges. BFS begins with the single source.",
+        },
+        {
+          marked: [[0, 1], [1, 0]],
+          grid: [
+            [2, 2, 1],
+            [2, 1, 0],
+            [0, 1, 1],
+          ],
+          action: "minute 1: rot (0,1) and (1,0)",
+          caption: "The first ring: the two fresh neighbours of (0,0) rot. Fresh count drops 6 → 4.",
+        },
+        {
+          marked: [[0, 2], [1, 1]],
+          grid: [
+            [2, 2, 2],
+            [2, 2, 0],
+            [0, 1, 1],
+          ],
+          action: "minute 2: rot (0,2) and (1,1)",
+          caption: "Second ring out from the cells that rotted last minute. Fresh count 4 → 2, leaving (2,1) and (2,2).",
+        },
+        {
+          marked: [[2, 1]],
+          grid: [
+            [2, 2, 2],
+            [2, 2, 0],
+            [0, 2, 1],
+          ],
+          action: "minute 3: rot (2,1) from (1,1); fresh = 1",
+          caption: "(2,1) sits below (1,1) and rots this minute, leaving only (2,2) fresh. The (1,2)=0 empty cell is a gap the rot has to route around.",
+        },
+        {
+          marked: [[2, 2]],
+          grid: [
+            [2, 2, 2],
+            [2, 2, 0],
+            [0, 2, 2],
+          ],
+          action: "minute 4: rot (2,2) from (2,1) → fresh = 0",
+          caption: "The last fresh orange (2,2) rots from its neighbour (2,1). No fresh oranges remain, so the answer is the 4 minutes elapsed.",
+        },
+      ],
+    },
+  ],
+
+  "longest-increasing-path-in-a-matrix": [
+    {
+      kind: "prose",
+      body:
+        "From each cell we want the longest strictly-increasing walk that starts there. The brute force does exactly " +
+        "that, literally: a plain DFS from every cell, exploring each strictly-larger neighbour and tracking the " +
+        "deepest chain — with no memory between starts.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — an independent DFS from every cell, recomputing shared subpaths: exponential.",
+      source:
+        "function longestIncreasingPath(matrix) {\n" +
+        "  const rows = matrix.length, cols = matrix[0].length;\n" +
+        "  // Longest increasing path starting at (r, c), recomputed from scratch each call.\n" +
+        "  const dfs = (r, c) => {\n" +
+        "    let best = 1;                          // the cell alone is a path of length 1\n" +
+        "    for (const [nr, nc] of [[r+1,c],[r-1,c],[r,c+1],[r,c-1]]) {\n" +
+        "      if (nr<0||nc<0||nr>=rows||nc>=cols) continue;\n" +
+        "      if (matrix[nr][nc] > matrix[r][c])   // only step strictly upward\n" +
+        "        best = Math.max(best, 1 + dfs(nr, nc));\n" +
+        "    }\n" +
+        "    return best;\n" +
+        "  };\n" +
+        "  let answer = 0;\n" +
+        "  for (let r = 0; r < rows; r++)\n" +
+        "    for (let c = 0; c < cols; c++)\n" +
+        "      answer = Math.max(answer, dfs(r, c));\n" +
+        "  return answer;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "The waste: many cells funnel into the same upward chains, and each DFS re-derives those chains from scratch. " +
+        "Can we do better?\n\n" +
+        "The key observation: because every step is *strictly* increasing, a path can never revisit a cell — the " +
+        "grid-with-upward-edges is a **DAG**, so `longest(r, c)` depends only on `(r, c)`, never on how you arrived. " +
+        "That makes it a perfect [memoisation](/study-guide/algos/topic/dynamic-programming) target: cache each " +
+        "cell's answer the first time it's computed, and every later visit is an O(1) lookup. It's DFS plus a memo " +
+        "table — a [DP](/study-guide/algos/topic/dynamic-programming) over the implicit graph.\n\n" +
+        "The walk is on the board, so the diagram is a `gridWalkthrough`. The cursor is the cell being solved; cells " +
+        "already memoised are marked. A badge-free board, so the captions carry the computed `longest` value. Walking " +
+        "it through:",
+    },
+    {
+      kind: "gridWalkthrough",
+      heading: "DFS + memo — each cell's longest-path value is computed once, then reused",
+      showIndices: true,
+      grid: [
+        [9, 9, 4],
+        [6, 6, 8],
+        [2, 1, 1],
+      ],
+      frames: [
+        {
+          cursor: [2, 1],
+          active: [[2, 1]],
+          action: "solve (2,1)=1: neighbours 2,6 are larger",
+          caption: "Start at the global minimum (2,1)=1. Its larger neighbours are (2,0)=2 and (1,1)=6 — recurse into them first.",
+        },
+        {
+          cursor: [2, 0],
+          active: [[2, 0], [1, 0]],
+          action: "(2,0)=2 → (1,0)=6 → (0,0)=9; chain 2→6→9",
+          caption: "From (2,0)=2 the only larger step is up to (1,0)=6, then (0,0)=9. longest(0,0)=1, longest(1,0)=2, longest(2,0)=3 — all memoised on the way back.",
+        },
+        {
+          cursor: [1, 1],
+          marked: [[2, 0], [1, 0], [0, 0]],
+          action: "(1,1)=6 → (0,1)=9; longest(1,1)=2",
+          caption: "Back at (2,1)'s other branch: (1,1)=6 steps to (0,1)=9, giving longest(1,1)=2. Cells solved earlier (struck) are reused, not re-walked.",
+        },
+        {
+          cursor: [2, 1],
+          marked: [[2, 0], [1, 0], [0, 0], [1, 1], [0, 1]],
+          action: "longest(2,1) = 1 + max(3, 2) = 4",
+          caption: "(2,1)=1 takes the better branch: 1 + longest(2,0)=3 gives a path 1→2→6→9 of length 4 — the answer.",
+        },
+        {
+          cursor: [1, 2],
+          marked: [[2, 0], [1, 0], [0, 0], [1, 1], [0, 1], [2, 1]],
+          action: "remaining cells: all ≤ length 4",
+          caption: "The outer scan visits the rest, but each is an O(1) memo hit and none beats 4. Longest increasing path: 1 → 2 → 6 → 9.",
+        },
+      ],
+    },
+  ],
+
+  "clone-graph": [
+    {
+      kind: "prose",
+      body:
+        "We must return a *deep copy* of a connected undirected graph — every node and every edge rebuilt as fresh " +
+        "objects. The trap a naïve attempt falls into: walk the graph and, for each node, immediately recurse into " +
+        "its neighbours. With cycles (and an undirected graph is full of them — every edge is a 2-cycle), that " +
+        "recursion never terminates and clones the same node endlessly.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Naïve recursion — no memory of what's been cloned: loops forever on the first cycle.",
+      source:
+        "function cloneGraph(node) {\n" +
+        "  if (!node) return null;\n" +
+        "  const copy = new GraphNode(node.val);\n" +
+        "  // BUG: a neighbour points back at `node`, so this recurses into `node`\n" +
+        "  // again, clones it again, and never stops.\n" +
+        "  for (const neighbor of node.neighbors) {\n" +
+        "    copy.neighbors.push(cloneGraph(neighbor));\n" +
+        "  }\n" +
+        "  return copy;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "The fix is one piece of state: remember the clone we've already made for each original node. Can we do " +
+        "better than looping forever? Yes — with a `Map` from *original node → its clone*.\n\n" +
+        "The key observation: that map does double duty. It **dedupes** — a node reached from several neighbours is " +
+        "cloned once — and it **breaks cycles** — when a back-edge revisits a node, the map already holds its " +
+        "(possibly in-progress) clone, so we return that instead of recursing. The discipline is *record the clone in " +
+        "the map before recursing into its neighbours*, so a back-edge finds it. This is a standard " +
+        "[DFS](/study-guide/algos/topic/depth-first-search) with a visited map.\n\n" +
+        "A graph isn't a sequence or a grid, so there's no faithful lane or board animation here — laying the four " +
+        "nodes of the example on a circle, the clone proceeds like this. Take the square `1—2—3—4—1` (node 1 borders " +
+        "2 and 4, and so on around the ring):",
+    },
+    {
+      kind: "graph",
+      caption:
+        "The example graph: a 4-cycle. DFS from node 1 clones 1, records it, recurses to 2 (clone, record), to 3, " +
+        "to 4 — and 4's neighbour 1 is already in the map, so its back-edge wires to the existing clone of 1 instead " +
+        "of recursing. Four nodes cloned, eight directed neighbour links rebuilt, no infinite loop.",
+      nodes: ["1", "2", "3", "4"],
+      edges: [
+        ["1", "2"],
+        ["2", "3"],
+        ["3", "4"],
+        ["4", "1"],
+      ],
+    },
+    {
+      kind: "callout",
+      tone: "info",
+      items: [
+        "**Grading is structure-only.** The tests serialize the returned graph back to an adjacency list and compare *shape* — they confirm you rebuilt the right nodes and edges, but serialization erases object identity, so they cannot catch a solution that returns the *original* graph unmodified. Still write a genuine deep copy (allocate new `GraphNode`s, wire new links); the structural check is necessary, not sufficient.",
+        "**Record before you recurse.** Inserting the clone into the map *after* recursing into neighbours reopens the infinite loop — the back-edge runs before the map entry exists.",
+      ],
+    },
+  ],
+
+  "is-graph-bipartite": [
+    {
+      kind: "prose",
+      body:
+        "A graph is bipartite when its nodes split into two groups with every edge crossing between them — " +
+        "equivalently, it can be 2-coloured with no two neighbours sharing a colour. A first instinct is to try every " +
+        "possible 2-colouring and check each, but with `n` nodes that's 2ⁿ assignments — hopeless.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — test all 2^n colour assignments for a valid one: exponential.",
+      source:
+        "function isBipartite(graph) {\n" +
+        "  const n = graph.length;\n" +
+        "  // Try every way to paint the n nodes with 2 colours.\n" +
+        "  for (let mask = 0; mask < (1 << n); mask++) {\n" +
+        "    let ok = true;\n" +
+        "    for (let u = 0; u < n && ok; u++) {\n" +
+        "      for (const v of graph[u]) {\n" +
+        "        // Same colour on both ends of an edge → this assignment fails.\n" +
+        "        if (((mask >> u) & 1) === ((mask >> v) & 1)) { ok = false; break; }\n" +
+        "      }\n" +
+        "    }\n" +
+        "    if (ok) return true;\n" +
+        "  }\n" +
+        "  return false;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "Enumerating colourings throws away all structure. Can we do better?\n\n" +
+        "The key observation: a colouring isn't free — *the moment you colour one node, every neighbour's colour is " +
+        "forced* (the opposite). So we never guess: pick any node, colour it, " +
+        "[BFS](/study-guide/algos/topic/breadth-first-search) outward giving each newly-seen node the colour opposite " +
+        "its parent, and the instant an edge connects two same-coloured nodes, the graph isn't bipartite. Because the " +
+        "graph may be disconnected, restart from every still-uncoloured node. This is a single O(V + E) traversal — " +
+        "the conflict it's hunting for is an **odd-length cycle**, the one thing that can't be 2-coloured.\n\n" +
+        "A general graph has no faithful lane or grid animation, so a static picture serves better than a misleading " +
+        "one. The example below is the odd cycle that *fails*: nodes 0,1,2 form a triangle.",
+    },
+    {
+      kind: "graph",
+      caption:
+        "Colour 0 = A. Its neighbours 1, 2, 3 must be B. But edge 1—2 joins two B nodes (1 and 2 are also " +
+        "neighbours) — a same-colour edge, so the BFS reports false. The culprit is the odd cycle 0–1–2–0; an even " +
+        "cycle like 0–1–2–3–0 would alternate A,B,A,B cleanly and pass.",
+      nodes: ["0", "1", "2", "3"],
+      edges: [
+        ["0", "1"],
+        ["0", "2"],
+        ["0", "3"],
+        ["1", "2"],
+      ],
+    },
+    {
+      kind: "callout",
+      tone: "info",
+      items: [
+        "**Colour 0 means \"uncoloured\", not group A.** The stored solution uses `1` and `-1` for the two groups and `0` for unseen, so a single array tracks both the visited state and the colour. A neighbour gets `-color[u]` — the negation flips the group.",
+        "**Restart per component.** A bipartite even cycle plus a separate odd triangle is *not* bipartite; the outer loop over every node is what catches a violation hiding in a second component.",
+      ],
+    },
+  ],
+
+  "number-of-provinces": [
+    {
+      kind: "prose",
+      body:
+        "A province is a maximal group of mutually-connected cities — a connected component of the friendship graph, " +
+        "given here as an adjacency matrix. The straightforward read is to count components by traversal: but it's " +
+        "worth seeing the problem through the lens of *merging*, which is what the stored Union-Find solution does.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "A clean DFS baseline — count the launches of a component flood. O(n²), the matrix size.",
+      source:
+        "function findCircleNum(isConnected) {\n" +
+        "  const n = isConnected.length;\n" +
+        "  const visited = new Array(n).fill(false);\n" +
+        "  const dfs = (city) => {\n" +
+        "    visited[city] = true;\n" +
+        "    // Follow every direct connection out of this city.\n" +
+        "    for (let next = 0; next < n; next++)\n" +
+        "      if (isConnected[city][next] === 1 && !visited[next]) dfs(next);\n" +
+        "  };\n" +
+        "  let provinces = 0;\n" +
+        "  for (let city = 0; city < n; city++) {\n" +
+        "    // Each unvisited city begins a brand-new province.\n" +
+        "    if (!visited[city]) { provinces++; dfs(city); }\n" +
+        "  }\n" +
+        "  return provinces;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "The DFS is already O(n²) and perfectly good. But the canonical tool for *\"how many groups, given a stream " +
+        "of pairwise connections\"* is [Union-Find](/study-guide/algos/topic/union-find), and it's the model the " +
+        "stored solution teaches.\n\n" +
+        "The key observation: start with every city in its own singleton set, then for each edge `isConnected[i][j]`, " +
+        "**union** the two endpoints. Two cities end up in the same set exactly when they're connected directly or " +
+        "transitively — so the number of provinces is the number of distinct **roots** left at the end. Path " +
+        "compression plus union-by-rank makes each operation effectively constant.\n\n" +
+        "Union-Find tracks an evolving forest, not a sequence or a grid, so there's no lane to animate; the static " +
+        "graph below shows the three components the unions discover. (The matrix `[[1,1,0],[1,1,1],[0,1,1]]` from the " +
+        "example is one province; here is a clearer three-province instance for the picture.)",
+    },
+    {
+      kind: "graph",
+      caption:
+        "Cities {0,1,2} are pairwise reachable, {3,4} form a second group, and 5 stands alone. Union 0–1 and 1–2 " +
+        "collapse the first trio to a single root; union 3–4 collapses the pair; 5 is never unioned. Three roots " +
+        "remain → three provinces.",
+      nodes: ["0", "1", "2", "3", "4", "5"],
+      edges: [
+        ["0", "1"],
+        ["1", "2"],
+        ["0", "2"],
+        ["3", "4"],
+      ],
+    },
+    {
+      kind: "callout",
+      tone: "info",
+      items: [
+        "**Only scan `j > i`.** The matrix is symmetric and every city connects to itself (`isConnected[i][i] = 1`); unioning the upper triangle covers every real edge without redundant work or spurious self-unions.",
+        "**Count roots, not unions.** The province count is the number of indices that are their own parent after all unions — equivalently `n` minus the number of *successful* (non-redundant) unions.",
+      ],
+    },
+  ],
+
+  "course-schedule": [
+    {
+      kind: "prose",
+      body:
+        "We can finish all the courses exactly when their prerequisite graph has no cycle — a cycle means a course " +
+        "is, transitively, its own prerequisite. The brute-force way to detect a cycle is to launch a DFS from every " +
+        "node and, on each path, check whether we ever revisit a node already on the current path.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — DFS for a back-edge from every start, no cross-call memory: redundant work.",
+      source:
+        "function canFinish(numCourses, prerequisites) {\n" +
+        "  const adj = Array.from({ length: numCourses }, () => []);\n" +
+        "  for (const [a, b] of prerequisites) adj[b].push(a);  // edge b → a (b unlocks a)\n" +
+        "  // Does any path out of `node` loop back onto the current stack?\n" +
+        "  const hasCycle = (node, onStack) => {\n" +
+        "    if (onStack.has(node)) return true;                // revisited a node on this path → cycle\n" +
+        "    onStack.add(node);\n" +
+        "    for (const next of adj[node])\n" +
+        "      if (hasCycle(next, onStack)) return true;\n" +
+        "    onStack.delete(node);                              // leave the path on the way back up\n" +
+        "    return false;\n" +
+        "  };\n" +
+        "  for (let c = 0; c < numCourses; c++)\n" +
+        "    if (hasCycle(c, new Set())) return false;\n" +
+        "  return true;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "Restarting a fresh DFS from every course re-explores shared subgraphs over and over. Can we do better?\n\n" +
+        "The key observation: cycle detection over a directed graph is exactly what a **topological sort** does as a " +
+        "by-product. Build the graph with an edge `b → a` for each prerequisite `[a, b]`, and use " +
+        "[Kahn's algorithm](/study-guide/algos/topic/topological-sort): compute each course's **in-degree** (number " +
+        "of unmet prerequisites), start a queue with every in-degree-0 course, and repeatedly take a ready course, " +
+        "decrementing the in-degree of everything it unlocks. Courses caught in a cycle never reach in-degree 0, so " +
+        "if fewer than `numCourses` come out of the queue, a cycle blocked them — return false. One O(V + E) pass, no " +
+        "restarts.\n\n" +
+        "A dependency graph has no faithful lane animation. The static graph below is the acyclic case; the dashed " +
+        "intuition: peel off in-degree-0 nodes layer by layer until either the graph empties (no cycle) or stalls " +
+        "(cycle).",
+    },
+    {
+      kind: "graph",
+      caption:
+        "Edges point from prerequisite to dependent (0→1, 0→2, 1→3, 2→3). In-degrees: 0:0, 1:1, 2:1, 3:2. Kahn's " +
+        "takes 0 first (drops 1 and 2 to in-degree 0), then 1 and 2 (dropping 3 to 0), then 3. All four come out → " +
+        "no cycle → all courses finishable. Add an edge 3→0 and nothing ever reaches in-degree 0: a cycle.",
+      directed: true,
+      nodes: ["0", "1", "2", "3"],
+      edges: [
+        ["0", "1"],
+        ["0", "2"],
+        ["1", "3"],
+        ["2", "3"],
+      ],
+    },
+    {
+      kind: "callout",
+      tone: "info",
+      items: [
+        "**Edge direction is the whole problem.** `[a, b]` means *b before a*, so the unlock edge is `b → a`. Reverse it and a finishable curriculum reports a cycle and vice-versa.",
+        "**Count, don't inspect.** You never need the actual ordering — just whether the number of courses dequeued equals `numCourses`. A shortfall is precisely the set of cycle-trapped courses.",
+      ],
+    },
+  ],
+
+  "network-delay-time": [
+    {
+      kind: "prose",
+      body:
+        "A signal leaves node `k` and travels along weighted directed edges; we want the moment *all* nodes have " +
+        "received it — the largest shortest-arrival-time over every node, or `-1` if one is unreachable. Since edges " +
+        "carry different costs, a plain BFS (which counts edges, not cost) gives the wrong answer; the textbook " +
+        "starting point is Bellman–Ford, relaxing every edge `V − 1` times.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Bellman–Ford — relax all edges V−1 times: correct but O(V·E).",
+      source:
+        "function networkDelayTime(times, n, k) {\n" +
+        "  const dist = new Array(n + 1).fill(Infinity);\n" +
+        "  dist[k] = 0;\n" +
+        "  // V-1 rounds; each round tries to shorten every edge.\n" +
+        "  for (let round = 0; round < n - 1; round++) {\n" +
+        "    for (const [u, v, w] of times) {\n" +
+        "      if (dist[u] !== Infinity && dist[u] + w < dist[v]) {\n" +
+        "        dist[v] = dist[u] + w;            // found a cheaper route to v\n" +
+        "      }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  let slowest = 0;\n" +
+        "  for (let node = 1; node <= n; node++) {\n" +
+        "    if (dist[node] === Infinity) return -1;\n" +
+        "    slowest = Math.max(slowest, dist[node]);\n" +
+        "  }\n" +
+        "  return slowest;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "Bellman–Ford re-relaxes every edge in every round, even edges whose endpoints didn't change. Can we do " +
+        "better?\n\n" +
+        "The key observation: with **non-negative** weights, once we settle the *closest* unsettled node its distance " +
+        "is final — no later, longer detour can improve it. That's [Dijkstra](/study-guide/algos/topic/greedy): keep " +
+        "a frontier of `(distance, node)`, always expand the smallest-distance node next, and relax its outgoing " +
+        "edges. Each node settles once; with a [heap](/study-guide/algos/topic/heaps) the cost is O(E log V). The " +
+        "answer is the max settled distance, or `-1` if any node stays at `Infinity`.\n\n" +
+        "A weighted graph has no faithful lane animation, so the static picture and a distance trace serve better " +
+        "than a misleading one. Example: `times = [[2,1,1],[2,3,1],[3,4,1]]`, `k = 2`.",
+    },
+    {
+      kind: "graph",
+      caption:
+        "From source 2 (all weights 1): settle 2 at distance 0, then its neighbours 1 and 3 at distance 1, then 4 " +
+        "at distance 2 (via 3). Every node reached; the slowest arrival is node 4 at 2 — so the answer is 2. Had any " +
+        "node had no incoming route from 2, it would stay at Infinity and the answer would be -1.",
+      directed: true,
+      nodes: ["2", "1", "3", "4"],
+      edges: [
+        ["2", "1"],
+        ["2", "3"],
+        ["3", "4"],
+      ],
+    },
+    {
+      kind: "callout",
+      tone: "info",
+      items: [
+        "**Settle once, skip stale entries.** A node can sit in the frontier under several distances; when you pop one whose distance already exceeds the recorded best, skip it — it's a superseded entry.",
+        "**Dijkstra needs non-negative weights.** The settle-and-never-revisit guarantee breaks with a negative edge; that case wants Bellman–Ford instead. Here weights are `0..100`, so Dijkstra is safe.",
+        "**The stored solution uses a sort-based frontier** rather than a binary heap — same algorithm, an extra log factor, plenty fast for `n ≤ 100`. The `(d > dist[u])` guard is the stale-entry skip.",
+      ],
+    },
+  ],
+
+  "min-cost-to-connect-all-points": [
+    {
+      kind: "prose",
+      body:
+        "We must connect every point into one network at minimum total Manhattan-distance cost — the weight of a " +
+        "**minimum spanning tree** over the complete graph of points. A naïve greedy that just repeatedly adds the " +
+        "globally cheapest edge (ignoring structure) risks forming cycles or leaving the tree disconnected; the " +
+        "honest brute force is to build all `O(n²)` edges, sort them, and add edges that don't create a cycle.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — Kruskal over the full edge list: build all n² edges, sort, union. O(n² log n).",
+      source:
+        "function minCostConnectPoints(points) {\n" +
+        "  const n = points.length;\n" +
+        "  const edges = [];\n" +
+        "  // Every pair is a candidate edge, weighted by Manhattan distance.\n" +
+        "  for (let i = 0; i < n; i++)\n" +
+        "    for (let j = i + 1; j < n; j++)\n" +
+        "      edges.push([Math.abs(points[i][0]-points[j][0]) + Math.abs(points[i][1]-points[j][1]), i, j]);\n" +
+        "  edges.sort((a, b) => a[0] - b[0]);          // cheapest first\n" +
+        "  const parent = Array.from({ length: n }, (_, i) => i);\n" +
+        "  const find = (x) => parent[x] === x ? x : (parent[x] = find(parent[x]));\n" +
+        "  let total = 0, used = 0;\n" +
+        "  for (const [w, i, j] of edges) {\n" +
+        "    const ri = find(i), rj = find(j);\n" +
+        "    if (ri === rj) continue;                  // would form a cycle — skip\n" +
+        "    parent[ri] = rj; total += w; used++;      // safe edge: add it\n" +
+        "    if (used === n - 1) break;                // tree complete\n" +
+        "  }\n" +
+        "  return total;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "Materialising and sorting all `n²` edges is the cost. Can we do better?\n\n" +
+        "The key observation: the graph is *complete* — every pair is connectable — so we never need the edge list at " +
+        "all. **Prim's** algorithm grows one tree outward: keep `minDist[i]` = the cheapest edge from point `i` to the " +
+        "tree so far, repeatedly pull in the nearest outside point, add its cost, and relax every remaining point " +
+        "against its distance to the newly-added one. For a dense graph this O(n²) scan-and-relax beats sorting " +
+        "O(n²) edges. Both Prim and Kruskal are [greedy](/study-guide/algos/topic/greedy) MST builders.\n\n" +
+        "A point cloud and its spanning tree don't animate on a lane. The static graph shows the MST edges chosen for " +
+        "the example points `[[0,0],[2,2],[3,10],[5,2],[7,0]]` (labelled by index).",
+    },
+    {
+      kind: "graph",
+      caption:
+        "MST over the five points (Manhattan costs): 0–1 = 4, 1–3 = 3, 3–4 = 4, 3–2 = 9. Total 4 + 3 + 4 + 9 = 20. " +
+        "Prim seeds at point 0, then each step adds the cheapest edge reaching a point not yet in the tree, never " +
+        "forming a cycle — four edges connect all five points.",
+      nodes: ["0", "1", "2", "3", "4"],
+      edges: [
+        ["0", "1"],
+        ["1", "3"],
+        ["3", "4"],
+        ["3", "2"],
+      ],
+    },
+    {
+      kind: "callout",
+      tone: "info",
+      items: [
+        "**An MST always has exactly `n − 1` edges** and no cycles. Prim adds exactly one point (and one edge) per step after the seed, so it can't over- or under-connect.",
+        "**The dense O(n²) Prim is deliberate.** With a complete graph, the heap-based O(E log V) Prim degrades to O(n² log n); the plain array scan is simpler *and* asymptotically better here.",
+      ],
+    },
+  ],
 };
 
 /**
@@ -5906,6 +6927,409 @@ export const PROBLEM_EXTRAS: Record<string, { complexity?: Section[]; testCases?
       { args: [[[2, 4], [4, 7]]], expected: 2, note: "Closed intervals touching at 4 are both active there." },
       { args: [[[1, 10], [2, 9], [3, 8]]], expected: 3, note: "Fully nested — all three cover the middle at once." },
       { args: [[[1, 5], [2, 6], [8, 9]]], expected: 2, note: "Two overlap early; the disjoint [8,9] doesn't raise the peak." },
+    ],
+  },
+
+  "implement-trie-prefix-tree": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(L) per operation. Here's why:\n\n" +
+          "- `insert` walks one node per character of the word, creating missing children as it goes — `O(L)` for a word of length `L`.\n" +
+          "- `search` and `startsWith` each follow one path of length `L`, doing O(1) work per character.\n\n" +
+          "Crucially the cost is independent of how many words are stored, so over `m` operations whose keys total `N` characters the whole replay is **O(N)** — versus the brute force's `O(W · L)` per `startsWith`.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(N). Here's why:\n\n" +
+          "- The trie holds at most one node per character across all inserted words; shared prefixes collapse onto shared nodes, divergent suffixes do not.\n\n" +
+          "So the structure is **O(N)** in the total length of the inserted words. The result array is O(m) for `m` operations and isn't counted against the structure.",
+      },
+    ],
+    testCases: [
+      { args: [["search", "startsWith"], [["a"], ["a"]]], expected: [false, false], note: "Queries on an empty trie — both miss." },
+      { args: [["insert", "search"], [["a"], ["a"]]], expected: [null, true], note: "Single insert then exact search hits." },
+      { args: [["insert", "search", "startsWith"], [["hello"], ["hell"], ["hell"]]], expected: [null, false, true], note: "\"hell\" is a prefix of \"hello\" but not a stored word — search false, startsWith true." },
+      { args: [["insert", "insert", "insert", "search", "search", "startsWith"], [["a"], ["ab"], ["abc"], ["ab"], ["abx"], ["ab"]]], expected: [null, null, null, true, false, true], note: "Words that are prefixes of each other are independently searchable." },
+      { args: [["insert", "search", "startsWith"], [["ab"], ["abc"], ["abc"]]], expected: [null, false, false], note: "A query longer than any stored word falls off the trie — both false." },
+      { args: [["insert", "insert", "search"], [["cat"], ["cat"], ["cat"]]], expected: [null, null, true], note: "Re-inserting the same word is idempotent." },
+    ],
+  },
+
+  "design-add-and-search-words-data-structure": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(L) for `addWord`; `search` is O(L) with no wildcards and up to O(26^d · L) with `d` wildcards. Here's why:\n\n" +
+          "- `addWord` walks/creates one node per character — `O(L)`.\n" +
+          "- A literal search follows a single path — `O(L)`.\n" +
+          "- Each `.` forces the recursion to branch into every child (up to 26), so `d` wildcards can fan out to `O(26^d · L)`.\n\n" +
+          "With the wildcard count capped small (the constraints bound the dots), search stays cheap in practice — **O(L)** dominated by the path length.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(N). Here's why:\n\n" +
+          "- The trie holds at most one node per character of the stored words, sharing prefixes — **O(N)** in their total length.\n" +
+          "- The wildcard search adds O(L) recursion-stack depth.\n\n" +
+          "So the structure is **O(N)**; the result array is O(m) over `m` operations.",
+      },
+    ],
+    testCases: [
+      { args: [["search"], [["a"]]], expected: [false], note: "Search before any add — empty structure misses." },
+      { args: [["addWord", "search", "search"], [["cat"], ["cat"], ["dog"]]], expected: [null, true, false], note: "Exact match hits; a different word misses." },
+      { args: [["addWord", "search", "search"], [["bad"], [".ad"], ["ba."]]], expected: [null, true, true], note: "Leading and trailing wildcards both match the one stored word." },
+      { args: [["addWord", "search", "search"], [["dog"], ["..."], [".."]]], expected: [null, true, false], note: "All-wildcard matches a same-length word but fails on a length mismatch." },
+      { args: [["addWord", "addWord", "addWord", "search", "search"], [["abc"], ["abd"], ["xyz"], ["ab."], [".b."]]], expected: [null, null, null, true, true], note: "A wildcard must try several children; both patterns find a completing path." },
+      { args: [["addWord", "search"], [["abcd"], ["a.c"]]], expected: [null, false], note: "A wildcard path that explores children but dead-ends on length before the end." },
+    ],
+  },
+
+  "word-search-ii": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(W·L + m·n·4^Lmax). Here's why:\n\n" +
+          "- Building the trie costs the total length of all words, `O(W · L)`.\n" +
+          "- The single board DFS starts from each of `m·n` cells and can branch in 4 directions up to the longest word's length `Lmax` — but the trie *prunes* any branch with no matching child, so in practice it explores far less than the bound.\n\n" +
+          "The win over the brute force is the shared prefix pruning: words sharing a prefix are walked **together**, not re-traced per word, so the `W` factor leaves the exponential term.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(W·L). Here's why:\n\n" +
+          "- The trie holds at most one node per character across all words — `O(W · L)`.\n" +
+          "- The DFS recursion stack is at most `O(Lmax)` deep, and the board is mutated in place (cells restored on backtrack), so no copy is made.\n\n" +
+          "So the dominant extra space is the **O(W·L)** trie; the result list holds only the found words.",
+      },
+    ],
+    testCases: [
+      { args: [[["a"]], ["a"]], expected: ["a"], note: "Single cell matches a single-letter word." },
+      { args: [[["a", "b"], ["c", "d"]], []], expected: [], note: "No words to find — empty result." },
+      { args: [[["a", "b"], ["c", "d"]], ["abdc"]], expected: ["abdc"], note: "A word that turns a corner: a→b→d→c." },
+      { args: [[["a", "a"]], ["aa", "aaa"]], expected: ["aa"], note: "Cell reuse is forbidden, so \"aaa\" can't be formed from two cells." },
+      { args: [[["a", "b"], ["c", "d"]], ["ad", "ab"]], expected: ["ab"], note: "Diagonal is not adjacency — \"ad\" fails, the horizontal \"ab\" succeeds." },
+      { args: [[["o", "a", "a", "n"], ["e", "t", "a", "e"], ["i", "h", "k", "r"], ["i", "f", "l", "v"]], ["oath", "pea", "eat", "rain"]], expected: ["oath", "eat"], note: "The canonical board: two of four words trace valid paths." },
+    ],
+  },
+
+  "number-of-islands": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(m·n). Here's why:\n\n" +
+          "- The outer scan visits each of the `m·n` cells once.\n" +
+          "- The flood fills, summed over all islands, touch each land cell exactly once (a cell is sunk the first time it's reached and never re-entered).\n\n" +
+          "Every cell is handled a constant number of times, so the total is **O(m·n)**.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(m·n). Here's why:\n\n" +
+          "- The explicit flood-fill stack can hold up to `O(m·n)` cells when the grid is one giant island.\n" +
+          "- No separate visited grid is allocated — sinking land to `\"0\"` reuses the input.\n\n" +
+          "So the extra space is **O(m·n)** in the worst case (a fully-land grid); the input grid is mutated rather than copied.",
+      },
+    ],
+    testCases: [
+      { args: [[["0"]]], expected: 0, note: "A single water cell — no islands." },
+      { args: [[["1", "1", "1"]]], expected: 1, note: "A single row of connected land is one island." },
+      { args: [[["1"], ["1"], ["1"]]], expected: 1, note: "A single column of connected land is one island." },
+      {
+        args: [[
+          ["1", "0", "1", "0", "1"],
+          ["0", "1", "0", "1", "0"],
+          ["1", "0", "1", "0", "1"],
+        ]],
+        expected: 8,
+        note: "Diagonal-only adjacency must NOT merge cells — every land cell stands alone.",
+      },
+      {
+        args: [[
+          ["1", "1", "0", "1"],
+          ["1", "0", "0", "1"],
+          ["0", "0", "0", "0"],
+          ["1", "1", "1", "1"],
+        ]],
+        expected: 3,
+        note: "Three components: the top-left L, the lone top-right pair, and the bottom strip.",
+      },
+    ],
+  },
+
+  "rotting-oranges": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(m·n). Here's why:\n\n" +
+          "- The initial sweep that seeds the queue and counts fresh oranges is one pass over `m·n` cells.\n" +
+          "- During the BFS, each cell is enqueued at most once and its four neighbours inspected a constant number of times.\n\n" +
+          "Both phases are linear in the grid size, so the total is **O(m·n)**.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(m·n). Here's why:\n\n" +
+          "- The BFS frontier holds at most `O(m·n)` cells (a grid that is entirely rotten at the start seeds every cell).\n" +
+          "- The grid is rotted in place, so no copy is made.\n\n" +
+          "The dominant extra space is the **O(m·n)** queue.",
+      },
+    ],
+    testCases: [
+      { args: [[[0]]], expected: 0, note: "An empty cell — nothing fresh, zero minutes." },
+      { args: [[[2, 2, 2]]], expected: 0, note: "All already rotten — zero minutes elapse." },
+      { args: [[[1, 1, 1]]], expected: -1, note: "All fresh, no source — they never rot, return -1." },
+      {
+        args: [[
+          [2, 1, 1],
+          [1, 1, 1],
+          [1, 1, 1],
+        ]],
+        expected: 4,
+        note: "A solid block of fresh oranges with one rotten corner — the far corner rots at minute 4.",
+      },
+      {
+        args: [[
+          [2, 1, 0, 0, 1],
+          [0, 0, 0, 0, 0],
+        ]],
+        expected: -1,
+        note: "(0,1) rots from the source, but (0,4) is fenced off by empties and never rots — impossible.",
+      },
+    ],
+  },
+
+  "longest-increasing-path-in-a-matrix": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(m·n). Here's why:\n\n" +
+          "- With memoisation, each cell's longest-path value is computed exactly once and cached.\n" +
+          "- Computing one cell inspects its four neighbours — constant work — so the total is `4 · m·n`.\n\n" +
+          "Each of the `m·n` cells is solved once, giving **O(m·n)**. Without the memo this would blow up exponentially as paths re-explore shared suffixes.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(m·n). Here's why:\n\n" +
+          "- The memo table is one entry per cell, `O(m·n)`.\n" +
+          "- The recursion stack is bounded by the longest increasing path, at most `O(m·n)` deep (a snaking grid).\n\n" +
+          "So the extra space is **O(m·n)**.",
+      },
+    ],
+    testCases: [
+      { args: [[[42]]], expected: 1, note: "A single cell is a path of length 1." },
+      { args: [[[1, 2, 3, 4]]], expected: 4, note: "A strictly increasing row — the whole row is one path." },
+      { args: [[[4, 3, 2, 1]]], expected: 4, note: "Strictly decreasing reads as increasing right-to-left — still 4." },
+      { args: [[[7, 7], [7, 7]]], expected: 1, note: "All equal — no strictly-increasing step exists, so every path is length 1." },
+      {
+        args: [[
+          [1, 2, 3],
+          [6, 5, 4],
+          [7, 8, 9],
+        ]],
+        expected: 9,
+        note: "A boustrophedon snake 1→2→…→9 winds through every cell — one path of length 9.",
+      },
+    ],
+  },
+
+  "clone-graph": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(V + E). Here's why:\n\n" +
+          "- The DFS visits each node once (the map guard returns immediately on a repeat).\n" +
+          "- For each node it walks its neighbour list, and across all nodes that's every edge counted twice (once from each endpoint).\n\n" +
+          "So the work is proportional to nodes plus edges — **O(V + E)**.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(V). Here's why:\n\n" +
+          "- The `Map` from original node to clone holds one entry per node, `O(V)`.\n" +
+          "- The recursion stack is at most `O(V)` deep on a path-shaped graph.\n\n" +
+          "The clone itself is the required output (not counted as extra), so the auxiliary space is **O(V)**.",
+      },
+    ],
+    testCases: [
+      { args: [[]], expected: [], note: "Empty graph — the function returns null, serialized as []." },
+      { args: [[[]]], expected: [[]], note: "A single node with no neighbours clones to the same shape." },
+      { args: [[[2, 4], [1, 3], [2, 4], [1, 3]]], expected: [[2, 4], [1, 3], [2, 4], [1, 3]], note: "A 4-cycle (the example square) — structure preserved across the clone." },
+      { args: [[[2], [1, 3, 4], [2], [2]]], expected: [[2], [1, 3, 4], [2], [2]], note: "A star centred on node 2 — one hub, three leaves; the hub is cloned once and shared." },
+      { args: [[[2, 6], [1, 3], [2, 4], [3, 5], [4, 6], [1, 5]]], expected: [[2, 6], [1, 3], [2, 4], [3, 5], [4, 6], [1, 5]], note: "A 6-cycle — a longer ring whose closing back-edge must reuse the existing clone." },
+    ],
+  },
+
+  "is-graph-bipartite": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(V + E). Here's why:\n\n" +
+          "- The outer loop starts a BFS in each component, and across all of them every node is enqueued once.\n" +
+          "- Each node's adjacency list is scanned once, totalling every edge (twice, undirected).\n\n" +
+          "One pass over nodes and edges — **O(V + E)**.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(V). Here's why:\n\n" +
+          "- The `color` array is one entry per node, `O(V)`.\n" +
+          "- The BFS queue holds at most `O(V)` nodes.\n\n" +
+          "So the extra space is **O(V)**.",
+      },
+    ],
+    testCases: [
+      { args: [[[]]], expected: true, note: "A single node with no edges — trivially bipartite." },
+      { args: [[[1, 2], [0], [0]]], expected: true, note: "A path 1–0–2 (a tree) is always 2-colourable." },
+      { args: [[[1, 2, 3], [0, 2], [0, 1], [0]]], expected: false, note: "A triangle on {0,1,2} with an extra leaf — the odd cycle still fails it." },
+      { args: [[[2, 3], [2, 3], [0, 1], [0, 1]]], expected: true, note: "Complete bipartite K(2,2): groups {0,1} and {2,3}, every edge crosses." },
+      { args: [[[1], [0, 2], [1, 3], [2, 4], [3], [6], [5]]], expected: true, note: "A long even path plus a separate edge — both components colour, so bipartite." },
+    ],
+  },
+
+  "number-of-provinces": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n²). Here's why:\n\n" +
+          "- Scanning the upper triangle of the `n × n` matrix to find edges is `O(n²)`.\n" +
+          "- Each `union`/`find` is effectively constant (inverse-Ackermann) with path compression and union by rank.\n\n" +
+          "The matrix scan dominates, so the overall time is **O(n²)** — unavoidable given the adjacency-matrix input.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(n). Here's why:\n\n" +
+          "- The `parent` and `rank` arrays are one entry per city, `O(n)`.\n\n" +
+          "No copy of the matrix is made, so the auxiliary space is **O(n)** (the DFS alternative uses an `O(n)` visited array plus recursion stack instead).",
+      },
+    ],
+    testCases: [
+      { args: [[[1, 1, 0], [1, 1, 0], [0, 0, 1]]], expected: 2, note: "Cities 0–1 form a province; city 2 is isolated — two in all." },
+      { args: [[[1, 1, 0], [1, 1, 1], [0, 1, 1]]], expected: 1, note: "0–1 and 1–2 are connected, so 0 and 2 join indirectly through 1 — one province." },
+      {
+        args: [[
+          [1, 1, 1],
+          [1, 1, 1],
+          [1, 1, 1],
+        ]],
+        expected: 1,
+        note: "Every city connected to every other — a single province.",
+      },
+      {
+        args: [[
+          [1, 0, 0, 1],
+          [0, 1, 1, 0],
+          [0, 1, 1, 0],
+          [1, 0, 0, 1],
+        ]],
+        expected: 2,
+        note: "Non-adjacent indices connected: {0,3} and {1,2} — two provinces.",
+      },
+      {
+        args: [[
+          [1, 0, 1, 0, 0],
+          [0, 1, 0, 0, 0],
+          [1, 0, 1, 1, 0],
+          [0, 0, 1, 1, 0],
+          [0, 0, 0, 0, 1],
+        ]],
+        expected: 3,
+        note: "Components {0,2,3}, {1}, {4} — a chain of connections plus two loners.",
+      },
+    ],
+  },
+
+  "course-schedule": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(V + E). Here's why:\n\n" +
+          "- Building the adjacency lists and in-degrees is one pass over the `E` prerequisite edges plus `V` courses.\n" +
+          "- Kahn's algorithm dequeues each course once and decrements once per outgoing edge.\n\n" +
+          "Every course and edge is handled a constant number of times — **O(V + E)**, where `V = numCourses` and `E = prerequisites.length`.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(V + E). Here's why:\n\n" +
+          "- The adjacency lists hold all `E` edges; the in-degree array and queue are `O(V)`.\n\n" +
+          "So the extra space is **O(V + E)**.",
+      },
+    ],
+    testCases: [
+      { args: [1, []], expected: true, note: "One course, no prerequisites — finishable." },
+      { args: [3, [[1, 0], [2, 1]]], expected: true, note: "A clean chain 0 → 1 → 2 — finishable." },
+      { args: [3, [[0, 1], [1, 2], [2, 0]]], expected: false, note: "A 3-cycle — every course is transitively its own prerequisite." },
+      { args: [5, [[1, 0], [2, 0], [3, 0], [4, 0]]], expected: true, note: "Fan-out from course 0 — many dependents, no cycle." },
+      { args: [4, [[1, 0], [2, 1], [0, 2]]], expected: false, note: "A cycle 0 → 1 → 2 → 0 traps three courses; course 3 alone can't rescue it." },
+    ],
+  },
+
+  "network-delay-time": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(E log V) with a binary heap (the stored sort-based frontier is a slower-by-a-log variant). Here's why:\n\n" +
+          "- Each of the `E` edges is relaxed at most once, and each relaxation pushes onto the frontier.\n" +
+          "- A heap pop/push is `O(log V)`; the final max-distance scan is `O(V)`.\n\n" +
+          "So the dominant cost is the edge relaxations through the frontier — **O(E log V)**.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(V + E). Here's why:\n\n" +
+          "- The adjacency lists hold all `E` edges; the `dist` array is `O(V)`.\n" +
+          "- The frontier holds at most `O(E)` entries before stale ones are skipped.\n\n" +
+          "So the extra space is **O(V + E)**.",
+      },
+    ],
+    testCases: [
+      { args: [[], 1, 1], expected: 0, note: "The source is the only node — zero time." },
+      { args: [[[1, 2, 7]], 2, 1], expected: 7, note: "A single edge from the source — arrival time 7." },
+      { args: [[[1, 2, 7]], 2, 2], expected: -1, note: "The only edge points away from the source — node 1 unreachable." },
+      { args: [[[1, 2, 9], [1, 3, 1], [3, 2, 1]], 3, 1], expected: 2, note: "A two-hop route (1→3→2 = 2) beats the slow direct edge (1→2 = 9)." },
+      { args: [[[1, 2, 3], [1, 3, 2], [1, 4, 5]], 4, 1], expected: 5, note: "A star from the source — the slowest direct arrival (5) sets the answer." },
+    ],
+  },
+
+  "min-cost-to-connect-all-points": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n²). Here's why:\n\n" +
+          "- Prim runs `n` rounds; each round scans all points to find the nearest outside one (`O(n)`) and relaxes all points against it (`O(n)`).\n\n" +
+          "That's `n × O(n) = ` **O(n²)** — and for a *complete* graph this beats materialising and sorting the `O(n²)` edges that Kruskal needs (`O(n² log n)`).",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(n). Here's why:\n\n" +
+          "- The `minDist` and `inTree` arrays are one entry per point, `O(n)`.\n" +
+          "- No explicit edge list is built — distances are computed on the fly.\n\n" +
+          "So the auxiliary space is **O(n)**.",
+      },
+    ],
+    testCases: [
+      { args: [[[0, 0]]], expected: 0, note: "A single point needs no connections." },
+      { args: [[[0, 0], [3, 4]]], expected: 7, note: "Two points — the one Manhattan edge, |3|+|4| = 7." },
+      { args: [[[1, 1], [1, 4], [5, 1]]], expected: 7, note: "An L of three points — the two legs (3 and 4) span them, skipping the long hypotenuse." },
+      { args: [[[0, 0], [2, 0], [5, 0], [9, 0]]], expected: 9, note: "Collinear points — the MST chains the adjacent gaps 2+3+4." },
+      { args: [[[0, 0], [0, 3], [4, 0], [4, 3]]], expected: 10, note: "A 4×3 rectangle — the MST uses three sides (3 + 4 + 3)." },
     ],
   },
 };

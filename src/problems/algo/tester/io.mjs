@@ -20,6 +20,14 @@ export class TreeNode {
   }
 }
 
+/** Graph node (adjacency list), also injected as a sandbox global so graph solutions can reference `GraphNode`. */
+export class GraphNode {
+  constructor(val, neighbors) {
+    this.val = val === undefined ? 0 : val;
+    this.neighbors = neighbors === undefined ? [] : neighbors;
+  }
+}
+
 export const arrayToList = (values) => {
   let head = null;
   for (let i = values.length - 1; i >= 0; i--) head = new ListNode(values[i], head);
@@ -65,12 +73,46 @@ export const treeToArray = (root) => {
   return result;
 };
 
+// LeetCode adjacency-list array → GraphNode. `adjList[i]` holds the neighbor *vals* of the node with val
+// `i + 1` (vals are the contiguous range 1..N). Returns the node with val 1 — the entry point a graph
+// solution is handed — or null for the empty graph.
+export const arrayToGraph = (adjList) => {
+  if (!adjList || adjList.length === 0) return null;
+  const nodes = adjList.map((_, i) => new GraphNode(i + 1));
+  adjList.forEach((neighbors, i) => { nodes[i].neighbors = neighbors.map((val) => nodes[val - 1]); });
+  return nodes[0];
+};
+
+// GraphNode → LeetCode adjacency-list array. Traverses from the entry node, ordering nodes and each node's
+// neighbors by val so the serialization is canonical (a structurally-correct result deep-equals the input).
+// Structure-only: object identity is gone after serialization, so this CANNOT distinguish a deep copy from
+// the original graph — clone problems graded through this check only their structure. See problem-authoring.md.
+export const graphToArray = (node) => {
+  if (!node) return [];
+  const seen = new Map();
+  const queue = [node];
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (seen.has(current.val)) continue;
+    seen.set(current.val, current);
+    for (const neighbor of current.neighbors) if (!seen.has(neighbor.val)) queue.push(neighbor);
+  }
+  const maxVal = Math.max(...seen.keys());
+  const result = [];
+  for (let val = 1; val <= maxVal; val++) {
+    const found = seen.get(val);
+    result.push(found ? found.neighbors.map((n) => n.val).sort((a, b) => a - b) : []);
+  }
+  return result;
+};
+
 export const hydrate = (value, shape) => {
   switch (shape) {
     case "linked-list": return arrayToList(value);
     case "linked-list[]": return value.map(arrayToList);
     case "binary-tree": return arrayToTree(value);
     case "binary-tree[]": return value.map(arrayToTree);
+    case "graph": return arrayToGraph(value);
     default: return value;
   }
 };
@@ -81,6 +123,7 @@ export const dehydrate = (value, shape) => {
     case "linked-list[]": return value.map(listToArray);
     case "binary-tree": return treeToArray(value);
     case "binary-tree[]": return value.map(treeToArray);
+    case "graph": return graphToArray(value);
     default: return value;
   }
 };

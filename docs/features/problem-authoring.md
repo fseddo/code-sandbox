@@ -232,11 +232,22 @@ type around the call (and flatten it back), so authored cases stay serializable.
 | `"binary-tree"`  | level-order `(number\|null)[]` | a `TreeNode`             | [inorderTraversal](../../src/problems/data/problems/inorderTraversal.ts) |
 | `"linked-list[]"`| `number[][]`        | a `ListNode[]`                    | [mergeKLists](../../src/problems/data/problems/mergeKLists.ts) |
 | `"binary-tree[]"`| `(number\|null)[][]`| a `TreeNode[]`                    | "generate all unique BSTs"      |
+| `"graph"`        | adjacency-list `number[][]` | a cyclic `GraphNode`      | [cloneGraph](../../src/problems/data/problems/cloneGraph.ts) |
 
-`ListNode` and `TreeNode` are injected as worker globals (the solver references them; the starter's
-JSDoc block documents them). **Binary-tree serialization** is LeetCode's level-order array where `null`
-marks an absent child and a null node contributes no slots: `[1, null, 2, 3]` is root `1`, right child
-`2`, and `2`'s left child `3`. Trailing `null`s are trimmed on the way out.
+`ListNode`, `TreeNode`, and `GraphNode` are injected as worker globals (the solver references them; the
+starter's JSDoc block documents them). **Binary-tree serialization** is LeetCode's level-order array where
+`null` marks an absent child and a null node contributes no slots: `[1, null, 2, 3]` is root `1`, right
+child `2`, and `2`'s left child `3`. Trailing `null`s are trimmed on the way out.
+
+**Graph serialization** is LeetCode's adjacency-list array: `adjList[i]` lists the neighbor *vals* of the
+node with val `i + 1`, vals are the contiguous range `1..N`, and the hydrated `GraphNode` (`{ val, neighbors }`)
+is cyclic — the solver is handed the node with val 1. On the way out the graph is traversed from that entry
+and re-serialized with nodes and each node's neighbors ordered by val, so a structurally-correct result
+deep-equals the input. **Caveat — structure only:** serialization drops object identity, so a `"graph"`
+result verifies a graph's *shape* but not that it's a fresh deep copy. A clone-style problem graded this way
+**cannot catch a solution that returns the original graph unmodified** — note that limitation in the prompt,
+and don't rely on the tests to enforce the copy. Fixing it would need a bespoke `checker` that walks both
+graphs and asserts every returned node is a different instance than its input counterpart.
 
 ## In-place problems — judge the mutated arg
 

@@ -79,8 +79,13 @@ export type Example<Args extends unknown[], Result> = TestCase<Args, Result> & {
  *   returned tree serializes back to the same level-order array (trailing `null`s trimmed).
  * - `"linked-list[]"` / `"binary-tree[]"` — the array variants: an array *of* arrays maps element-wise
  *   (e.g. merge-k-sorted-lists takes a `ListNode[]`; "generate all BSTs" returns a `TreeNode[]`).
+ * - `"graph"` — a LeetCode adjacency-list array (`adjList[i]` = neighbor vals of the node with val `i + 1`,
+ *   vals contiguous `1..N`) hydrates into a `GraphNode` (cyclic, with `.neighbors`); the returned graph
+ *   serializes back to the canonical adjacency list. **Structure-only:** serialization drops object identity,
+ *   so a `"graph"` result can verify a graph's *shape* but not that it's a fresh deep copy — clone-style
+ *   problems graded this way can't catch a solution that returns the original graph. See problem-authoring.md.
  */
-export type IoShape = "value" | "linked-list" | "linked-list[]" | "binary-tree" | "binary-tree[]";
+export type IoShape = "value" | "linked-list" | "linked-list[]" | "binary-tree" | "binary-tree[]" | "graph";
 
 export type ProblemIo = {
   params?: IoShape[];

@@ -140,6 +140,18 @@ import { maxPathSum } from "./maxPathSum";
 import { rightSideView } from "./rightSideView";
 import { widthOfBinaryTree } from "./widthOfBinaryTree";
 import { serializeDeserialize } from "./serializeDeserialize";
+import { implementTriePrefixTree } from "./implementTriePrefixTree";
+import { designAddAndSearchWords } from "./designAddAndSearchWords";
+import { wordSearchII } from "./wordSearchII";
+import { cloneGraph } from "./cloneGraph";
+import { numIslands } from "./numIslands";
+import { rottingOranges } from "./rottingOranges";
+import { isBipartite } from "./isBipartite";
+import { longestIncreasingPath } from "./longestIncreasingPath";
+import { wordLadder } from "./wordLadder";
+import { courseSchedule } from "./courseSchedule";
+import { networkDelayTime } from "./networkDelayTime";
+import { minCostConnectPoints } from "./minCostConnectPoints";
 
 /**
  * The problem bank, keyed by id. Authored modules keep their precise generics for
@@ -287,6 +299,18 @@ export const problems = {
   "binary-tree-right-side-view": rightSideView,
   "maximum-width-of-binary-tree": widthOfBinaryTree,
   "serialize-and-deserialize-binary-tree": serializeDeserialize,
+  "implement-trie-prefix-tree": implementTriePrefixTree,
+  "design-add-and-search-words-data-structure": designAddAndSearchWords,
+  "word-search-ii": wordSearchII,
+  "clone-graph": cloneGraph,
+  "number-of-islands": numIslands,
+  "rotting-oranges": rottingOranges,
+  "is-graph-bipartite": isBipartite,
+  "longest-increasing-path-in-a-matrix": longestIncreasingPath,
+  "word-ladder": wordLadder,
+  "course-schedule": courseSchedule,
+  "network-delay-time": networkDelayTime,
+  "min-cost-to-connect-all-points": minCostConnectPoints,
 } satisfies Record<string, AnyProblem>;
 
 export type ProblemId = keyof typeof problems;

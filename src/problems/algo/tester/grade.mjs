@@ -5,7 +5,7 @@
 // worker around it is what bounds infinite loops; this core never sets a timeout itself.
 
 import { transform } from "sucrase";
-import { ListNode, TreeNode, hydrate, dehydrate } from "./io.mjs";
+import { ListNode, TreeNode, GraphNode, hydrate, dehydrate } from "./io.mjs";
 
 /** Structural equality for judge output: handles primitives (incl. NaN), arrays, and plain objects. */
 const deepEqual = (a, b) => {
@@ -60,10 +60,11 @@ export const gradeSubmission = ({ source, language, functionName, tests, io, che
     const factory = new Function(
       "ListNode",
       "TreeNode",
+      "GraphNode",
       "console",
       `${code}\n; return typeof ${functionName} === "function" ? ${functionName} : undefined;`,
     );
-    const fn = factory(ListNode, TreeNode, consoleShim);
+    const fn = factory(ListNode, TreeNode, GraphNode, consoleShim);
     if (typeof fn !== "function") {
       return {
         status: "compile-error",
