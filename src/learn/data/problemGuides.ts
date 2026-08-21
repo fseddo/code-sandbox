@@ -4826,6 +4826,92 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
     },
   ],
 
+  "word-ladder": [
+    {
+      kind: "prose",
+      body:
+        "A natural first attempt treats the dictionary as a graph — words are nodes, and an edge joins two words " +
+        "that differ in exactly one letter — then explores every transformation path from `beginWord` to `endWord` " +
+        "with DFS/backtracking, remembering the shortest path length seen so far.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption:
+        "Brute force — DFS/backtracking over every transformation path, keeping the shortest: exponential — up to " +
+        "O((26L)^N) in the worst case, from re-exploring the same words down different paths.",
+      source:
+        "function ladderLength(beginWord, endWord, wordList) {\n" +
+        "  const dict = new Set(wordList);\n" +
+        "  if (!dict.has(endWord)) return 0;        // endWord can never be reached if it isn't in the dictionary\n" +
+        "\n" +
+        "  let shortest = Infinity;\n" +
+        "  // Explore every transformation path out of `word`, tracking words already used on *this* path.\n" +
+        "  const dfs = (word, visited, length) => {\n" +
+        "    if (word === endWord) {\n" +
+        "      shortest = Math.min(shortest, length);  // record this path's length, keep looking for a shorter one\n" +
+        "      return;\n" +
+        "    }\n" +
+        "    // Try every one-letter substitution of the current word.\n" +
+        "    for (let i = 0; i < word.length; i++) {\n" +
+        "      for (let code = 97; code < 97 + 26; code++) {\n" +
+        "        const candidate = word.slice(0, i) + String.fromCharCode(code) + word.slice(i + 1);\n" +
+        "        if (dict.has(candidate) && !visited.has(candidate)) {\n" +
+        "          visited.add(candidate);            // claim it for this path only\n" +
+        "          dfs(candidate, visited, length + 1);\n" +
+        "          visited.delete(candidate);         // backtrack so a different path can still use it\n" +
+        "        }\n" +
+        "      }\n" +
+        "    }\n" +
+        "  };\n" +
+        "\n" +
+        "  dfs(beginWord, new Set([beginWord]), 1);\n" +
+        "  return shortest === Infinity ? 0 : shortest;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This DFS is correct but wasteful: the same word can be reached from many different partial paths, and " +
+        "because `visited` is undone on backtrack rather than remembered globally, every one of those paths " +
+        "re-explores it as if for the first time. Can we do better?\n\n" +
+        "The key observation: we don't need every path, only the *length* of the shortest one — and in an " +
+        "unweighted graph, [BFS](/study-guide/algos/topic/breadth-first-search) finds shortest paths for free by " +
+        "expanding outward one edge at a time. The first time BFS reaches a word, it does so along a shortest " +
+        "route to it, so no later path can ever improve on that word's distance — each word only needs to be " +
+        "visited once, ever. The stored solution bakes that in directly: the moment a candidate word is found in " +
+        "the dictionary it's deleted from it, so it can never be rediscovered and re-enqueued by a different " +
+        "branch.\n\n" +
+        "A word graph has no faithful lane, grid, or list animation — it's neither a fixed sequence nor a board nor " +
+        "a chain, so a static picture of the graph, read level by level, teaches the mechanic honestly where a " +
+        "forced lane would not. Walking it through with the `hit -> cog` example (`wordList = [hot, dot, dog, lot, " +
+        "log, cog]`):",
+    },
+    {
+      kind: "graph",
+      caption:
+        "BFS grows outward from hit one edge at a time. Frontier 1: hot. Frontier 2: dot and lot (hot's one-letter " +
+        "neighbours — both removed from the dictionary the instant they're discovered). Frontier 3: dog (from dot) " +
+        "and log (from lot); dot's other neighbour, lot, is skipped because it was already claimed the moment hot " +
+        "was expanded, the very step that discovered dot itself. Frontier 4: cog, reached from either dog or log " +
+        "— the target. BFS returns 5 words counting hit " +
+        "itself: hit → hot → dot → dog → cog is one shortest route, hit → hot → lot → log → cog is another, both " +
+        "length 5.",
+      nodes: ["hit", "hot", "dot", "dog", "lot", "log", "cog"],
+      edges: [
+        ["hit", "hot"],
+        ["hot", "dot"],
+        ["hot", "lot"],
+        ["dot", "dog"],
+        ["dot", "lot"],
+        ["lot", "log"],
+        ["dog", "cog"],
+        ["dog", "log"],
+        ["log", "cog"],
+      ],
+    },
+  ],
+
   "clone-graph": [
     {
       kind: "prose",
@@ -7137,6 +7223,46 @@ export const PROBLEM_EXTRAS: Record<string, { complexity?: Section[]; testCases?
         ]],
         expected: 9,
         note: "A boustrophedon snake 1→2→…→9 winds through every cell — one path of length 9.",
+      },
+    ],
+  },
+
+  "word-ladder": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(N · L² · 26), where `N` is the number of words in the dictionary and `L` is the " +
+          "word length. Here's why:\n\n" +
+          "- Each word is enqueued at most once — it's deleted from the dictionary the moment it's claimed, so BFS " +
+          "processes at most `N` words in total.\n" +
+          "- For each word, generating every one-letter variant tries `L` positions × `26` letters, and building " +
+          "each `O(L)`-length candidate string costs `O(L)`.\n\n" +
+          "So the total work is `N` words × `O(L · 26)` candidates × `O(L)` per candidate, giving **O(N · L² · 26)**.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(N · L). Here's why:\n\n" +
+          "- The dictionary set holds up to `N` words of length `L`.\n" +
+          "- The BFS queue holds at most one frontier's worth of words, also bounded by `N`.\n\n" +
+          "Both are dominated by the dictionary, so the extra space is **O(N · L)** — the output is a single number, " +
+          "not counted separately.",
+      },
+    ],
+    testCases: [
+      { args: ["hit", "cog", []], expected: 0, note: "Empty dictionary — endWord can never appear, so BFS never even starts." },
+      { args: ["cat", "cot", ["cot"]], expected: 2, note: "beginWord is one hop from endWord — the shortest ladder is just the two words." },
+      { args: ["cat", "dog", ["dot", "dog"]], expected: 0, note: "dog is in the dictionary but unreachable — cat and dot differ in two letters, so no ladder connects them." },
+      {
+        args: ["a", "d", ["a", "b", "c", "d"]],
+        expected: 2,
+        note: "Single-letter words are all pairwise one substitution apart, so beginWord jumps straight to endWord.",
+      },
+      {
+        args: ["dog", "cat", ["dot", "dat", "cat"]],
+        expected: 4,
+        note: "Each hop changes a different letter position, forcing BFS to route through two intermediaries.",
       },
     ],
   },

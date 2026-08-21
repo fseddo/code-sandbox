@@ -69,6 +69,7 @@ The Intuition section must move brute-force → optimal the way ByteByteGo does:
 - **`code`** — `{ kind: "code", lang: "javascript" | "typescript", source, caption? }`. Shiki-highlighted, with a copy button. Use for the brute force.
 - **`walkthrough`** — the diagram (§8).
 - **`callout`** — `{ kind: "callout", tone: "warn" | "info" | "tip", items: string[] }` for a boxed aside (e.g. a gotcha). Use sparingly.
+- **`graph`** ([GraphDiagram](../../src/learn/article/sections/GraphDiagram.tsx)) — a static node/edge diagram for genuinely graph-shaped problems (adjacency lists, word graphs) where none of §8's sequence/grid/list/partition/merge/tree primitives fit. No frame animation — pair it with prose narrating the traversal (precedent: `clone-graph`, `word-ladder`).
 
 ## 6. Our adjustments from ByteByteGo — read this
 
