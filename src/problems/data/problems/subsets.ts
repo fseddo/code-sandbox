@@ -107,15 +107,21 @@ function subsets(nums: number[]): number[][] {
 \`O(n · 2^n)\` time and output size, \`O(1)\` extra beyond the result.`,
       code: {
         javascript: `function subsets(nums) {
+  // Start with just the empty subset.
   let result = [[]];
   for (const num of nums) {
+    // Every existing subset either stays as-is (already in result) or gets num appended —
+    // concatenate the two, doubling the collection each pass.
     result = result.concat(result.map((sub) => [...sub, num]));
   }
   return result;
 }`,
         typescript: `function subsets(nums: number[]): number[][] {
+  // Start with just the empty subset.
   let result: number[][] = [[]];
   for (const num of nums) {
+    // Every existing subset either stays as-is (already in result) or gets num appended —
+    // concatenate the two, doubling the collection each pass.
     result = result.concat(result.map((sub) => [...sub, num]));
   }
   return result;

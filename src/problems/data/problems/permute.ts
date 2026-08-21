@@ -69,20 +69,22 @@ function permute(nums: number[]): number[][] {
       code: {
         javascript: `function permute(nums) {
   const result = [];
-  const path = [];
-  const used = new Array(nums.length).fill(false);
+  const path = []; // the permutation currently being built, one position at a time
+  const used = new Array(nums.length).fill(false); // used[i] = true once nums[i] is already in path
   const dfs = () => {
+    // Base case: every position is filled — record a copy of the completed permutation.
     if (path.length === nums.length) {
       result.push([...path]);
       return;
     }
+    // Try every index as the next position, skipping any value already placed.
     for (let i = 0; i < nums.length; i++) {
       if (used[i]) continue;
-      used[i] = true;
+      used[i] = true; // choose nums[i] for this position
       path.push(nums[i]);
-      dfs();
-      path.pop();
-      used[i] = false;
+      dfs(); // recurse into the next position with nums[i] locked in
+      path.pop(); // undo the choice (backtrack)...
+      used[i] = false; // ...so a later branch can use nums[i] again
     }
   };
   dfs();
@@ -90,20 +92,22 @@ function permute(nums: number[]): number[][] {
 }`,
         typescript: `function permute(nums: number[]): number[][] {
   const result: number[][] = [];
-  const path: number[] = [];
-  const used = new Array<boolean>(nums.length).fill(false);
+  const path: number[] = []; // the permutation currently being built, one position at a time
+  const used = new Array<boolean>(nums.length).fill(false); // used[i] = true once nums[i] is already in path
   const dfs = (): void => {
+    // Base case: every position is filled — record a copy of the completed permutation.
     if (path.length === nums.length) {
       result.push([...path]);
       return;
     }
+    // Try every index as the next position, skipping any value already placed.
     for (let i = 0; i < nums.length; i++) {
       if (used[i]) continue;
-      used[i] = true;
+      used[i] = true; // choose nums[i] for this position
       path.push(nums[i]);
-      dfs();
-      path.pop();
-      used[i] = false;
+      dfs(); // recurse into the next position with nums[i] locked in
+      path.pop(); // undo the choice (backtrack)...
+      used[i] = false; // ...so a later branch can use nums[i] again
     }
   };
   dfs();

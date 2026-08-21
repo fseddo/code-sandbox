@@ -19,11 +19,11 @@
 | Stacks | `stacks` | yes |
 | Heaps | `heaps` | yes |
 | Intervals | `intervals` | yes |
-| **Prefix Sums** | `prefix-sum` | **this run** |
-| Trees | `trees` | no |
-| Tries | `tries` | no |
-| Graphs | `graphs` | no |
-| Backtracking | `backtracking` | no |
+| Prefix Sums | `prefix-sum` | yes |
+| Trees | `trees` | yes |
+| Tries | `tries` | yes |
+| Graphs | `graphs` | yes |
+| **Backtracking** | `backtracking` | **this run** |
 | Dynamic Programming | `dynamic-programming` | no |
 | Greedy | `greedy` | no |
 | Sort and Search | `sorting` | no |

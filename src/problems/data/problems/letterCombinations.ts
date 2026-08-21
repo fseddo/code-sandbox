@@ -141,17 +141,22 @@ function letterCombinations(digits: string): string[] {
 If \`n\` is the number of digits, there are up to \`4^n\` combinations and each takes \`O(n)\` to assemble, so \`O(n · 4^n)\` time and \`O(n)\` recursion depth.`,
       code: {
         javascript: `function letterCombinations(digits) {
+  // No digits, no combinations — return immediately rather than descending into an empty recursion.
   if (digits.length === 0) return [];
+  // Telephone keypad: each digit 2-9 maps to the letters it could represent.
   const map = {
     "2": "abc", "3": "def", "4": "ghi", "5": "jkl",
     "6": "mno", "7": "pqrs", "8": "tuv", "9": "wxyz",
   };
   const result = [];
+  // index: which digit position we're deciding next; path: the combination built so far.
   const backtrack = (index, path) => {
+    // Base case: a letter has been chosen for every digit — path is a complete combination.
     if (index === digits.length) {
       result.push(path);
       return;
     }
+    // Try every letter this digit could be, recursing one position deeper for each choice.
     for (const letter of map[digits[index]]) {
       backtrack(index + 1, path + letter);
     }
@@ -160,17 +165,22 @@ If \`n\` is the number of digits, there are up to \`4^n\` combinations and each 
   return result;
 }`,
         typescript: `function letterCombinations(digits: string): string[] {
+  // No digits, no combinations — return immediately rather than descending into an empty recursion.
   if (digits.length === 0) return [];
+  // Telephone keypad: each digit 2-9 maps to the letters it could represent.
   const map: Record<string, string> = {
     "2": "abc", "3": "def", "4": "ghi", "5": "jkl",
     "6": "mno", "7": "pqrs", "8": "tuv", "9": "wxyz",
   };
   const result: string[] = [];
+  // index: which digit position we're deciding next; path: the combination built so far.
   const backtrack = (index: number, path: string): void => {
+    // Base case: a letter has been chosen for every digit — path is a complete combination.
     if (index === digits.length) {
       result.push(path);
       return;
     }
+    // Try every letter this digit could be, recursing one position deeper for each choice.
     for (const letter of map[digits[index]]) {
       backtrack(index + 1, path + letter);
     }

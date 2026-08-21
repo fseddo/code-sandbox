@@ -127,20 +127,22 @@ Time is \`O(n!)\` in the worst case (bounded hard by the pruning), \`O(n)\` extr
       code: {
         javascript: `function solveNQueens(n) {
   const result = [];
-  const queens = [];
-  const cols = new Set();
-  const diag1 = new Set();
-  const diag2 = new Set();
+  const queens = []; // queens[r] = column of the queen placed in row r
+  const cols = new Set(); // columns already occupied
+  const diag1 = new Set(); // "↘" diagonals occupied, keyed by r - c (constant along that diagonal)
+  const diag2 = new Set(); // "↙" diagonals occupied, keyed by r + c (constant along that diagonal)
   const place = (row) => {
     if (row === n) {
+      // Every row holds a queen — turn the column list into the board's string form.
       result.push(queens.map((c) => ".".repeat(c) + "Q" + ".".repeat(n - 1 - c)));
       return;
     }
     for (let c = 0; c < n; c++) {
+      // O(1) safety check: same column, or either diagonal through (row, c).
       if (cols.has(c) || diag1.has(row - c) || diag2.has(row + c)) continue;
-      cols.add(c); diag1.add(row - c); diag2.add(row + c); queens.push(c);
-      place(row + 1);
-      cols.delete(c); diag1.delete(row - c); diag2.delete(row + c); queens.pop();
+      cols.add(c); diag1.add(row - c); diag2.add(row + c); queens.push(c); // choose
+      place(row + 1); // explore with a queen locked in at (row, c)
+      cols.delete(c); diag1.delete(row - c); diag2.delete(row + c); queens.pop(); // un-choose before the next column
     }
   };
   place(0);
@@ -148,20 +150,22 @@ Time is \`O(n!)\` in the worst case (bounded hard by the pruning), \`O(n)\` extr
 }`,
         typescript: `function solveNQueens(n: number): string[][] {
   const result: string[][] = [];
-  const queens: number[] = [];
-  const cols = new Set<number>();
-  const diag1 = new Set<number>();
-  const diag2 = new Set<number>();
+  const queens: number[] = []; // queens[r] = column of the queen placed in row r
+  const cols = new Set<number>(); // columns already occupied
+  const diag1 = new Set<number>(); // "↘" diagonals occupied, keyed by r - c (constant along that diagonal)
+  const diag2 = new Set<number>(); // "↙" diagonals occupied, keyed by r + c (constant along that diagonal)
   const place = (row: number): void => {
     if (row === n) {
+      // Every row holds a queen — turn the column list into the board's string form.
       result.push(queens.map((c) => ".".repeat(c) + "Q" + ".".repeat(n - 1 - c)));
       return;
     }
     for (let c = 0; c < n; c++) {
+      // O(1) safety check: same column, or either diagonal through (row, c).
       if (cols.has(c) || diag1.has(row - c) || diag2.has(row + c)) continue;
-      cols.add(c); diag1.add(row - c); diag2.add(row + c); queens.push(c);
-      place(row + 1);
-      cols.delete(c); diag1.delete(row - c); diag2.delete(row + c); queens.pop();
+      cols.add(c); diag1.add(row - c); diag2.add(row + c); queens.push(c); // choose
+      place(row + 1); // explore with a queen locked in at (row, c)
+      cols.delete(c); diag1.delete(row - c); diag2.delete(row + c); queens.pop(); // un-choose before the next column
     }
   };
   place(0);

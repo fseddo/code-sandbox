@@ -5319,6 +5319,614 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
       ],
     },
   ],
+
+  "subsets": [
+    {
+      kind: "prose",
+      body:
+        "The most direct way to enumerate every subset is to walk the decision tree by hand: at each number, " +
+        "either include it in the subset being built or leave it out, then recurse into the rest of the array. " +
+        "When the recursion runs out of numbers, the path built so far is one complete subset.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption:
+        "Brute force — include/exclude recursion over every index: O(n · 2ⁿ) time (2ⁿ leaves, each up to length n to copy).",
+      source:
+        "function subsets(nums) {\n" +
+        "  const result = [];\n" +
+        "  const path = []; // the subset currently being built\n" +
+        "\n" +
+        "  function backtrack(i) {\n" +
+        "    // Base case: a decision has been made for every index — record a copy of the path.\n" +
+        "    if (i === nums.length) {\n" +
+        "      result.push([...path]);\n" +
+        "      return;\n" +
+        "    }\n" +
+        "    // Choice 1: include nums[i], recurse into the rest, then undo (pop) before trying the other choice.\n" +
+        "    path.push(nums[i]);\n" +
+        "    backtrack(i + 1);\n" +
+        "    path.pop();\n" +
+        "    // Choice 2: leave nums[i] out entirely, recurse with the same (unchanged) path.\n" +
+        "    backtrack(i + 1);\n" +
+        "  }\n" +
+        "\n" +
+        "  backtrack(0);\n" +
+        "  return result;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This already runs in O(n · 2ⁿ) — the same order as the optimal solution, since the output itself holds " +
+        "2ⁿ subsets of up to length n to copy, so there's no asymptotic time left to shave off. Can we do better?\n\n" +
+        "Not on complexity — but on how directly the choices get made. Look at what happens to the *whole* " +
+        "collection of subsets built so far each time a new number arrives: every existing subset either stays " +
+        "as it is (exclude), or gets a copy with the new number appended (include). That's the exact " +
+        "include/exclude decision the recursion above makes one leaf at a time, just applied to an entire " +
+        "generation of subsets at once. It's also the same building block behind " +
+        "[Bit manipulation](/study-guide/algos/topic/bit-manipulation)'s enumeration trick — each subset is one " +
+        "n-bit mask, one bit per index, where a set bit means \"included\".\n\n" +
+        "The stored solution takes that doubling route: start from the single empty subset `[[]]`, and for each " +
+        "number, extend a copy of every subset built so far with it, doubling the collection each step. " +
+        "**Bridging the two models:** after processing the first `k` numbers, `result` holds exactly the `2^k` " +
+        "leaves the recursion above would reach after deciding on those `k` indices — the line " +
+        "`result.concat(result.map(sub => [...sub, num]))` *is* the include/exclude branch from the walkthrough " +
+        "below, applied to every one of those leaves simultaneously instead of one root-to-leaf path at a time.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "nums = [2, 5, 8]",
+      lane: [2, 5, 8],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "i", at: 0 }],
+          action: "path=[]; include 2",
+          caption: "Start at index 0 with an empty path. Try the include branch first: choose 2.",
+        },
+        {
+          pointers: [{ name: "i", at: 1 }],
+          marked: [0],
+          action: "path=[2]; include 5",
+          caption: "One level deeper. `marked` here means \"already chosen\", not \"discarded\" — 2 is locked into the path.",
+        },
+        {
+          pointers: [{ name: "i", at: 2 }],
+          marked: [0, 1],
+          action: "path=[2,5]; include 8 → record [2,5,8]",
+          caption: "All three included — a leaf. Record a copy of the path: [2, 5, 8].",
+        },
+        {
+          pointers: [{ name: "i", at: 2 }],
+          marked: [0, 1],
+          action: "unchoose 8; skip 8 → record [2,5]",
+          caption:
+            "Backtrack: pop 8 back off, then take the skip branch at the same depth. That's also a complete subset — record [2, 5].",
+        },
+        {
+          pointers: [{ name: "i", at: 1 }],
+          marked: [0],
+          action: "unchoose 5; skip 5 → explore",
+          caption: "Unwind one more level, pop 5, and take skip at index 1. The subtree under \"5 excluded\" still needs exploring for 8.",
+        },
+        {
+          pointers: [{ name: "i", at: 0 }],
+          marked: [],
+          action: "unchoose 2; skip 2 → explore mirrored right subtree",
+          caption:
+            "Finally pop 2 and take skip at the root. The mirrored subtree (2 excluded) produces the remaining subsets the same way — after the full traversal, all 2³ = 8 subsets have been recorded.",
+        },
+      ],
+    },
+  ],
+
+  "permutations": [
+    {
+      kind: "prose",
+      body:
+        "A first attempt recurses position by position, and at each position asks the path itself which " +
+        "numbers are still free: scan the numbers already placed, and try any `nums[i]` that doesn't show up " +
+        "in that scan. Once every position is filled, the path is one complete permutation.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption:
+        "Brute force — same recursive shape, but \"already placed\" is answered by scanning the path: O(n² · n!).",
+      source:
+        "function permute(nums) {\n" +
+        "  const result = [];\n" +
+        "  const path = []; // the permutation currently being built\n" +
+        "\n" +
+        "  function backtrack() {\n" +
+        "    // Base case: every position is filled — record a copy of the permutation.\n" +
+        "    if (path.length === nums.length) {\n" +
+        "      result.push([...path]);\n" +
+        "      return;\n" +
+        "    }\n" +
+        "    for (let i = 0; i < nums.length; i++) {\n" +
+        "      // Naive \"already placed?\" check: rescan the whole path so far. O(n) per check.\n" +
+        "      if (path.includes(nums[i])) continue;\n" +
+        "      path.push(nums[i]); // choose\n" +
+        "      backtrack();        // explore with nums[i] locked in\n" +
+        "      path.pop();         // un-choose (backtrack) before trying the next index\n" +
+        "    }\n" +
+        "  }\n" +
+        "\n" +
+        "  backtrack();\n" +
+        "  return result;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This already explores the right search tree — position by position, try an unused number, recurse, " +
+        "undo — so it isn't a different algorithm, just a slower way to answer one question: *is this number " +
+        "already in the path?* Scanning the path for that answer costs O(n), and it gets asked at every one of " +
+        "the `n` candidate indices, at every one of the `n` positions, across `n!` completed permutations — " +
+        "turning an already-large O(n · n!) enumeration into O(n² · n!). Can we do better?\n\n" +
+        "The key observation: membership doesn't need a scan at all. A `used` boolean array, one flag per index, " +
+        "answers \"is index `i` already placed?\" in O(1) — the same trade a [hash map](/study-guide/algos/topic/hash-maps) " +
+        "makes for membership generally, just specialized to a plain array since positions are already small, " +
+        "dense integers.\n\n" +
+        "The stored solution keeps the identical recursive shape — same `path`, same push/recurse/pop — and only " +
+        "swaps the O(n) `path.includes` check for an O(1) `used[i]` flag, flipped on when a position is chosen " +
+        "and back off on the way out.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "nums = [4, 6, 9]",
+      lane: [4, 6, 9],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "i", at: 0 }],
+          action: "path=[]; used[0]=false → place nums[0]=4",
+          caption: "Start at depth 0 with an empty path. Try index 0 first: it's unused, so place 4 and mark index 0 used.",
+        },
+        {
+          pointers: [{ name: "i", at: 1 }],
+          marked: [0],
+          action: "path=[4]; used[1]=false → place nums[1]=6",
+          caption: "Depth 1: index 0 (struck through) is already used, so move to index 1. It's free — place 6.",
+        },
+        {
+          pointers: [{ name: "i", at: 2 }],
+          marked: [0, 1],
+          action: "path=[4,6]; used[2]=false → place nums[2]=9 → record [4,6,9]",
+          caption:
+            "Depth 2: only index 2 is still unused. Place 9 — the path now has length 3, a full permutation, so record [4, 6, 9].",
+        },
+        {
+          pointers: [{ name: "i", at: 2 }],
+          marked: [0, 1],
+          action: "pop 9, unmark index 2 → depth 2 has no other free index → pop 6, unmark index 1",
+          caption:
+            "Backtrack: undo the last placement and look for another candidate at that depth — but depth 2 already " +
+            "tried its only free index (index 2), so unwind one level to depth 1 and undo 6 too, where index 2 is " +
+            "still untried.",
+        },
+        {
+          pointers: [{ name: "i", at: 2 }],
+          marked: [0],
+          action: "path=[4]; used[2]=false → place nums[2]=9 → path=[4,9]",
+          caption:
+            "Back at depth 1 with just index 0 used, try the next candidate: index 2. Place 9, then depth 2 has only " +
+            "index 1 left — place 6 and record [4, 9, 6].",
+        },
+        {
+          pointers: [{ name: "i", at: 0 }],
+          marked: [],
+          action: "unwind to depth 0 → try index 1, then index 2 as the first placement",
+          caption:
+            "Once both orderings starting with 4 are recorded, unwind fully and start over with index 1 (6) and " +
+            "then index 2 (9) as the first element — the same nested process repeats under each, producing all " +
+            "3! = 6 permutations.",
+        },
+      ],
+    },
+  ],
+
+  "combination-sum": [
+    {
+      kind: "prose",
+      body:
+        "A first attempt tries every candidate at every position, with no restriction on order: at each step, " +
+        "add any candidate to the running path and recurse, backing off once the running sum reaches or passes " +
+        "the target. Whenever the sum lands exactly on the target, the path is one valid combination.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption:
+        "Brute force — DFS over every ordering of candidates, deduped after the fact by a sorted key: " +
+        "O(n^(T/m)) branches before dedup, where n is the candidate count and m the smallest candidate.",
+      source:
+        "function combinationSumBruteForce(candidates, target) {\n" +
+        "  const seen = new Set(); // canonical keys of combinations already recorded, so dedup works after the fact\n" +
+        "  const result = [];\n" +
+        "  const path = []; // the combination currently being built\n" +
+        "  let sum = 0; // running total of the path\n" +
+        "\n" +
+        "  function dfs() {\n" +
+        "    if (sum === target) {\n" +
+        "      // Sort the path so any order of the same multiset maps to one canonical key.\n" +
+        "      const key = [...path].sort((a, b) => a - b).join(',');\n" +
+        "      if (!seen.has(key)) {\n" +
+        "        seen.add(key);\n" +
+        "        result.push([...path].sort((a, b) => a - b));\n" +
+        "      }\n" +
+        "      return; // stop — don't keep adding once the target is already hit\n" +
+        "    }\n" +
+        "    if (sum > target) return; // overshot; this branch can never recover\n" +
+        "    // Try every candidate at every position — no start index, so [2,3] and [3,2] both get explored.\n" +
+        "    for (let i = 0; i < candidates.length; i++) {\n" +
+        "      path.push(candidates[i]);\n" +
+        "      sum += candidates[i];\n" +
+        "      dfs();\n" +
+        "      sum -= candidates[i];\n" +
+        "      path.pop();\n" +
+        "    }\n" +
+        "  }\n" +
+        "\n" +
+        "  dfs();\n" +
+        "  return result;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This works, but it pays twice for never restricting the order of choices. The search explores every " +
+        "ordering of a combination — `[2, 3]` and `[3, 2]` both get built as separate branches — which blows the " +
+        "branching factor up to the *full* candidate count at every level, not just the candidates from some " +
+        "point onward. Then it has to sort and dedup after the fact just to collapse those reorderings back into " +
+        "one answer. Can we do better?\n\n" +
+        "Key observation: once reordering doesn't matter, force the search to only ever build combinations in " +
+        "**non-decreasing** order. Passing a `start` index forward — the earliest index the *next* pick may come " +
+        "from, instead of always scanning from 0 — means `[3, 2]` is never attempted as a separate branch from " +
+        "`[2, 3]`: once index 0 is behind you, `start` can only move further forward, never back. That's the " +
+        "same decision-tree recursion behind [Subsets](/problems/subsets), just with a numeric budget " +
+        "(`remaining`) capping the depth instead of running out of indices — and reuse still works, because " +
+        "recursing with `start = i` (not `i + 1`) lets the same candidate be chosen again.\n\n" +
+        "Sorting the array first buys one more win: once `sorted[i]` is too big for what's left, every candidate " +
+        "after it is too (they're sorted ascending) — so the loop can `break` immediately instead of checking " +
+        "every remaining candidate one by one.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "sorted: [3, 4, 5], target = 8",
+      lane: [3, 4, 5],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "i", at: 0 }],
+          action: "take sorted[0]=3 (start stays 0)",
+          caption:
+            "Start the search at start=0 with remaining=8. Reuse is allowed, so taking 3 recurses with the same " +
+            "start index — 3 can be chosen again next.",
+        },
+        {
+          pointers: [{ name: "i", at: 0 }],
+          action: "sorted[0]=3 > remaining(2) → break",
+          caption:
+            "After picking 3 twice (path=[3,3], remaining=2), even the smallest candidate no longer fits. Because " +
+            "the array is sorted, everything from here on is at least as big — break instead of checking each one.",
+        },
+        {
+          pointers: [{ name: "i", at: 2 }],
+          action: "3 + 5 = 8 → record [3, 5]",
+          caption:
+            "Backtracking out of the [3,3,…] and [3,4,…] dead ends, index 2 (value 5) closes the gap exactly: " +
+            "remaining hits 0, so [3, 5] is recorded.",
+        },
+        {
+          pointers: [{ name: "i", at: 1 }],
+          marked: [0],
+          action: "take sorted[1]=4 (start becomes 1)",
+          caption:
+            "Back at the root, the whole i=0 branch is exhausted. Moving to i=1 raises start to 1 — index 0's " +
+            "candidate (3) can never be chosen again below this point. That's exactly why [4, 3] never gets " +
+            "generated as a second copy of [3, 4]-style pairs: only non-decreasing picks are possible.",
+        },
+        {
+          pointers: [{ name: "i", at: 1 }],
+          marked: [0],
+          action: "4 + 4 = 8 → record [4, 4]",
+          caption:
+            "One level deeper, index 1 (value 4) is available again since start is still 1 — reuse in action. " +
+            "remaining hits 0: record [4, 4].",
+        },
+        {
+          pointers: [{ name: "i", at: 2 }],
+          marked: [0, 1],
+          action: "sorted[2]=5 > remaining(3) → break",
+          caption:
+            "Finally, starting fresh from index 2 (3 and 4 are now locked out), only 5 remains: 5 > remaining(3) " +
+            "— break. Nothing left to try; the search ends having found exactly two combinations.",
+        },
+      ],
+    },
+  ],
+
+  "letter-combinations-of-a-phone-number": [
+    {
+      kind: "prose",
+      body:
+        "A first attempt builds the whole cartesian product a round at a time: start with just the empty " +
+        "combination, and for each digit in turn, extend every combination built so far with every letter that " +
+        "digit could be.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption:
+        "Brute force — iterative cartesian product, rebuilt one digit at a time: O(n · 4ⁿ) time (the same " +
+        "output-bound complexity as the optimal).",
+      source:
+        "function letterCombinations(digits) {\n" +
+        "  // No digits, no combinations.\n" +
+        "  if (digits.length === 0) return [];\n" +
+        "  const map = {\n" +
+        "    \"2\": \"abc\", \"3\": \"def\", \"4\": \"ghi\", \"5\": \"jkl\",\n" +
+        "    \"6\": \"mno\", \"7\": \"pqrs\", \"8\": \"tuv\", \"9\": \"wxyz\",\n" +
+        "  };\n" +
+        "  // The \"product built so far\" — starts as just the empty combination.\n" +
+        "  let combos = [\"\"];\n" +
+        "  for (const digit of digits) {\n" +
+        "    const letters = map[digit];\n" +
+        "    const next = [];\n" +
+        "    // Extend every combination built so far with every letter this digit could be.\n" +
+        "    for (const combo of combos) {\n" +
+        "      for (const letter of letters) {\n" +
+        "        next.push(combo + letter);\n" +
+        "      }\n" +
+        "    }\n" +
+        "    combos = next; // this round's full product replaces the last one entirely\n" +
+        "  }\n" +
+        "  return combos;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This already runs in O(n · 4ⁿ) — the same order as the optimal, since the output itself holds up to 4ⁿ " +
+        "combinations of length n, and no algorithm that returns every one of them can do less work than that. " +
+        "Can we do better?\n\n" +
+        "Not on complexity — on how directly the choices get made. Every round, the outer loop throws `combos` " +
+        "away and rebuilds `next` from scratch, re-copying every prefix built in every earlier round just to " +
+        "tack one more letter onto it. That's the same fix-one-choice-then-recurse-into-the-rest idea behind " +
+        "[Subsets](/problems/subsets) and [Permutations](/problems/permutations), just run breadth-first over " +
+        "the whole frontier of partial strings instead of depth-first over one path at a time — and depth-first " +
+        "only ever needs *one* partial string in memory (the call stack's local `path`), not every combination " +
+        "built so far.\n\n" +
+        "The stored solution takes that route: walk the digits left to right with an `index` and a single " +
+        "`path` string built one character at a time. At each `index`, try every letter `digits[index]` maps " +
+        "to — recurse into `index + 1` with `path + letter` — and once `index` reaches `digits.length`, `path` " +
+        "is a complete combination, so record it. Because `path + letter` builds a new string rather than " +
+        "mutating a shared one, there's no explicit undo step the way an array-based `path.pop()` would need — " +
+        "the caller's own `path` is untouched by whatever the recursive call did with its copy.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "digits = \"352\"",
+      lane: ["3", "5", "2"],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "index", at: 0 }],
+          action: "digit '3' → try 'd' → path = \"d\"",
+          caption: "Start at index 0 with an empty path. Digit '3' maps to \"def\"; try its first letter.",
+        },
+        {
+          pointers: [{ name: "index", at: 1 }],
+          marked: [0],
+          action: "digit '5' → try 'j' → path = \"dj\"",
+          caption: "One level deeper on the 'd' branch. Digit '5' maps to \"jkl\"; try its first letter.",
+        },
+        {
+          pointers: [{ name: "index", at: 2 }],
+          marked: [0, 1],
+          action: "digit '2' → try 'a' → path = \"dja\"",
+          caption:
+            "Index 2 is digit '2', which maps to \"abc\"; try its first letter. The path is now three characters " +
+            "long — one per digit.",
+        },
+        {
+          pointers: [{ name: "index", at: 2 }],
+          marked: [0, 1],
+          action: "index === digits.length (3) → record \"dja\"",
+          caption:
+            "The path's length now matches digits.length, so \"dja\" is a complete combination — record it, then " +
+            "return back up to where 'a' was chosen.",
+        },
+        {
+          pointers: [{ name: "index", at: 2 }],
+          marked: [0, 1],
+          action: "undo 'a'; try 'b' → path = \"djb\" → record \"djb\"",
+          caption:
+            "Back at index 2, drop 'a' and try digit '2''s next letter, 'b' — that completes another combination, " +
+            "\"djb\".",
+        },
+        {
+          pointers: [{ name: "index", at: 1 }],
+          marked: [0],
+          action: "digit '2' exhausted under \"dj\" → undo 'j'; try 'k' → path = \"dk\"",
+          caption:
+            "Once all three of digit '2''s letters (a, b, c) are tried under \"dj\", unwind to index 1 and move to " +
+            "digit '5''s next letter, 'k'. A fresh descent into index 2 begins again from there.",
+        },
+      ],
+    },
+  ],
+
+  "n-queens": [
+    {
+      kind: "prose",
+      body:
+        "A first attempt places one queen per row, same as the optimal search, but decides whether a column " +
+        "is safe by looking at the board itself: scan every queen already placed and check whether it shares " +
+        "the candidate's column or either diagonal.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption:
+        "Brute force — same row-by-row backtracking, but safety is checked by rescanning every placed queen: " +
+        "O(row) per check instead of O(1).",
+      source:
+        "function solveNQueensBruteForce(n) {\n" +
+        "  const result = [];\n" +
+        "  const queens = []; // queens[r] = column of the queen placed in row r\n" +
+        "\n" +
+        "  // Scan every already-placed queen for a column or diagonal collision — O(row) per call.\n" +
+        "  function isSafe(row, col) {\n" +
+        "    for (let r = 0; r < row; r++) {\n" +
+        "      const c = queens[r];\n" +
+        "      if (c === col) return false; // same column\n" +
+        "      if (Math.abs(c - col) === row - r) return false; // same diagonal, either direction\n" +
+        "    }\n" +
+        "    return true;\n" +
+        "  }\n" +
+        "\n" +
+        "  function place(row) {\n" +
+        "    if (row === n) {\n" +
+        "      // Every row is filled — turn the column list into the board's string form.\n" +
+        "      result.push(queens.map((c) => '.'.repeat(c) + 'Q' + '.'.repeat(n - 1 - c)));\n" +
+        "      return;\n" +
+        "    }\n" +
+        "    for (let col = 0; col < n; col++) {\n" +
+        "      if (!isSafe(row, col)) continue; // rescans the whole placed list every time\n" +
+        "      queens.push(col); // choose\n" +
+        "      place(row + 1); // explore with a queen locked in at (row, col)\n" +
+        "      queens.pop(); // un-choose before trying the next column\n" +
+        "    }\n" +
+        "  }\n" +
+        "\n" +
+        "  place(0);\n" +
+        "  return result;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This already explores the right search tree — one queen per row, try a column, recurse, undo — so " +
+        "it isn't a different algorithm, just a slower way to answer one question: *does this column collide " +
+        "with any queen already on the board?* Scanning up to `row` placed queens for that answer costs O(n) " +
+        "in the worst case, and it gets asked at every one of the up to `n` candidate columns, at every one of " +
+        "the `n` rows — an avoidable O(n) factor stacked on top of an already-exponential search. Can we do " +
+        "better?\n\n" +
+        "The key observation: a queen at `(r, c)` doesn't just occupy one column — it also occupies exactly " +
+        "one \"↘\" diagonal, where `r − c` is constant, and one \"↙\" diagonal, where `r + c` is constant. " +
+        "Column and both diagonals are just three group memberships, and answering membership in O(1) is " +
+        "exactly the [hash maps](/study-guide/algos/topic/hash-maps) trick — keep three `Set`s (`cols`, " +
+        "`diag1` keyed by `r − c`, `diag2` keyed by `r + c`) instead of rescanning the board.\n\n" +
+        "The stored solution keeps the identical recursive shape — same row-by-row placement, same " +
+        "push/recurse/pop — and only swaps the O(n) board rescan for three O(1) set lookups, adding to and " +
+        "removing from the three sets alongside every `queens.push()` / `queens.pop()`.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "gridWalkthrough",
+      heading: "n = 4",
+      showIndices: true,
+      grid: [
+        [".", ".", ".", "."],
+        [".", ".", ".", "."],
+        [".", ".", ".", "."],
+        [".", ".", ".", "."],
+      ],
+      frames: [
+        {
+          grid: [
+            ["Q", ".", ".", "."],
+            [".", ".", ".", "."],
+            [".", ".", ".", "."],
+            [".", ".", ".", "."],
+          ],
+          cursor: [0, 0],
+          action: "row 0, col 0: cols/diag1/diag2 all empty → place",
+          caption:
+            "Start the search: row 0 has no queens yet, so column 0 is automatically safe. Place the queen and " +
+            "record cols={0}, diag1={0} (0−0), diag2={0} (0+0).",
+        },
+        {
+          grid: [
+            ["Q", ".", ".", "."],
+            [".", ".", ".", "."],
+            [".", ".", ".", "."],
+            [".", ".", ".", "."],
+          ],
+          cursor: [1, 1],
+          marked: [[0, 0], [1, 1], [2, 2], [3, 3]],
+          action: "row 1, col 1: diag1 has 0 (1−1=0) → skip",
+          caption:
+            "(1,1) sits on (0,0)'s ↘ diagonal (r − c = 0, the whole diagonal is marked) — the diag1 set rejects " +
+            "it in O(1), no need to look at the board.",
+        },
+        {
+          grid: [
+            ["Q", ".", ".", "."],
+            [".", ".", "Q", "."],
+            [".", ".", ".", "."],
+            [".", ".", ".", "."],
+          ],
+          cursor: [1, 2],
+          action: "row 1, col 2: cols/diag1/diag2 all miss → place",
+          caption:
+            "Column 2 collides with nothing — not (0,0)'s column, and neither of its diagonals. Place the queen " +
+            "and recurse into row 2.",
+        },
+        {
+          grid: [
+            ["Q", ".", ".", "."],
+            [".", ".", "Q", "."],
+            [".", ".", ".", "."],
+            [".", ".", ".", "."],
+          ],
+          marked: [[2, 0], [2, 1], [2, 2], [2, 3]],
+          action: "row 2: every column conflicts → backtrack",
+          caption:
+            "Column 0 shares (0,0)'s column; column 1 shares (1,2)'s ↙ diagonal (r+c=3); column 2 shares " +
+            "(1,2)'s column; column 3 shares (1,2)'s ↘ diagonal (r−c=−1). No safe cell — pop (1,2). Row 1's " +
+            "last option, column 3, dead-ends the same way one row deeper, so the whole column-0 opening " +
+            "backtracks out completely; row 0 retries with column 1.",
+        },
+        {
+          grid: [
+            [".", "Q", ".", "."],
+            [".", ".", ".", "Q"],
+            ["Q", ".", ".", "."],
+            [".", ".", ".", "."],
+          ],
+          cursor: [2, 0],
+          action: "row 1: skip col 0/1/2 → col 3 safe; row 2: col 0 safe",
+          caption:
+            "Under the new queen at (0,1), row 1 rules out column 0 (shares its ↙ diagonal, r+c=1), column 1 " +
+            "(shares its column), and column 2 (shares its ↘ diagonal, r−c=−1) — the same three set checks as " +
+            "before — leaving column 3 clear. Row 2 then finds column 0 open. Three queens placed, one row left.",
+        },
+        {
+          grid: [
+            [".", "Q", ".", "."],
+            [".", ".", ".", "Q"],
+            ["Q", ".", ".", "."],
+            [".", ".", "Q", "."],
+          ],
+          cursor: [3, 2],
+          action: "row 3, col 2: clear → place → row === n → record board",
+          caption:
+            "Column 2 collides with none of the three queens above it. All four rows are filled, so this board " +
+            "— one of N-Queens' two solutions for n = 4 — is recorded.",
+        },
+      ],
+    },
+  ],
 };
 
 /**
@@ -7456,6 +8064,230 @@ export const PROBLEM_EXTRAS: Record<string, { complexity?: Section[]; testCases?
       { args: [[[1, 1], [1, 4], [5, 1]]], expected: 7, note: "An L of three points — the two legs (3 and 4) span them, skipping the long hypotenuse." },
       { args: [[[0, 0], [2, 0], [5, 0], [9, 0]]], expected: 9, note: "Collinear points — the MST chains the adjacent gaps 2+3+4." },
       { args: [[[0, 0], [0, 3], [4, 0], [4, 3]]], expected: 10, note: "A 4×3 rectangle — the MST uses three sides (3 + 4 + 3)." },
+    ],
+  },
+
+  "subsets": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n · 2ⁿ). Here's why:\n\n" +
+          "- The result doubles once per number: after processing `k` of the `n` numbers it holds `2^k` subsets, so after all `n` numbers it holds `2ⁿ` subsets total.\n" +
+          "- Each doubling step maps over the current result, copying every existing subset (up to length `n`) to append the new number — one copy costs up to O(n).\n" +
+          "- Summed across all `n` doubling steps, the total work tracks the combined size of every subset ever built.\n\n" +
+          "So the overall time is **O(n · 2ⁿ)** — which is also the size of the output itself, so no algorithm that returns every subset can do better.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(n · 2ⁿ). Here's why:\n\n" +
+          "- The final `result` holds all `2ⁿ` subsets; each of the `n` numbers appears in exactly half of them, so the combined length across every subset is `n · 2ⁿ⁻¹`.\n" +
+          "- `result.concat(...)` and `.map(...)` allocate new arrays each step, but those become the final subsets rather than adding overhead beyond them.\n" +
+          "- The approach is iterative, not recursive, so there's no call stack to add on top.\n\n" +
+          "So the extra space is **O(n · 2ⁿ)**, dominated by the output — the same size the problem forces any solution to produce.",
+      },
+    ],
+    testCases: [
+      { args: [[9]], expected: [[], [9]], note: "Single positive element — smallest possible input, 2¹ = 2 subsets." },
+      { args: [[-8, 4]], expected: [[], [-8], [4], [-8, 4]], note: "Two elements, one negative — 2² = 4 subsets." },
+      {
+        args: [[3, -3, 6]],
+        expected: [[], [3], [-3], [3, -3], [6], [3, 6], [-3, 6], [3, -3, 6]],
+        note: "Three elements including a negative — 2³ = 8 subsets, in the order the doubling actually builds them.",
+      },
+      {
+        args: [[0, -5, 10, 2]],
+        expected: [
+          [], [0], [-5], [0, -5], [10], [0, 10], [-5, 10], [0, -5, 10],
+          [2], [0, 2], [-5, 2], [0, -5, 2], [10, 2], [0, 10, 2], [-5, 10, 2], [0, -5, 10, 2],
+        ],
+        note: "Four elements spanning zero and both signs — 2⁴ = 16 subsets, checks the doubling scales past one round.",
+      },
+      { args: [[-7, 1]], expected: [[], [-7], [1], [-7, 1]], note: "Two elements, both boundary-adjacent signs — a second pair case distinct from row 2." },
+    ],
+  },
+
+  "permutations": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n · n!). Here's why:\n\n" +
+          "- The recursion produces exactly `n!` complete permutations — one leaf per full-length path.\n" +
+          "- Reaching each leaf takes `n` recursive calls (one per position filled), and recording it copies the `n`-length path — both O(n) per leaf.\n" +
+          "- The `used` array answers every \"is this index free?\" check in O(1), so no extra factor is added beyond the `n!` leaves and their O(n) cost.\n\n" +
+          "So the total work is `n! × O(n)` = **O(n · n!)**.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(n) auxiliary. Here's why:\n\n" +
+          "- The `used` array and the `path` array each hold at most `n` entries.\n" +
+          "- The recursion stack is at most `n` frames deep, one per position filled.\n\n" +
+          "So the extra bookkeeping is **O(n)**. The `result` array itself holds `n!` permutations of length `n` — " +
+          "O(n · n!) — but that's the required output, not overhead the algorithm adds.",
+      },
+    ],
+    testCases: [
+      { args: [[8]], expected: [[8]], note: "Single element — smallest possible input, only one arrangement." },
+      { args: [[4, -3]], expected: [[4, -3], [-3, 4]], note: "Two elements, one negative — both orderings." },
+      { args: [[6, 3]], expected: [[6, 3], [3, 6]], note: "Two positive elements — the other direction of the pair swap." },
+      {
+        args: [[2, -4, 7]],
+        expected: [[2, -4, 7], [2, 7, -4], [-4, 2, 7], [-4, 7, 2], [7, 2, -4], [7, -4, 2]],
+        note: "Three elements spanning positive and negative — the full 3! = 6 branch from the walkthrough's shape.",
+      },
+      {
+        args: [[-10, 0, 10]],
+        expected: [[-10, 0, 10], [-10, 10, 0], [0, -10, 10], [0, 10, -10], [10, -10, 0], [10, 0, -10]],
+        note: "Both constraint boundaries plus zero — still just 3! = 6 orderings, no special-casing needed.",
+      },
+    ],
+  },
+
+  "combination-sum": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n^(T/m + 1)). Here's why:\n\n" +
+          "- Sorting the candidates first costs O(n log n).\n" +
+          "- Every recursive call branches over up to `n` candidates, and `remaining` shrinks by at least `m` " +
+          "(the smallest candidate) with each pick, so the recursion depth is bounded by `T/m`.\n" +
+          "- Compounding a branching factor of `n` across a depth of `T/m` bounds the call count at `O(n^(T/m))`, " +
+          "and each call that completes a combination copies up to `T/m` values into the result.\n\n" +
+          "So the overall time is bounded by **O(n^(T/m + 1))** — dominated by the shape of the search tree, not " +
+          "the O(n log n) sort. Here `n` is the candidate count, `T` the target, and `m` the smallest candidate.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(T/m) auxiliary. Here's why:\n\n" +
+          "- The recursion stack is at most `T/m` frames deep, since `remaining` drops by at least `m` — the " +
+          "smallest candidate — on every call.\n" +
+          "- The `path` array mirrors that same depth, holding at most `T/m` chosen numbers at once.\n" +
+          "- The sorted copy of `candidates` adds another O(n).\n\n" +
+          "So the extra bookkeeping is **O(n + T/m)**. Each `result.push([...path])` copies the current path into " +
+          "the output, so `result` itself can grow large (as many as O(n^(T/m)) combinations worst case) — but " +
+          "that's the required answer, not overhead the algorithm adds.",
+      },
+    ],
+    testCases: [
+      { args: [[5], 3], expected: [], note: "Smallest no-solution case — the only candidate already exceeds the target." },
+      { args: [[4], 12], expected: [[4, 4, 4]], note: "Single candidate that divides the target evenly, reused three times." },
+      {
+        args: [[6, 10, 20], 6],
+        expected: [[6]],
+        note: "Target equals the smallest candidate itself — the larger candidates are pruned by the sorted break before they're ever tried.",
+      },
+      {
+        args: [[3, 4, 6], 12],
+        expected: [[3, 3, 3, 3], [3, 3, 6], [4, 4, 4], [6, 6]],
+        note: "Several candidates reach the same target different ways, including heavy reuse of the smallest value.",
+      },
+      {
+        args: [[2, 5, 7], 14],
+        expected: [[2, 2, 2, 2, 2, 2, 2], [2, 2, 5, 5], [2, 5, 7], [7, 7]],
+        note: "More candidates and a larger target — combinations range from two values up to seven reused copies of the smallest.",
+      },
+    ],
+  },
+
+  "letter-combinations-of-a-phone-number": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n · 4ⁿ). Here's why:\n\n" +
+          "- Each digit maps to at most 4 letters (`7` and `9`), so the recursion branches at most 4 ways at " +
+          "every position, giving at most 4ⁿ complete combinations for `n` digits.\n" +
+          "- Reaching each leaf takes `n` recursive calls — one per digit position — and recording it involves a " +
+          "string of length `n`, both O(n) of work per leaf.\n" +
+          "- There's no wasted work above the leaves: every call either recurses further or returns immediately, " +
+          "so the total cost tracks the leaves times their depth.\n\n" +
+          "So the overall time is `4ⁿ × O(n)` = **O(n · 4ⁿ)**.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(n) auxiliary. Here's why:\n\n" +
+          "- The recursion stack is at most `n` frames deep, one per digit position.\n" +
+          "- Each call's own `path` argument is a string of length up to `n`; because strings are immutable, " +
+          "there's no shared mutable buffer to undo on the way back up.\n" +
+          "- The digit-to-letters `map` is a fixed 8-entry table — O(1) regardless of the input.\n\n" +
+          "So the extra bookkeeping is **O(n)**. The `result` array itself holds up to 4ⁿ strings of length n " +
+          "— O(n · 4ⁿ) — but that's the required output, not overhead the algorithm adds.",
+      },
+    ],
+    testCases: [
+      { args: ["8"], expected: ["t", "u", "v"], note: "Single digit — smallest nonempty input, a three-letter set." },
+      {
+        args: ["35"],
+        expected: ["dj", "dk", "dl", "ej", "ek", "el", "fj", "fk", "fl"],
+        note: "Two digits, three letters apiece — a fresh two-digit spread not shown in the example.",
+      },
+      {
+        args: ["44"],
+        expected: ["gg", "gh", "gi", "hg", "hh", "hi", "ig", "ih", "ii"],
+        note: "The same digit twice — every letter pairs with every letter, including itself.",
+      },
+      {
+        args: ["94"],
+        expected: ["wg", "wh", "wi", "xg", "xh", "xi", "yg", "yh", "yi", "zg", "zh", "zi"],
+        note: "A four-letter digit paired with a three-letter digit — an asymmetric letter-set size.",
+      },
+      {
+        args: ["638"],
+        expected: [
+          "mdt", "mdu", "mdv", "met", "meu", "mev", "mft", "mfu", "mfv",
+          "ndt", "ndu", "ndv", "net", "neu", "nev", "nft", "nfu", "nfv",
+          "odt", "odu", "odv", "oet", "oeu", "oev", "oft", "ofu", "ofv",
+        ],
+        note: "Three digits — same depth as the walkthrough, one deeper than the derived example.",
+      },
+    ],
+  },
+
+  "n-queens": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n!). Here's why:\n\n" +
+          "- Row 0 has up to `n` candidate columns; row 1 has at most `n − 1` left once one column is ruled " +
+          "out, and so on — the search tree branches like a permutation of the `n` columns, one per row.\n" +
+          "- The three `Set`s prune many branches long before they reach row `n`, but the classic worst-case " +
+          "bound is still the same as generating permutations of `n` columns: **O(n!)**.\n" +
+          "- Each safety check inside the loop is O(1) (three set lookups), so checking itself adds no extra " +
+          "factor on top of the branching — the brute force's O(n) rescan is what the sets remove.\n\n" +
+          "So the overall time is bounded by **O(n!)**, dominated by the shape of the search tree.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(n) auxiliary. Here's why:\n\n" +
+          "- `queens` holds at most `n` column choices, one per row.\n" +
+          "- `cols`, `diag1`, and `diag2` each hold at most `n` entries — one per placed queen.\n" +
+          "- The recursion stack is at most `n` frames deep, one per row.\n\n" +
+          "So the extra bookkeeping is **O(n)**. The `result` array can hold up to as many boards as exist " +
+          "for that `n`, each an array of `n` strings — that's the required output, not overhead the " +
+          "algorithm adds.",
+      },
+    ],
+    testCases: [
+      { args: [1], expected: [["Q"]], note: "Trivial base case — a single queen on a 1×1 board has no possible conflicts." },
+      {
+        args: [2],
+        expected: [],
+        note: "Smallest no-solution board — every column choice at row 1 collides with row 0's queen, by column or diagonal.",
+      },
+      { args: [3], expected: [], note: "Still no solution — three queens can't avoid attacking each other on a 3×3 board." },
+      {
+        args: [4],
+        expected: [[".Q..", "...Q", "Q...", "..Q."], ["..Q.", "Q...", "...Q", ".Q.."]],
+        note: "Smallest board with a solution — exactly two, mirror images of each other.",
+      },
     ],
   },
 };

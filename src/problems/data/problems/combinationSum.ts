@@ -92,38 +92,50 @@ function combinationSum(candidates: number[], target: number): number[][] {
 With \`n\` candidates and target \`T\`, the search tree is bounded by the number of valid combinations; worst case \`O(n^(T/min))\` nodes, \`O(T/min)\` recursion depth.`,
       code: {
         javascript: `function combinationSum(candidates, target) {
+  // Sort so the search can prune early: once a candidate is too big, every later one is too.
   const sorted = [...candidates].sort((a, b) => a - b);
   const result = [];
-  const path = [];
+  const path = []; // the combination currently being built
+  // \`start\` is the earliest index this call may pick from — it only ever moves forward, so
+  // combinations are built in non-decreasing order and reorderings (e.g. [2,3] vs [3,2]) never recur.
   const dfs = (start, remaining) => {
     if (remaining === 0) {
+      // Exact match — record a snapshot of the path.
       result.push([...path]);
       return;
     }
     for (let i = start; i < sorted.length; i++) {
+      // Sorted ascending, so once one candidate overshoots, all the rest do too.
       if (sorted[i] > remaining) break;
-      path.push(sorted[i]);
+      path.push(sorted[i]); // choose sorted[i]
+      // Recurse with start = i (not i + 1) so this same candidate can be reused.
       dfs(i, remaining - sorted[i]);
-      path.pop();
+      path.pop(); // undo the choice (backtrack) before trying the next candidate
     }
   };
   dfs(0, target);
   return result;
 }`,
         typescript: `function combinationSum(candidates: number[], target: number): number[][] {
+  // Sort so the search can prune early: once a candidate is too big, every later one is too.
   const sorted = [...candidates].sort((a, b) => a - b);
   const result: number[][] = [];
-  const path: number[] = [];
+  const path: number[] = []; // the combination currently being built
+  // \`start\` is the earliest index this call may pick from — it only ever moves forward, so
+  // combinations are built in non-decreasing order and reorderings (e.g. [2,3] vs [3,2]) never recur.
   const dfs = (start: number, remaining: number): void => {
     if (remaining === 0) {
+      // Exact match — record a snapshot of the path.
       result.push([...path]);
       return;
     }
     for (let i = start; i < sorted.length; i++) {
+      // Sorted ascending, so once one candidate overshoots, all the rest do too.
       if (sorted[i] > remaining) break;
-      path.push(sorted[i]);
+      path.push(sorted[i]); // choose sorted[i]
+      // Recurse with start = i (not i + 1) so this same candidate can be reused.
       dfs(i, remaining - sorted[i]);
-      path.pop();
+      path.pop(); // undo the choice (backtrack) before trying the next candidate
     }
   };
   dfs(0, target);
