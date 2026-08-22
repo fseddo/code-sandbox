@@ -65,17 +65,23 @@ function minDistance(word1: string, word2: string): number {
         javascript: `function minDistance(word1, word2) {
   const m = word1.length;
   const n = word2.length;
+  // prev = dp[i - 1][...]: edit distance from the first (i - 1) chars of word1 to
+  // every prefix of word2. Row 0 is the base case: turning "" into word2[0:j] takes j inserts.
   let prev = Array.from({ length: n + 1 }, (_, j) => j);
   for (let i = 1; i <= m; i++) {
     const curr = new Array(n + 1);
+    // dp[i][0]: turning word1[0:i] into "" takes i deletes.
     curr[0] = i;
     for (let j = 1; j <= n; j++) {
       if (word1[i - 1] === word2[j - 1]) {
+        // Characters already match — carry the diagonal value, no extra cost.
         curr[j] = prev[j - 1];
       } else {
+        // Cheapest of: replace (diagonal), delete from word1 (above), insert into word1 (left).
         curr[j] = 1 + Math.min(prev[j - 1], prev[j], curr[j - 1]);
       }
     }
+    // This row is done; it becomes "the row above" for the next iteration.
     prev = curr;
   }
   return prev[n];
@@ -83,17 +89,23 @@ function minDistance(word1: string, word2: string): number {
         typescript: `function minDistance(word1: string, word2: string): number {
   const m = word1.length;
   const n = word2.length;
+  // prev = dp[i - 1][...]: edit distance from the first (i - 1) chars of word1 to
+  // every prefix of word2. Row 0 is the base case: turning "" into word2[0:j] takes j inserts.
   let prev: number[] = Array.from({ length: n + 1 }, (_, j) => j);
   for (let i = 1; i <= m; i++) {
     const curr: number[] = new Array(n + 1);
+    // dp[i][0]: turning word1[0:i] into "" takes i deletes.
     curr[0] = i;
     for (let j = 1; j <= n; j++) {
       if (word1[i - 1] === word2[j - 1]) {
+        // Characters already match — carry the diagonal value, no extra cost.
         curr[j] = prev[j - 1];
       } else {
+        // Cheapest of: replace (diagonal), delete from word1 (above), insert into word1 (left).
         curr[j] = 1 + Math.min(prev[j - 1], prev[j], curr[j - 1]);
       }
     }
+    // This row is done; it becomes "the row above" for the next iteration.
     prev = curr;
   }
   return prev[n];

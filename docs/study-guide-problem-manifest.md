@@ -23,14 +23,14 @@
 | Trees | `trees` | yes |
 | Tries | `tries` | yes |
 | Graphs | `graphs` | yes |
-| **Backtracking** | `backtracking` | **this run** |
-| Dynamic Programming | `dynamic-programming` | no |
+| Backtracking | `backtracking` | yes |
+| **Dynamic Programming** | `dynamic-programming` | **this run** |
 | Greedy | `greedy` | no |
 | Sort and Search | `sorting` | no |
 | Bit Manipulation | `bit-manipulation` | no |
 | Math and Geometry | `math` | no |
 
-Per-chapter problem counts (deduped BBG problems): Intervals 3 · Prefix Sums 4 · Trees 14 · Tries 3 · Graphs 11 · Backtracking 5 · Dynamic Programming 11 · Greedy 3 · Sort and Search 7 · Bit Manipulation 4 · Math and Geometry 6.
+Per-chapter problem counts (deduped BBG problems): Intervals 3 · Prefix Sums 4 · Trees 14 · Tries 3 · Graphs 11 · Backtracking 5 · Dynamic Programming 9 BBG + 1 non-BBG extra (10 built) · Greedy 3 · Sort and Search 7 · Bit Manipulation 4 · Math and Geometry 6.
 
 > Column legend — **In bank already?** is true iff the *suggested* bank id already exists as a key in `src/problems/data/problems/index.ts`. "off-catalog" = a BBG-original problem with no clean public LeetCode twin (lower mapping confidence; import from a self-contained spec). "sandbox concern" flags problems whose I/O shape (streaming, design/class, randomized, graph-build) may be awkward for the judge harness.
 
@@ -126,21 +126,22 @@ Per-chapter problem counts (deduped BBG problems): Intervals 3 · Prefix Sums 4 
 
 ---
 
-## Dynamic Programming (11)
+## Dynamic Programming (10 — built)
+
+**Resolved (2026-08):** the original 11-row estimate below was wrong on two counts, corrected by directly re-fetching `python3/Dynamic Programming/` from the BBG repo during the build. The BBG chapter has **9 distinct problems**, not 11 — the manifest's 11th-row padding never existed. `edit-distance` is **not** a BBG Dynamic Programming chapter file at all (contradicts this row's original "high confidence"); it was kept anyway as a documented non-BBG pattern-coverage addition (same precedent as Trees' `same-tree` and Prefix Sums' 2D range-sum), giving **10 built pages** total. The 0/1 Knapsack row's LC 416 suggestion was also dropped — BBG's `knapsack.py` is a generic value-maximization knapsack, not LC 416's subset-sum framing — and imported as a faithful off-catalog `knapsack(cap, weights, values)` instead.
 
 | BBG problem name | Suggested bank id/slug | In bank already? | Mapping confidence | Notes |
 | --- | --- | --- | --- | --- |
 | Climbing Stairs | `climbing-stairs` | yes | high | LC 70 — already in bank. |
-| Min Coin Combination | `coin-change` | no | high | LC 322. Unbounded knapsack DP. |
+| Min Coin Combination | `coin-change` | **imported #153** | high | LC 322. Unbounded knapsack DP. |
 | Matrix Pathways | `unique-paths` | yes | high | LC 62 — already in bank. |
-| Neighborhood Burglary | `house-robber` | no | high | LC 198. |
-| Longest Common Subsequence | `longest-common-subsequence` | no | high | LC 1143. 2D DP. |
+| Neighborhood Burglary | `house-robber` | **imported #154** | high | LC 198. |
+| Longest Common Subsequence | `longest-common-subsequence` | **imported #155** | high | LC 1143. 2D DP. |
 | Longest Palindrome in a String | `longest-palindromic-substring` | yes | high | LC 5 — already in bank. |
 | Maximum Subarray Sum | `maximum-subarray` | yes | high | LC 53 — already in bank (Kadane). |
-| 0/1 Knapsack | `partition-equal-subset-sum` | no | mid | BBG's `knapsack` is the classic 0/1 knapsack; closest clean LC framing is LC 416. Or import as off-catalog `knapsack` with a (weights, values, capacity) spec. |
-| Largest Square in a Matrix | `maximal-square` | no | high | LC 221. 2D DP over grid. |
-| (Edit distance foundation) | `edit-distance` | yes | high | LC 72 — already in bank; common DP chapter member. |
-| (DP foundation extra) | — | — | low | 11 distinct repo problems after collapsing variants; confirm exact set against the book. |
+| 0/1 Knapsack | `knapsack` (off-catalog) | **imported #157** | high | BBG's generic `(cap, weights, values)` knapsack, ported faithfully — not LC 416. |
+| Largest Square in a Matrix | `maximal-square` | **imported #156** | high | LC 221. 2D DP over grid. |
+| *(non-BBG pattern-coverage extra)* | `edit-distance` | yes | — | LC 72 — already in bank. **Not a confirmed BBG DP-chapter file**; kept as a genuinely distinct alignment-DP recurrence (3-way min + replace vs. LCS's 2-way max), flagged honestly rather than presented as a verified BBG match. |
 
 ---
 

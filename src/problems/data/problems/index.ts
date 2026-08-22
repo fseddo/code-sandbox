@@ -152,6 +152,11 @@ import { wordLadder } from "./wordLadder";
 import { courseSchedule } from "./courseSchedule";
 import { networkDelayTime } from "./networkDelayTime";
 import { minCostConnectPoints } from "./minCostConnectPoints";
+import { houseRobber } from "./houseRobber";
+import { coinChange } from "./coinChange";
+import { longestCommonSubsequence } from "./longestCommonSubsequence";
+import { maximalSquare } from "./maximalSquare";
+import { knapsack } from "./knapsack";
 
 /**
  * The problem bank, keyed by id. Authored modules keep their precise generics for
@@ -311,6 +316,11 @@ export const problems = {
   "course-schedule": courseSchedule,
   "network-delay-time": networkDelayTime,
   "min-cost-to-connect-all-points": minCostConnectPoints,
+  "house-robber": houseRobber,
+  "coin-change": coinChange,
+  "longest-common-subsequence": longestCommonSubsequence,
+  "maximal-square": maximalSquare,
+  knapsack,
 } satisfies Record<string, AnyProblem>;
 
 export type ProblemId = keyof typeof problems;

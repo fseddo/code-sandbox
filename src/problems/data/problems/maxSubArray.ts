@@ -74,19 +74,25 @@ function maxSubArray(nums: number[]): number {
 \`O(n)\` time, \`O(1)\` space.`,
       code: {
         javascript: `function maxSubArray(nums) {
+  // best sum of a subarray ending exactly at the current index (dp[i]); the first element is the only candidate so far.
   let best = nums[0];
   let cur = nums[0];
   for (let i = 1; i < nums.length; i++) {
+    // Either extend the previous run, or abandon it and start fresh here — whichever is larger.
     cur = Math.max(nums[i], cur + nums[i]);
+    // Track the best run seen anywhere, not just the one ending at the current index.
     best = Math.max(best, cur);
   }
   return best;
 }`,
         typescript: `function maxSubArray(nums: number[]): number {
+  // best sum of a subarray ending exactly at the current index (dp[i]); the first element is the only candidate so far.
   let best = nums[0];
   let cur = nums[0];
   for (let i = 1; i < nums.length; i++) {
+    // Either extend the previous run, or abandon it and start fresh here — whichever is larger.
     cur = Math.max(nums[i], cur + nums[i]);
+    // Track the best run seen anywhere, not just the one ending at the current index.
     best = Math.max(best, cur);
   }
   return best;

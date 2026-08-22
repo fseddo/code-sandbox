@@ -61,18 +61,24 @@ function uniquePaths(m: number, n: number): number {
 \`O(m·n)\` time, \`O(n)\` space.`,
       code: {
         javascript: `function uniquePaths(m, n) {
+  // row[j] = dp[i][j] for the row currently in progress; row 0 is all 1s (only one route: always right).
   const row = new Array(n).fill(1);
   for (let i = 1; i < m; i++) {
+    // Column 0 stays 1 (the only route down the left edge), so start at j = 1.
     for (let j = 1; j < n; j++) {
+      // row[j] is still dp[i-1][j]; row[j-1] was already overwritten this pass, so it's already dp[i][j-1].
       row[j] += row[j - 1];
     }
   }
   return row[n - 1];
 }`,
         typescript: `function uniquePaths(m: number, n: number): number {
+  // row[j] = dp[i][j] for the row currently in progress; row 0 is all 1s (only one route: always right).
   const row: number[] = new Array(n).fill(1);
   for (let i = 1; i < m; i++) {
+    // Column 0 stays 1 (the only route down the left edge), so start at j = 1.
     for (let j = 1; j < n; j++) {
+      // row[j] is still dp[i-1][j]; row[j-1] was already overwritten this pass, so it's already dp[i][j-1].
       row[j] += row[j - 1];
     }
   }

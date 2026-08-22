@@ -53,24 +53,26 @@ function climbStairs(n: number): number {
 \`O(n)\` time, \`O(1)\` space.`,
       code: {
         javascript: `function climbStairs(n) {
-  let prev = 1;
-  let curr = 1;
+  // Base cases folded in: dp[0] = dp[1] = 1, tracked as the last two values.
+  let prev = 1; // dp[i - 2]
+  let curr = 1; // dp[i - 1]
   for (let i = 2; i <= n; i++) {
-    const next = prev + curr;
-    prev = curr;
-    curr = next;
+    const next = prev + curr; // dp[i] = dp[i - 2] + dp[i - 1]
+    prev = curr; // slide the window forward: dp[i - 2] <- dp[i - 1]
+    curr = next; // dp[i - 1] <- dp[i]
   }
-  return curr;
+  return curr; // dp[n]; for n <= 1 the loop never runs and curr is already 1
 }`,
         typescript: `function climbStairs(n: number): number {
-  let prev = 1;
-  let curr = 1;
+  // Base cases folded in: dp[0] = dp[1] = 1, tracked as the last two values.
+  let prev = 1; // dp[i - 2]
+  let curr = 1; // dp[i - 1]
   for (let i = 2; i <= n; i++) {
-    const next = prev + curr;
-    prev = curr;
-    curr = next;
+    const next = prev + curr; // dp[i] = dp[i - 2] + dp[i - 1]
+    prev = curr; // slide the window forward: dp[i - 2] <- dp[i - 1]
+    curr = next; // dp[i - 1] <- dp[i]
   }
-  return curr;
+  return curr; // dp[n]; for n <= 1 the loop never runs and curr is already 1
 }`,
       },
     },

@@ -5927,6 +5927,1245 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
       ],
     },
   ],
+
+  "climbing-stairs": [
+    {
+      kind: "prose",
+      body:
+        "A first pass just recurses straight on the definition: the number of ways to reach step `n` is the " +
+        "number of ways to reach `n-1` plus the number of ways to reach `n-2`, recomputed from scratch every " +
+        "time either is needed.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — naive recursion on the recurrence, no caching: O(2ⁿ).",
+      source:
+        "function climbStairs(n) {\n" +
+        "  // Reaching stair 0 (stand still) or stair 1 (a single 1-step) each has exactly one way.\n" +
+        "  if (n <= 1) return 1;\n" +
+        "  // The last move into stair n was either a 1-step from n-1 or a 2-step from n-2;\n" +
+        "  // recurse into both and sum, with no memory of anything already solved.\n" +
+        "  return climbStairs(n - 1) + climbStairs(n - 2);\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(2ⁿ) — exponential, because the same subproblem gets solved over and over. " +
+        "`climbStairs(5)` calls `climbStairs(4)` and `climbStairs(3)`, but `climbStairs(4)` *also* calls " +
+        "`climbStairs(3)` — and both of those recurse all the way back down through `climbStairs(1)` and " +
+        "`climbStairs(0)` many times over. Can we do better?\n\n" +
+        "The key observation: `climbStairs(i)` only ever depends on `climbStairs(i-1)` and `climbStairs(i-2)`, " +
+        "and once a state is solved its answer never changes — so it only needs to be computed **once**. That's " +
+        "the overlapping-subproblems signature [dynamic programming](/study-guide/algos/topic/dynamic-programming) " +
+        "exists for: memoize each state's answer top-down, or fill a table of them bottom-up.\n\n" +
+        "The stored solution takes the bottom-up route, and immediately space-optimizes it: since `dp[i]` only " +
+        "ever reads the two values directly behind it, there's no need to keep a whole array — two rolling " +
+        "variables are enough. In the code, `prev` and `curr` are exactly `dp[i-2]` and `dp[i-1]` from the " +
+        "walkthrough below, slid one step forward each iteration instead of written into a full table.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "dp[i] = ways to reach stair i, for i = 0..5 (n = 5)",
+      lane: [1, 1, 2, 3, 5, 8],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "i", at: 0 }],
+          action: "dp[0] = 1",
+          caption: "Base case: there's exactly one way to be standing at the ground — take zero steps.",
+        },
+        {
+          pointers: [{ name: "i", at: 1 }],
+          marked: [0],
+          action: "dp[1] = 1",
+          caption:
+            "Base case: exactly one way to reach stair 1 — a single 1-step. `marked` means \"already filled\", " +
+            "not \"discarded\" — dp[0] stays available to read.",
+        },
+        {
+          pointers: [{ name: "i", at: 2 }],
+          marked: [0, 1],
+          action: "dp[2] = dp[1] + dp[0] = 1 + 1 = 2",
+          caption:
+            "First real transition: reach stair 2 either via a last 1-step from stair 1, or a last 2-step from " +
+            "stair 0. Both are already sitting in the table.",
+        },
+        {
+          pointers: [{ name: "i", at: 3 }],
+          marked: [0, 1, 2],
+          action: "dp[3] = dp[2] + dp[1] = 2 + 1 = 3",
+          caption:
+            "Without a table, computing this fresh would recurse back through dp[1] and dp[0] all over again — " +
+            "the table reads each of them exactly once.",
+        },
+        {
+          pointers: [{ name: "i", at: 4 }],
+          marked: [0, 1, 2, 3],
+          action: "dp[4] = dp[3] + dp[2] = 3 + 2 = 5",
+          caption: "Same recurrence, one step further — dp[3] and dp[2] are both already computed.",
+        },
+        {
+          pointers: [{ name: "i", at: 5 }],
+          marked: [0, 1, 2, 3, 4],
+          action: "dp[5] = dp[4] + dp[3] = 5 + 3 = 8",
+          caption: "Final state: 8 distinct ways to climb 5 stairs.",
+        },
+      ],
+    },
+  ],
+
+  "coin-change": [
+    {
+      kind: "prose",
+      body:
+        "A first pass just recurses on the definition: the fewest coins to make `remaining` is 1 plus the fewest " +
+        "coins to make `remaining - coin`, for whichever coin does best — recomputed from scratch every time the " +
+        "same remaining amount comes up again.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — try every coin as the last one placed, no memo: O(coins.length^amount).",
+      source:
+        "function coinChange(coins, amount) {\n" +
+        "  // Recursively find the fewest coins to make `remaining`, trying every coin as the last one placed.\n" +
+        "  function solve(remaining) {\n" +
+        "    // Nothing left to make — zero more coins needed.\n" +
+        "    if (remaining === 0) return 0;\n" +
+        "    // Overshot with the last coin tried — this path can't work.\n" +
+        "    if (remaining < 0) return Infinity;\n" +
+        "    let best = Infinity;\n" +
+        "    // Try every coin as the last coin placed, then recurse on what's left.\n" +
+        "    for (const coin of coins) {\n" +
+        "      const withCoin = 1 + solve(remaining - coin);\n" +
+        "      if (withCoin < best) best = withCoin;\n" +
+        "    }\n" +
+        "    return best;\n" +
+        "  }\n" +
+        "  const fewest = solve(amount);\n" +
+        "  // Infinity means no path of coins ever landed on exactly 0.\n" +
+        "  return fewest === Infinity ? -1 : fewest;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(coins.length^amount) — every remaining amount branches into `coins.length` more calls, and the " +
+        "same remaining amount gets solved over and over from different coin-choice paths (a 3 then a 4 leaves the " +
+        "same remainder as a 4 then a 3, but the recursion re-derives it independently both times). Can we do better?\n\n" +
+        "The key observation: `solve(remaining)` depends only on `remaining`, not on which coins got us there — " +
+        "once it's been solved, its answer never changes, so it's only worth solving **once**. That's the " +
+        "overlapping-subproblems signature [dynamic programming](/study-guide/algos/topic/dynamic-programming) exists for.\n\n" +
+        "It's tempting to reach for a greedy shortcut instead — always take the largest coin that still fits. That " +
+        "happens to work for `coins = [1, 2, 5]`, but it isn't reliable in general: with `coins = [1, 4, 5]` and " +
+        "`amount = 8`, greedy grabs a 5 first, then has to fill the remaining 3 with three 1s — 4 coins total. DP " +
+        "considers every coin choice at every amount and never commits early, so it finds the 2-coin answer, 4 + 4, " +
+        "that greedy walked right past.\n\n" +
+        "The stored solution takes the bottom-up route: fill `dp[total]` — the fewest coins for that total — for " +
+        "every `total` from 1 up to `amount`, trying each coin as the last one placed and keeping whichever leaves " +
+        "the cheapest remainder. A total that no coin combination reaches stays at a sentinel of `Infinity`; if " +
+        "`dp[amount]` never improves past it, the answer is `-1`.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "dp[total] = fewest coins to make that total, for coins = [2, 3], amount = 7",
+      lane: [0, "∞", 1, 1, 2, 2, 2, 3],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "total", at: 0 }],
+          action: "dp[0] = 0",
+          caption: "Base case: zero coins are needed to make a total of 0.",
+        },
+        {
+          pointers: [{ name: "total", at: 1 }],
+          marked: [0],
+          action: "coin 2 > 1, coin 3 > 1 → no coin fits, dp[1] stays ∞",
+          caption:
+            "Neither coin is small enough to use here, so dp[1] is never relaxed. If the target amount itself " +
+            "ended on a cell like this, the final answer would be -1.",
+        },
+        {
+          pointers: [{ name: "total", at: 3 }],
+          marked: [0, 1, 2],
+          action: "coin 2: dp[1] + 1 = ∞ · coin 3: dp[0] + 1 = 1 → dp[3] = 1",
+          caption: "Coin 3 alone reaches total 3 in a single coin — coin 2 can't beat that from an unreached dp[1].",
+        },
+        {
+          pointers: [{ name: "total", at: 6 }],
+          marked: [0, 1, 2, 3, 4, 5],
+          action: "coin 2: dp[4] + 1 = 3 · coin 3: dp[3] + 1 = 2 → dp[6] = 2",
+          caption: "Both coins are tried at every total; whichever leaves the cheaper remainder wins — here coin 3 beats coin 2.",
+        },
+        {
+          pointers: [{ name: "total", at: 7 }],
+          marked: [0, 1, 2, 3, 4, 5, 6],
+          action: "coin 2: dp[5] + 1 = 3 · coin 3: dp[4] + 1 = 3 → dp[7] = 3",
+          caption: "Both options tie at 3 coins (e.g. 2 + 2 + 3) — the fewest coins that make exactly 7.",
+        },
+      ],
+    },
+  ],
+
+  "house-robber": [
+    {
+      kind: "prose",
+      body:
+        "A first pass just tries both choices at every house — rob it (and skip straight past the next one), or " +
+        "leave it standing — and recurses on whatever's left, keeping whichever choice pays more.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — try rob-it or skip-it at every house, no memo: O(2^n).",
+      source:
+        "function rob(nums) {\n" +
+        "  // Best haul available from house i to the end of the street.\n" +
+        "  function solve(i) {\n" +
+        "    // Ran off the end of the street — nothing left to rob.\n" +
+        "    if (i >= nums.length) return 0;\n" +
+        "    // Option 1: rob this house, which trips the alarm on i + 1, so skip straight to i + 2.\n" +
+        "    const robIt = nums[i] + solve(i + 2);\n" +
+        "    // Option 2: leave this house alone and move to the very next one.\n" +
+        "    const skipIt = solve(i + 1);\n" +
+        "    return Math.max(robIt, skipIt);\n" +
+        "  }\n" +
+        "  return solve(0);\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(2^n) — every house branches the recursion in two, and the same starting index gets re-solved " +
+        "from multiple paths (rob house 0 then decide from house 2 onward, or skip house 0, skip house 1, and " +
+        "arrive at that same 'decide from house 2 onward' question a second time). Can we do better?\n\n" +
+        "The key observation: `solve(i)` — the best haul from house `i` to the end — depends only on `i`, not on " +
+        "which houses were robbed before it. Once it's answered, it never changes, so it's only worth solving " +
+        "**once**. That's the overlapping-subproblems signature [dynamic programming](/study-guide/algos/topic/dynamic-programming) exists for.\n\n" +
+        "Flip the recursion around and fill it bottom-up instead: let `dp[i]` be the best haul using only houses " +
+        "`0..i`. At each house you either skip it (`dp[i-1]`) or rob it and add to the best haul from two houses " +
+        "back (`dp[i-2] + nums[i]`): `dp[i] = max(dp[i-1], dp[i-2] + nums[i])`. Only the last two `dp` values are " +
+        "ever needed to compute the next one, so the stored solution never keeps the array at all — it rolls two " +
+        "variables forward instead. `curr` here is `dp[i]` and `prev` is `dp[i-1]`, once house `i` has been " +
+        "folded in.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "houses: [5, 3, 4, 11, 2]",
+      lane: [5, 3, 4, 11, 2],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "i", at: 0 }],
+          action: "dp[0] = nums[0] = 5",
+          caption: "Base case: with only one house available, the best haul is just robbing it.",
+        },
+        {
+          pointers: [{ name: "i", at: 1 }],
+          marked: [1],
+          action: "dp[1] = max(dp[0], nums[1]) = max(5, 3) = 5 → skip house 1",
+          caption:
+            "Robbing house 1 alone only nets 3, worse than the 5 already banked from house 0 — skipping keeps " +
+            "the bigger run alive. (There's no dp[-1] yet, so `prev` starts at 0.)",
+        },
+        {
+          pointers: [{ name: "i", at: 2 }],
+          action: "dp[2] = max(dp[1], dp[0] + nums[2]) = max(5, 5 + 4) = 9 → rob house 2",
+          caption: "Now robbing pays off: house 2's 4 stacked on dp[0]'s 5 beats just carrying dp[1]'s 5 forward.",
+        },
+        {
+          pointers: [{ name: "i", at: 3 }],
+          action: "dp[3] = max(dp[2], dp[1] + nums[3]) = max(9, 5 + 11) = 16 → rob house 3",
+          caption: "House 3's 11 is large enough that robbing it plus dp[1]'s 5 beats carrying dp[2]'s 9 forward.",
+        },
+        {
+          pointers: [{ name: "i", at: 4 }],
+          marked: [4],
+          action: "dp[4] = max(dp[3], dp[2] + nums[4]) = max(16, 9 + 2) = 16 → skip house 4",
+          caption:
+            "House 4 only adds 2 to dp[2]'s 9 (11 total) — worse than keeping dp[3]'s 16. Final answer: 16, " +
+            "from robbing houses 0 and 3.",
+        },
+      ],
+    },
+  ],
+
+  "maximum-subarray": [
+    {
+      kind: "prose",
+      body:
+        "A first pass just tries every possible subarray — every start `i` paired with every end `j` — adding a " +
+        "running sum as `j` grows so each subarray doesn't need to be re-summed from scratch, and keeps the " +
+        "largest total seen.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — every (start, end) pair, with a running sum: O(n²).",
+      source:
+        "function maxSubArray(nums) {\n" +
+        "  let best = nums[0];\n" +
+        "  // Try every possible starting index.\n" +
+        "  for (let i = 0; i < nums.length; i++) {\n" +
+        "    let sum = 0;\n" +
+        "    // Extend the subarray one element at a time, keeping a running sum instead of re-adding from i.\n" +
+        "    for (let j = i; j < nums.length; j++) {\n" +
+        "      sum += nums[j];\n" +
+        "      // This start-i, end-j subarray is a new candidate — keep it if it beats the best seen so far.\n" +
+        "      if (sum > best) best = sum;\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return best;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(n²) — far more work than necessary. Can we do better?\n\n" +
+        "Think about a narrower question: *what's the best subarray that ends exactly at index `i`?* Once that's " +
+        "answered for index `i`, index `i + 1`'s answer builds directly on it — either extend the winning run by " +
+        "tacking on `nums[i + 1]`, or the running sum has gone so negative that it's dragging the total down, in " +
+        "which case it's better to drop it and start fresh at `nums[i + 1]` alone. The \"best ending here\" " +
+        "question, once solved for `i`, is never re-derived for `i + 1` — it's just reused. That's the " +
+        "overlapping-subproblems signature [dynamic programming](/study-guide/algos/topic/dynamic-programming) " +
+        "exists for.\n\n" +
+        "Formally, let `dp[i]` be the largest sum of any subarray ending at index `i`. Then " +
+        "`dp[i] = nums[i] + max(0, dp[i - 1])` — extend the previous run if it's still pulling its weight, or " +
+        "drop it and start over, since a negative prefix can only ever hurt whatever sum follows it. The overall " +
+        "answer is the largest `dp[i]` across every index.\n\n" +
+        "Since `dp[i]` only ever depends on `dp[i - 1]`, there's no need to keep the whole table — the stored " +
+        "solution rolls a single variable `cur` forward instead (`cur` holds `dp[i - 1]` going into each step, " +
+        "and `dp[i]` coming out of it), alongside `best`, the running maximum across all of them. This routine is " +
+        "often taught as a standalone greedy trick (\"Kadane's algorithm\"), but it's really this one-dimensional " +
+        "DP recurrence collapsed to O(1) space.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "nums = [4, -6, 5, -2, 3, 1]",
+      lane: [4, -6, 5, -2, 3, 1],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "i", at: 0 }],
+          action: "cur = best = nums[0] = 4",
+          caption: "Seed both trackers with the first element — it's the only subarray candidate so far.",
+        },
+        {
+          pointers: [{ name: "i", at: 1 }],
+          action: "cur = max(-6, 4 + -6) = max(-6, -2) = -2",
+          caption:
+            "Extending narrowly beats starting over at -6, but the running sum has now gone negative — a " +
+            "warning sign for the next step.",
+        },
+        {
+          pointers: [{ name: "i", at: 2 }],
+          marked: [0, 1],
+          action: "cur = max(5, -2 + 5) = max(5, 3) = 5 → drop the negative prefix",
+          caption:
+            "A negative running sum only drags down whatever follows it, so it's better to abandon indices " +
+            "0-1 and restart at nums[2]. best updates to 5.",
+        },
+        {
+          pointers: [{ name: "i", at: 3 }],
+          action: "cur = max(-2, 5 + -2) = max(-2, 3) = 3",
+          caption:
+            "The run survives a dip: even though nums[3] is negative on its own, the total is still worth " +
+            "carrying forward.",
+        },
+        {
+          pointers: [{ name: "i", at: 4 }],
+          action: "cur = max(3, 3 + 3) = max(3, 6) = 6 → best updates to 6",
+          caption: "Extending keeps winning; the running sum climbs past the previous best, to 6.",
+        },
+        {
+          pointers: [{ name: "i", at: 5 }],
+          action: "cur = max(1, 6 + 1) = max(1, 7) = 7 → best updates to 7",
+          caption: "Final step: best becomes 7, the sum of [5, -2, 3, 1] — indices 2 through 5.",
+        },
+      ],
+    },
+  ],
+
+  "unique-paths": [
+    {
+      kind: "prose",
+      body:
+        "A first pass just recurses on the two moves available at every cell — step down, or step right — and " +
+        "adds up however many complete paths each choice leads to, until the robot reaches the destination or " +
+        "falls off the edge of the grid.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — recurse on every down/right choice, no memo: O(2^(m+n)).",
+      source:
+        "function uniquePaths(m, n) {\n" +
+        "  // Count the paths from (row, col) to the bottom-right corner.\n" +
+        "  function solve(row, col) {\n" +
+        "    // Reached the destination — this is one complete path.\n" +
+        "    if (row === m - 1 && col === n - 1) return 1;\n" +
+        "    // Walked off the bottom or right edge — this path is invalid.\n" +
+        "    if (row >= m || col >= n) return 0;\n" +
+        "    // Every path from here either steps down first or steps right first.\n" +
+        "    return solve(row + 1, col) + solve(row, col + 1);\n" +
+        "  }\n" +
+        "  return solve(0, 0);\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(2^(m+n)) — every cell branches the recursion into two more calls, and the same cell gets " +
+        "revisited independently by every route that reaches it (down-then-right and right-then-down both land " +
+        "on the same next cell, and each re-derives its remaining path count from scratch). Can we do better?\n\n" +
+        "The key observation: `solve(row, col)` — the number of paths from `(row, col)` to the destination — " +
+        "depends only on that cell, never on the route taken to reach it. Once it's answered, it never changes, " +
+        "so it's only worth solving once. That's the overlapping-subproblems signature " +
+        "[dynamic programming](/study-guide/algos/topic/dynamic-programming) exists for.\n\n" +
+        "Flip the recursion around and fill it bottom-up instead: let `dp[i][j]` be the number of paths from the " +
+        "top-left corner to `(i, j)`. Every cell is entered either from above or from the left, so " +
+        "`dp[i][j] = dp[i-1][j] + dp[i][j-1]`. The entire top row and entire left column only have one possible " +
+        "route each — straight right, or straight down — so they're seeded to 1 before the fill starts.\n\n" +
+        "Each row of `dp` only ever reads the row directly above it and the cell to its own left, so nothing " +
+        "older than \"the row above\" is ever needed again. The stored solution exploits that and never keeps the " +
+        "full table — it rolls a single array `row` of length `n` forward, one grid row at a time: " +
+        "`row[j] += row[j - 1]` folds together `dp[i-1][j]` (still sitting in `row[j]` from the previous pass) " +
+        "and `dp[i][j-1]` (already overwritten earlier in *this* pass, so `row[j-1]` already holds the current " +
+        "row's value). The diagram below fills the full 2-D table to make the recurrence visible; the code just " +
+        "folds it into that one rolling row.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "gridWalkthrough",
+      heading: "dp[i][j] = paths to reach (i, j), for a 3x4 grid (m = 3, n = 4)",
+      showIndices: true,
+      grid: [
+        [".", ".", ".", "."],
+        [".", ".", ".", "."],
+        [".", ".", ".", "."],
+      ],
+      frames: [
+        {
+          grid: [
+            [1, 1, 1, 1],
+            [1, ".", ".", "."],
+            [1, ".", ".", "."],
+          ],
+          active: [[0, 0], [0, 1], [0, 2], [0, 3], [1, 0], [2, 0]],
+          action: "row[j] = 1 for all j · dp[i][0] = 1 for all i",
+          caption:
+            "The top row and left column each have exactly one route — straight right, or straight down — so " +
+            "they're seeded to 1 before anything is computed.",
+        },
+        {
+          grid: [
+            [1, 1, 1, 1],
+            [1, 2, ".", "."],
+            [1, ".", ".", "."],
+          ],
+          cursor: [1, 1],
+          active: [[0, 1], [1, 0]],
+          action: "dp[1][1] = dp[0][1] + dp[1][0] = 1 + 1 = 2",
+          caption:
+            "Every interior cell just adds the count above it to the count on its left — two ways converge " +
+            "here for the first time.",
+        },
+        {
+          grid: [
+            [1, 1, 1, 1],
+            [1, 2, 3, 4],
+            [1, ".", ".", "."],
+          ],
+          cursor: [1, 3],
+          active: [[0, 3], [1, 2]],
+          action: "dp[1][3] = dp[0][3] + dp[1][2] = 1 + 3 = 4",
+          caption: "Row 1 fills left to right the same way; by its last cell, 4 routes have already converged.",
+        },
+        {
+          grid: [
+            [1, 1, 1, 1],
+            [1, 2, 3, 4],
+            [1, 3, 6, "."],
+          ],
+          cursor: [2, 2],
+          active: [[1, 2], [2, 1]],
+          action: "dp[2][2] = dp[1][2] + dp[2][1] = 3 + 3 = 6",
+          caption:
+            "Row 2 reuses row 1's just-finished values the same way; dp[2][1] = 3 was filled in just before " +
+            "this step, so dp[2][2] adds 3 (from above) and 3 (from the left) to get 6.",
+        },
+        {
+          grid: [
+            [1, 1, 1, 1],
+            [1, 2, 3, 4],
+            [1, 3, 6, 10],
+          ],
+          cursor: [2, 3],
+          active: [[1, 3], [2, 2]],
+          action: "dp[2][3] = dp[1][3] + dp[2][2] = 4 + 6 = 10",
+          caption:
+            "The bottom-right cell sums every path that could have arrived from above or from the left — 10 " +
+            "distinct routes in total.",
+        },
+      ],
+    },
+  ],
+
+  "longest-palindromic-substring": [
+    {
+      kind: "prose",
+      body:
+        "A first pass checks every substring directly: for each start index paired with each end index, scan " +
+        "inward from both ends to see whether that slice reads the same forwards and backwards, keeping the " +
+        "longest one found so far.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — every substring, checked character by character: O(n³).",
+      source:
+        "function longestPalindrome(s) {\n" +
+        "  let best = '';\n" +
+        "  // Try every possible start index.\n" +
+        "  for (let i = 0; i < s.length; i++) {\n" +
+        "    // Try every possible end index, from i itself out to the end of the string.\n" +
+        "    for (let j = i; j < s.length; j++) {\n" +
+        "      const candidate = s.slice(i, j + 1);\n" +
+        "      // Check the whole candidate, character by character, for symmetry.\n" +
+        "      let isPalindrome = true;\n" +
+        "      for (let l = 0, r = candidate.length - 1; l < r; l++, r--) {\n" +
+        "        if (candidate[l] !== candidate[r]) { isPalindrome = false; break; }\n" +
+        "      }\n" +
+        "      // A longer palindrome always wins, even over one found earlier.\n" +
+        "      if (isPalindrome && candidate.length > best.length) best = candidate;\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return best;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(n³) — far more work than necessary. Can we do better?\n\n" +
+        "Checking whether `s[i..j]` is a palindrome from scratch throws away the previous answer: if " +
+        "`s[i+1..j-1]` was already known to be (or not be) a palindrome, then `s[i..j]` is one **iff** " +
+        "`s[i] === s[j]` *and* that inner range already is — no re-scan required. That's the same " +
+        "overlapping-subproblems signature [dynamic programming](/study-guide/algos/topic/dynamic-programming) " +
+        "exists to eliminate; the classic route memoizes that inner-range question in a 2-D `dp[i][j]` table.\n\n" +
+        "There's a cheaper way to ask the exact same question, though. Every palindrome has a **center** — a " +
+        "single character for odd length, or the gap between two characters for even length — and it's a " +
+        "palindrome precisely as long as expanding outward from that center hasn't failed yet. So instead of " +
+        "filling a table bottom-up, grow each of the `2n - 1` centers outward until the two ends stop matching. " +
+        "It visits the same 'is the inside a palindrome' work the table would, just without ever allocating it — " +
+        "the stored solution rolls the whole recurrence into two integer pointers, `l` and `r`, instead of an " +
+        "`n × n` grid.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: `s = "abaxyzzyxf"`,
+      lane: ["a", "b", "a", "x", "y", "z", "z", "y", "x", "f"],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "l", at: 0 }, { name: "r", at: 0 }],
+          action: "l = 0 already at the left edge → expand(0, 0) stops at length 1",
+          caption:
+            "Center 0 is the string's very first character, so there's nowhere further left to expand — the " +
+            "boundary check `l >= 0` cuts it short.",
+        },
+        {
+          pointers: [{ name: "l", at: 0 }, { name: "r", at: 2 }],
+          range: [0, 2],
+          action: "s[0] = 'a' = s[2] → expand(1, 1) reaches length 3",
+          caption: "Centered on index 1, 'aba' matches once outward before hitting the string's start — new best: 'aba'.",
+        },
+        {
+          pointers: [{ name: "l", at: 2 }, { name: "r", at: 4 }],
+          action: "s[2] = 'a' ≠ s[4] = 'y' → stop, length 1",
+          caption:
+            "Not every center pays off — the 'x' at index 3 can't extend either direction, so it's discarded " +
+            "without disturbing the best found so far.",
+        },
+        {
+          pointers: [{ name: "l", at: 5 }, { name: "r", at: 6 }],
+          action: "s[5] = 'z' = s[6] → seed an even center",
+          caption: "Between indices 5 and 6 the two z's match — an even-length palindrome starts growing from the gap.",
+        },
+        {
+          pointers: [{ name: "l", at: 3 }, { name: "r", at: 8 }],
+          range: [3, 8],
+          action: "y = y, then x = x → expand(5, 6) reaches length 6",
+          caption: "The match survives two more expansions — new best: 'xyzzyx', overtaking 'aba'.",
+        },
+        {
+          pointers: [{ name: "l", at: 2 }, { name: "r", at: 9 }],
+          range: [3, 8],
+          action: "s[2] = 'a' ≠ s[9] = 'f' → stop expanding",
+          caption:
+            "The scan finishes without finding anything longer; 'xyzzyx' (indices 3-8) is returned as the " +
+            "longest palindromic substring.",
+        },
+      ],
+    },
+  ],
+
+  "longest-common-subsequence": [
+    {
+      kind: "prose",
+      body:
+        "A first pass tries every possible way of building a common subsequence directly: at each pair of " +
+        "positions `(i, j)`, either take the matching characters when `text1[i]` equals `text2[j]`, or skip a " +
+        "character from one string or the other, trying both and keeping whichever choice leads to the longer " +
+        "result.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — try match/skip at every (i, j), no memo: O(2^(m+n)).",
+      source:
+        "function longestCommonSubsequence(text1, text2) {\n" +
+        "  // solve(i, j) = LCS length of the suffixes text1[i:] and text2[j:].\n" +
+        "  function solve(i, j) {\n" +
+        "    // Either suffix ran out — no characters left to match.\n" +
+        "    if (i === text1.length || j === text2.length) return 0;\n" +
+        "    if (text1[i] === text2[j]) {\n" +
+        "      // Characters match: take both and recurse past them in both strings.\n" +
+        "      return 1 + solve(i + 1, j + 1);\n" +
+        "    }\n" +
+        "    // No match: skip a character from either string and keep the better outcome.\n" +
+        "    return Math.max(solve(i + 1, j), solve(i, j + 1));\n" +
+        "  }\n" +
+        "  return solve(0, 0);\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(2^(m+n)) — even though `solve(i, j)` only depends on the two suffix start positions `i` and " +
+        "`j`, the recursion tree re-derives it from scratch every time a different sequence of match/skip " +
+        "choices happens to land on the same pair, and there are only `(m + 1) × (n + 1)` distinct pairs total. " +
+        "Can we do better?\n\n" +
+        "The key observation: `solve(i, j)` means the same thing every time it's called — the LCS length of " +
+        "`text1[i:]` and `text2[j:]` — so once it's answered it never needs answering again. That's the " +
+        "overlapping-subproblems signature [dynamic programming](/study-guide/algos/topic/dynamic-programming) " +
+        "exists to eliminate — the same signature that turns Longest Palindromic Substring's substring re-scans " +
+        "into an O(n²) interval table, and reappears in " +
+        "[Edit Distance](/study-guide/algos/problem/edit-distance)'s two-string alignment table.\n\n" +
+        "Flip the recursion into a table filled bottom-up instead: let `dp[i][j]` hold exactly what `solve(i, j)` " +
+        "computed, with an extra zero-filled row and column for the base case where a suffix has run out. Fill " +
+        "it from the bottom-right corner backward — `i` from `m - 1` down to `0`, `j` from `n - 1` down to `0` — " +
+        "so that whenever a cell is being computed, the two cells it depends on (one row below, one column to " +
+        "the right) are already sitting in the table. On a match, `dp[i][j] = 1 + dp[i+1][j+1]` (take the " +
+        "character, move past it in both strings); otherwise `dp[i][j] = max(dp[i+1][j], dp[i][j+1])` (skip a " +
+        "character from whichever string, and keep whichever skip did better).\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "gridWalkthrough",
+      heading: `dp[i][j] = LCS length of text1[i:] and text2[j:], for text1 = "acbcf" (rows) and text2 = "abcf" (cols)`,
+      showIndices: true,
+      grid: [
+        [".", ".", ".", ".", 0],
+        [".", ".", ".", ".", 0],
+        [".", ".", ".", ".", 0],
+        [".", ".", ".", ".", 0],
+        [".", ".", ".", ".", 0],
+        [0, 0, 0, 0, 0],
+      ],
+      frames: [
+        {
+          active: [
+            [5, 0], [5, 1], [5, 2], [5, 3], [5, 4],
+            [0, 4], [1, 4], [2, 4], [3, 4],
+          ],
+          action: "dp[5][j] = 0 for all j · dp[i][4] = 0 for all i",
+          caption:
+            "Row 5 (i = m) is the empty suffix of text1; column 4 (j = n) is the empty suffix of text2. An " +
+            "empty suffix shares nothing with anything, so both are seeded to 0 before the fill starts.",
+        },
+        {
+          grid: [
+            [".", ".", ".", ".", 0],
+            [".", ".", ".", ".", 0],
+            [".", ".", ".", ".", 0],
+            [".", ".", ".", ".", 0],
+            [".", ".", ".", 1, 0],
+            [0, 0, 0, 0, 0],
+          ],
+          cursor: [4, 3],
+          active: [[5, 4]],
+          action: "text1[4]='f' = text2[3]='f' → dp[4][3] = 1 + dp[5][4] = 1 + 0 = 1",
+          caption:
+            "The very last characters of both strings match, so the two one-character suffixes share a common " +
+            "subsequence of length 1 — the first real cell in the table.",
+        },
+        {
+          grid: [
+            [".", ".", ".", ".", 0],
+            [".", ".", ".", ".", 0],
+            [".", ".", ".", ".", 0],
+            [".", ".", 2, 1, 0],
+            [1, 1, 1, 1, 0],
+            [0, 0, 0, 0, 0],
+          ],
+          cursor: [3, 2],
+          active: [[4, 3]],
+          action: "text1[3]='c' = text2[2]='c' → dp[3][2] = 1 + dp[4][3] = 1 + 1 = 2",
+          caption:
+            "Row 4 finished filling in (every cell just inherits or extends the one before it). Another match: " +
+            "this 'c' pairs with text2's 'c', extending the earlier 'f' match into 'cf'.",
+        },
+        {
+          grid: [
+            [".", ".", ".", ".", 0],
+            [".", ".", ".", ".", 0],
+            [".", 3, 2, 1, 0],
+            [2, 2, 2, 1, 0],
+            [1, 1, 1, 1, 0],
+            [0, 0, 0, 0, 0],
+          ],
+          cursor: [2, 1],
+          active: [[3, 2]],
+          action: "text1[2]='b' = text2[1]='b' → dp[2][1] = 1 + dp[3][2] = 1 + 2 = 3",
+          caption:
+            "Row 3 is done. 'b' matches too, stitching onto 'cf' to build 'bcf' — three characters long so far.",
+        },
+        {
+          grid: [
+            [".", ".", ".", ".", 0],
+            [".", ".", ".", ".", 0],
+            [3, 3, 2, 1, 0],
+            [2, 2, 2, 1, 0],
+            [1, 1, 1, 1, 0],
+            [0, 0, 0, 0, 0],
+          ],
+          cursor: [2, 0],
+          active: [[3, 0], [2, 1]],
+          action: "text1[2]='b' ≠ text2[0]='a' → dp[2][0] = max(dp[3][0], dp[2][1]) = max(2, 3) = 3",
+          caption:
+            "No match here, so this cell just inherits the better of skipping a character from either string — " +
+            "the max of below (2) and right (3) — without adding a new character to the subsequence.",
+        },
+        {
+          grid: [
+            [4, 3, 2, 1, 0],
+            [3, 3, 2, 1, 0],
+            [3, 3, 2, 1, 0],
+            [2, 2, 2, 1, 0],
+            [1, 1, 1, 1, 0],
+            [0, 0, 0, 0, 0],
+          ],
+          cursor: [0, 0],
+          active: [[1, 1]],
+          action: "text1[0]='a' = text2[0]='a' → dp[0][0] = 1 + dp[1][1] = 1 + 3 = 4",
+          caption:
+            "Row 1 filled in the same way in between (dp[1][1] = 3, inherited from dp[2][1] since 'c' ≠ 'b' " +
+            "there too). The first characters match, giving the final answer: dp[0][0] = 4, the length of " +
+            "\"abcf\".",
+        },
+      ],
+    },
+  ],
+
+  "maximal-square": [
+    {
+      kind: "prose",
+      body:
+        "A first pass tries every cell as the top-left corner of a candidate square and, for each one, checks " +
+        "every side length that could still fit — re-scanning all the cells inside that candidate square for a " +
+        "0 each time.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — check every candidate square directly, re-verifying its interior each time: O(rows·cols·min(rows,cols)³).",
+      source:
+        "function maximalSquare(matrix) {\n" +
+        "  const rows = matrix.length;\n" +
+        "  const cols = matrix[0].length;\n" +
+        "  let maxSide = 0;\n" +
+        "\n" +
+        "  // Checks whether every cell in the side x side square starting at (row, col) is a 1.\n" +
+        "  function isAllOnes(row, col, side) {\n" +
+        "    for (let i = row; i < row + side; i++) {\n" +
+        "      for (let j = col; j < col + side; j++) {\n" +
+        "        if (matrix[i][j] !== 1) return false;\n" +
+        "      }\n" +
+        "    }\n" +
+        "    return true;\n" +
+        "  }\n" +
+        "\n" +
+        "  // Try every cell as a top-left corner.\n" +
+        "  for (let i = 0; i < rows; i++) {\n" +
+        "    for (let j = 0; j < cols; j++) {\n" +
+        "      const maxPossibleSide = Math.min(rows - i, cols - j);\n" +
+        "      // Try the largest side that could still beat the current best first, so we can stop as\n" +
+        "      // soon as one fits — nothing bigger will start at this corner.\n" +
+        "      for (let side = maxPossibleSide; side > maxSide; side--) {\n" +
+        "        if (isAllOnes(i, j, side)) {\n" +
+        "          maxSide = side;\n" +
+        "          break;\n" +
+        "        }\n" +
+        "      }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return maxSide * maxSide;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(rows·cols·min(rows,cols)³) — far more work than necessary. Can we do better?\n\n" +
+        "Checking a 3x3 square from scratch re-verifies nine cells that three separate 1x1 squares and a 2x2 " +
+        "square already verified on their own, one row and column ago. The \"is this square all 1s\" answer for a " +
+        "smaller square is thrown away instead of reused — that's the overlapping-subproblems signature " +
+        "[dynamic programming](/study-guide/algos/topic/dynamic-programming) exists to eliminate, the same one " +
+        "[Unique Paths](/study-guide/algos/problem/unique-paths) uses to turn a re-derived path count into a " +
+        "single table fill.\n\n" +
+        "The key observation: the largest square that can end with its bottom-right corner at `(i, j)` is " +
+        "bottlenecked by the largest squares ending at its three neighbours — directly above, directly to the " +
+        "left, and diagonally up-left. Whichever of those three supports the smallest square caps how far " +
+        "`(i, j)` can grow; `(i, j)` can add at most one more ring on top of that smallest neighbour. So instead " +
+        "of re-verifying whole squares, fill a table `dp[i][j]` — the side length of the largest all-1s square " +
+        "ending at `(i, j)` — bottom-up: it's `0` wherever the matrix has a `0`, and otherwise " +
+        "`1 + min(up, left, diagonal)`. The answer is the largest `dp` value anywhere, **squared** (its area).\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "gridWalkthrough",
+      heading: "dp[i][j] = side length of the largest all-1s square ending at (i, j)",
+      showIndices: true,
+      grid: [
+        [".", ".", ".", "."],
+        [".", ".", ".", "."],
+        [".", ".", ".", "."],
+        [".", ".", ".", "."],
+      ],
+      frames: [
+        {
+          grid: [
+            [1, 1, 1, 0],
+            [1, ".", ".", "."],
+            [1, ".", ".", "."],
+            [0, ".", ".", "."],
+          ],
+          active: [[0, 0], [0, 1], [0, 2], [0, 3], [1, 0], [2, 0], [3, 0]],
+          action: "dp[0][j] = matrix[0][j] · dp[i][0] = matrix[i][0]",
+          caption:
+            "Row 0 and column 0 have no room above or to the left, so each can only ever be a 1x1 square — a " +
+            "matrix cell of 1 seeds a dp value of 1, and a 0 seeds a 0.",
+        },
+        {
+          grid: [
+            [1, 1, 1, 0],
+            [1, 2, ".", "."],
+            [1, ".", ".", "."],
+            [0, ".", ".", "."],
+          ],
+          cursor: [1, 1],
+          active: [[0, 1], [1, 0], [0, 0]],
+          action: "dp[1][1] = 1 + min(up=1, left=1, diag=1) = 2",
+          caption:
+            "All three neighbours already support a 1x1 square, so this cell grows to a 2x2 — the square " +
+            "(0,0)-(1,1) is entirely 1s.",
+        },
+        {
+          grid: [
+            [1, 1, 1, 0],
+            [1, 2, 2, 1],
+            [1, ".", ".", "."],
+            [0, ".", ".", "."],
+          ],
+          cursor: [1, 3],
+          active: [[0, 3], [1, 2], [0, 2]],
+          action: "dp[1][3] = 1 + min(up=0, left=2, diag=1) = 1",
+          caption:
+            "matrix[1][3] is a 1, but the neighbour above is capped at 0 by the 0 sitting at (0,3) — the " +
+            "weakest neighbour bottlenecks the square, so growth stalls at 1x1 even though three of the four " +
+            "cells here are 1s.",
+        },
+        {
+          grid: [
+            [1, 1, 1, 0],
+            [1, 2, 2, 1],
+            [1, 2, 3, "."],
+            [0, ".", ".", "."],
+          ],
+          cursor: [2, 2],
+          active: [[1, 2], [2, 1], [1, 1]],
+          action: "dp[2][2] = 1 + min(up=2, left=2, diag=2) = 3 — new best",
+          caption:
+            "All three neighbours already support a 2x2 square, so this cell grows to a 3x3: rows 0-2, columns " +
+            "0-2 are entirely 1s. maxSide becomes 3.",
+        },
+        {
+          grid: [
+            [1, 1, 1, 0],
+            [1, 2, 2, 1],
+            [1, 2, 3, 2],
+            [0, 1, 2, 0],
+          ],
+          cursor: [3, 3],
+          active: [[2, 3], [3, 2], [2, 2]],
+          action: "matrix[3][3] = 0 → dp[3][3] = 0",
+          caption:
+            "The neighbours above (2), to the left (2), and diagonal (3) could have supported a 3x3 square " +
+            "here — but matrix[3][3] itself is a 0, so no square can end on it. The square resets to 0 " +
+            "regardless of how promising its neighbours were.",
+        },
+        {
+          grid: [
+            [1, 1, 1, 0],
+            [1, 2, 2, 1],
+            [1, 2, 3, 2],
+            [0, 1, 2, 0],
+          ],
+          cursor: [2, 2],
+          action: "maxSide = 3 → area = 3² = 9",
+          caption:
+            "The largest dp value anywhere in the table is 3, at (2,2) — the 3x3 square spanning rows 0-2, " +
+            "columns 0-2. The function returns the **area**, maxSide * maxSide = 9, not the side length itself.",
+        },
+      ],
+    },
+  ],
+
+  "knapsack": [
+    {
+      kind: "prose",
+      body:
+        "A first pass just tries every possible subset of the items: for each one, add up its total weight and " +
+        "value, and if the weight fits inside the capacity, check whether its value beats the best found so far.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — every subset of the n items, keep the best one that fits: O(2^n).",
+      source:
+        "function knapsack(cap, weights, values) {\n" +
+        "  const n = values.length;\n" +
+        "  let best = 0;\n" +
+        "  // Every integer from 0 to 2^n - 1 encodes one subset: bit i set means item i is included.\n" +
+        "  for (let mask = 0; mask < (1 << n); mask++) {\n" +
+        "    let weight = 0;\n" +
+        "    let value = 0;\n" +
+        "    for (let i = 0; i < n; i++) {\n" +
+        "      if (mask & (1 << i)) {\n" +
+        "        weight += weights[i];\n" +
+        "        value += values[i];\n" +
+        "      }\n" +
+        "    }\n" +
+        "    // Only a subset that still fits under the capacity is a candidate answer.\n" +
+        "    if (weight <= cap && value > best) {\n" +
+        "      best = value;\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return best;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(2^n) — every subset is rebuilt and summed from scratch, even though many subsets share the " +
+        "exact same situation partway through: whatever's decided about items 0 and 1 already, the best way to " +
+        "finish depends only on *which items remain* and *how much capacity remains* — not on which earlier " +
+        "choices got there. Can we do better?\n\n" +
+        "The key observation: \"the best value achievable using items `i..n-1` with capacity `c`\" is the same " +
+        "question every time it comes up, so once it's answered it never needs answering again. That's the " +
+        "overlapping-subproblems signature [dynamic programming](/study-guide/algos/topic/dynamic-programming) " +
+        "exists to eliminate.\n\n" +
+        "It's a different flavor of the pattern from [Coin Change](/study-guide/algos/problem/coin-change), " +
+        "though. There, each coin denomination can be reused any number of times — an *unbounded* choice — so " +
+        "`dp[total]` is one 1-D row that a later step can read after the same coin has already been used once. " +
+        "Here each item can be taken **at most once** — a *0/1* choice — so the table needs an extra dimension, " +
+        "one row per item: `dp[i][c]` only ever reads from `dp[i+1][...]`, the row for items *not yet decided*, " +
+        "never from its own row, or an item could sneak into the same subset twice.\n\n" +
+        "Fill the table bottom-up: `dp[i][c]` is the best value achievable using only items `i..n-1` with " +
+        "capacity `c`. Work from the last item back to the first, and for each item and each capacity either " +
+        "skip it (`dp[i+1][c]`) or, if it fits, take it and add its value to the best subproblem left over " +
+        "(`values[i] + dp[i+1][c - weights[i]]`) — `dp[i][c]` is the max of those two choices. `dp[0][cap]` is " +
+        "the answer over every item and the full capacity.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "gridWalkthrough",
+      heading:
+        "dp[i][c] = best value using items i..n-1 with capacity c, for weights = [2, 3, 4, 5], " +
+        "values = [3, 4, 5, 6] (rows 0-3 = items, row 4 = no items left; cols = capacity 0-5)",
+      showIndices: true,
+      grid: [
+        [0, ".", ".", ".", ".", "."],
+        [0, ".", ".", ".", ".", "."],
+        [0, ".", ".", ".", ".", "."],
+        [0, ".", ".", ".", ".", "."],
+        [0, 0, 0, 0, 0, 0],
+      ],
+      frames: [
+        {
+          active: [[4, 0], [4, 1], [4, 2], [4, 3], [4, 4], [4, 5], [0, 0], [1, 0], [2, 0], [3, 0]],
+          action: "dp[4][c] = 0 for all c · dp[i][0] = 0 for all i",
+          caption:
+            "Row 4 means no items are left to consider, and column 0 means there's no capacity left to spend — " +
+            "either way nothing can be packed, so both boundaries are 0 before the fill starts.",
+        },
+        {
+          grid: [
+            [0, ".", ".", ".", ".", "."],
+            [0, ".", ".", ".", ".", "."],
+            [0, ".", ".", ".", ".", "."],
+            [0, 0, 0, 0, 0, "."],
+            [0, 0, 0, 0, 0, 0],
+          ],
+          cursor: [3, 4],
+          active: [[4, 4]],
+          action: "weight[3]=5 > c=4 → dp[3][4] = dp[4][4] = 0",
+          caption:
+            "Item 3 weighs 5 — too heavy for any capacity under 5, so c = 1 through 4 are all forced skips on " +
+            "this row: each one just inherits whatever the \"no items left\" row already had, 0.",
+        },
+        {
+          grid: [
+            [0, ".", ".", ".", ".", "."],
+            [0, ".", ".", ".", ".", "."],
+            [0, ".", ".", ".", ".", "."],
+            [0, 0, 0, 0, 0, 6],
+            [0, 0, 0, 0, 0, 0],
+          ],
+          cursor: [3, 5],
+          active: [[4, 0]],
+          action: "weight[3]=5 ≤ c=5 → dp[3][5] = max(value3 + dp[4][0], dp[4][5]) = max(6 + 0, 0) = 6",
+          caption:
+            "At c = 5 item 3 finally fits, and taking it is free — there's no capacity left over to spend on " +
+            "anything else, so its whole value carries straight through: dp[3][5] = 6.",
+        },
+        {
+          grid: [
+            [0, ".", ".", ".", ".", "."],
+            [0, ".", ".", ".", ".", "."],
+            [0, 0, 0, 0, 5, 6],
+            [0, 0, 0, 0, 0, 6],
+            [0, 0, 0, 0, 0, 0],
+          ],
+          cursor: [2, 5],
+          active: [[3, 1], [3, 5]],
+          action: "weight[2]=4 ≤ c=5 → dp[2][5] = max(value2 + dp[3][1], dp[3][5]) = max(5 + 0, 6) = 6 → skip wins",
+          caption:
+            "Item 2 (weight 4, value 5) does fit in 5 units of capacity — but taking it leaves only 1 unit over " +
+            "(worth 0 more), for a total of 5. Skipping it and keeping item 3's 6 is worth more: fitting isn't " +
+            "enough on its own, it has to beat the alternative.",
+        },
+        {
+          grid: [
+            [0, ".", ".", ".", ".", "."],
+            [0, 0, 0, 4, 5, 6],
+            [0, 0, 0, 0, 5, 6],
+            [0, 0, 0, 0, 0, 6],
+            [0, 0, 0, 0, 0, 0],
+          ],
+          cursor: [1, 3],
+          active: [[2, 0], [2, 3]],
+          action: "weight[1]=3 ≤ c=3 → dp[1][3] = max(value1 + dp[2][0], dp[2][3]) = max(4 + 0, 0) = 4",
+          caption:
+            "Item 1 (weight 3, value 4) fills in the same way: it wins here at c = 3 (nothing to compare " +
+            "against yet), but by c = 4 and c = 5 skipping has already pulled back ahead — same tension as " +
+            "item 2's row.",
+        },
+        {
+          grid: [
+            [0, 0, 3, 4, 5, 7],
+            [0, 0, 0, 4, 5, 6],
+            [0, 0, 0, 0, 5, 6],
+            [0, 0, 0, 0, 0, 6],
+            [0, 0, 0, 0, 0, 0],
+          ],
+          cursor: [0, 5],
+          active: [[1, 3], [1, 5]],
+          action: "weight[0]=2 ≤ c=5 → dp[0][5] = max(value0 + dp[1][3], dp[1][5]) = max(3 + 4, 6) = 7 → take wins",
+          caption:
+            "Item 0 (weight 2, value 3) fits, and this time taking it pays off: it leaves 3 units of capacity, " +
+            "which item 1 alone already turns into 4 more value, for 7 combined — one better than skipping it " +
+            "and keeping the 6 from items 2 and 3 alone. dp[0][5] = 7 is the answer: pack items 0 and 1 " +
+            "(weights 2 + 3 = 5, values 3 + 4 = 7).",
+        },
+      ],
+    },
+  ],
+
+  "edit-distance": [
+    {
+      kind: "prose",
+      body:
+        "A first pass tries every possible way of turning word1 into word2 directly: at each pair of prefix " +
+        "lengths `(i, j)`, if the last characters already match, keep going for free; otherwise try all three " +
+        "allowed operations — replace, delete, insert — recursing into whichever leftover subproblem each one " +
+        "creates, and keep whichever choice ends up cheapest.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — every insert/delete/replace choice at each (i, j), no memo: O(3^(m+n)).",
+      source:
+        "function minDistance(word1, word2) {\n" +
+        "  // solve(i, j) = edit distance between the first i characters of word1\n" +
+        "  // and the first j characters of word2.\n" +
+        "  function solve(i, j) {\n" +
+        "    // No characters left in word1: insert the remaining j characters of word2.\n" +
+        "    if (i === 0) return j;\n" +
+        "    // No characters left in word2: delete the remaining i characters of word1.\n" +
+        "    if (j === 0) return i;\n" +
+        "    if (word1[i - 1] === word2[j - 1]) {\n" +
+        "      // Last characters already match — no operation needed here.\n" +
+        "      return solve(i - 1, j - 1);\n" +
+        "    }\n" +
+        "    // No match: try all three operations and keep the cheapest.\n" +
+        "    const replace = solve(i - 1, j - 1);\n" +
+        "    const deleteChar = solve(i - 1, j);\n" +
+        "    const insertChar = solve(i, j - 1);\n" +
+        "    return 1 + Math.min(replace, deleteChar, insertChar);\n" +
+        "  }\n" +
+        "  return solve(word1.length, word2.length);\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(3^(m+n)) roughly — exponential, because `solve(i, j)` gets re-derived from scratch every " +
+        "time a different sequence of replace/delete/insert choices happens to land on the same `(i, j)` pair, " +
+        "and there are only `(m + 1) × (n + 1)` distinct pairs total. Can we do better?\n\n" +
+        "The key observation: `solve(i, j)` always means the same thing — the edit distance between the first " +
+        "`i` characters of word1 and the first `j` characters of word2 — so once it's answered it never needs " +
+        "answering again. That's the overlapping-subproblems signature " +
+        "[dynamic programming](/study-guide/algos/topic/dynamic-programming) exists to eliminate.\n\n" +
+        "It's the same signature [Longest Common Subsequence](/study-guide/algos/problem/longest-common-subsequence) " +
+        "uses for its own two-string alignment table, but the recurrence itself is different. LCS only ever " +
+        "*skips* a character from one string or the other when they mismatch — a two-way branch, taking the " +
+        "max — and a match costs nothing extra either way. Edit distance additionally allows *replacing* a " +
+        "character — a three-way branch (delete, insert, replace), taking the min — and while a match still " +
+        "costs nothing, a mismatch always costs exactly 1 no matter which of the three operations gets picked.\n\n" +
+        "Flip the recursion into a table filled bottom-up instead: `dp[i][j]` holds exactly what `solve(i, j)` " +
+        "computed, with an extra row and column for the base cases where one string has run out entirely — " +
+        "`dp[i][0] = i` (delete everything left) and `dp[0][j] = j` (insert everything left). Fill it forward — " +
+        "`i` from `1` to `m`, `j` from `1` to `n` — so that whenever a cell is being computed, the three cells " +
+        "it depends on (diagonally up-left, directly above, directly to the left) are already sitting in the " +
+        "table. On a match, `dp[i][j] = dp[i-1][j-1]` (carry the value, no cost); otherwise " +
+        "`dp[i][j] = 1 + min(dp[i-1][j-1], dp[i-1][j], dp[i][j-1])` (replace, delete, or insert — whichever is " +
+        "cheapest).\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "gridWalkthrough",
+      heading:
+        `dp[i][j] = edit distance between the first i characters of word1 and the first j characters of word2, ` +
+        `for word1 = "stone" (rows) and word2 = "tore" (cols)`,
+      showIndices: true,
+      grid: [
+        [0, 1, 2, 3, 4],
+        [1, ".", ".", ".", "."],
+        [2, ".", ".", ".", "."],
+        [3, ".", ".", ".", "."],
+        [4, ".", ".", ".", "."],
+        [5, ".", ".", ".", "."],
+      ],
+      frames: [
+        {
+          active: [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [1, 0], [2, 0], [3, 0], [4, 0], [5, 0]],
+          action: "dp[0][j] = j · dp[i][0] = i",
+          caption:
+            "Turning the empty prefix of word1 into the first j characters of word2 takes j inserts; turning " +
+            "the first i characters of word1 into the empty prefix of word2 takes i deletes. These seed the " +
+            "table before any real character comparison happens.",
+        },
+        {
+          grid: [
+            [0, 1, 2, 3, 4],
+            [1, 1, ".", ".", "."],
+            [2, ".", ".", ".", "."],
+            [3, ".", ".", ".", "."],
+            [4, ".", ".", ".", "."],
+            [5, ".", ".", ".", "."],
+          ],
+          cursor: [1, 1],
+          active: [[0, 0], [0, 1], [1, 0]],
+          action: "'s' ≠ 't' → dp[1][1] = 1 + min(diag=0, up=1, left=1) = 1 (replace)",
+          caption:
+            "No match, so dp[1][1] takes the cheapest of three neighbors — right now that's the diagonal " +
+            "(replace 's' with 't'). Keep watching: the actual best route through the table ends up skipping " +
+            "this cell entirely.",
+        },
+        {
+          grid: [
+            [0, 1, 2, 3, 4],
+            [1, 1, 2, 3, 4],
+            [2, 1, ".", ".", "."],
+            [3, ".", ".", ".", "."],
+            [4, ".", ".", ".", "."],
+            [5, ".", ".", ".", "."],
+          ],
+          cursor: [2, 1],
+          active: [[1, 0]],
+          action: "word1[1]='t' = word2[0]='t' → dp[2][1] = dp[1][0] = 1 (match)",
+          caption:
+            "Row 1 finished filling in. This character matches, so the value carries straight from dp[1][0] = " +
+            "1 — the delete-'s' cell from the base row, not dp[1][1]'s replace from the previous frame. " +
+            "Matches don't add cost; they just propagate whatever's already been paid.",
+        },
+        {
+          grid: [
+            [0, 1, 2, 3, 4],
+            [1, 1, 2, 3, 4],
+            [2, 1, 2, 3, 4],
+            [3, ".", 1, ".", "."],
+            [4, ".", ".", ".", "."],
+            [5, ".", ".", ".", "."],
+          ],
+          cursor: [3, 2],
+          active: [[2, 1]],
+          action: "word1[2]='o' = word2[1]='o' → dp[3][2] = dp[2][1] = 1 (match)",
+          caption: "Another match — 'o' lines up with 'o' — so the value keeps propagating unchanged: still 1.",
+        },
+        {
+          grid: [
+            [0, 1, 2, 3, 4],
+            [1, 1, 2, 3, 4],
+            [2, 1, 2, 3, 4],
+            [3, 2, 1, 2, 3],
+            [4, ".", ".", 2, "."],
+            [5, ".", ".", ".", "."],
+          ],
+          cursor: [4, 3],
+          active: [[3, 2], [3, 3], [4, 2]],
+          action: "'n' ≠ 'r' → dp[4][3] = 1 + min(diag=1, up=2, left=2) = 2 (replace)",
+          caption:
+            "First real mismatch on this route: replacing 'n' with 'r' is strictly cheapest here (the diagonal " +
+            "neighbor beats both up and left), so this is the one actual replace in the optimal script.",
+        },
+        {
+          grid: [
+            [0, 1, 2, 3, 4],
+            [1, 1, 2, 3, 4],
+            [2, 1, 2, 3, 4],
+            [3, 2, 1, 2, 3],
+            [4, 3, 2, 2, 3],
+            [5, ".", ".", ".", 2],
+          ],
+          cursor: [5, 4],
+          active: [[4, 3]],
+          action: "word1[4]='e' = word2[3]='e' → dp[5][4] = dp[4][3] = 2 (match) — final answer",
+          caption:
+            "The last characters match too, so the final value carries straight from dp[4][3]: dp[5][4] = 2. " +
+            "Reading the route back: delete 's', keep 't' and 'o', replace 'n' with 'r', keep 'e' — " +
+            "\"stone\" → \"tone\" → \"tore\" in two operations.",
+        },
+      ],
+    },
+  ],
 };
 
 /**
@@ -8287,6 +9526,460 @@ export const PROBLEM_EXTRAS: Record<string, { complexity?: Section[]; testCases?
         args: [4],
         expected: [[".Q..", "...Q", "Q...", "..Q."], ["..Q.", "Q...", "...Q", ".Q.."]],
         note: "Smallest board with a solution — exactly two, mirror images of each other.",
+      },
+    ],
+  },
+
+  "climbing-stairs": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- The loop runs once for each step from 2 up to `n` — n - 1 iterations.\n" +
+          "- Each iteration does O(1) work: one addition and two assignments to slide `prev`/`curr` forward.\n\n" +
+          "So the whole fill is **O(n)**, down from the brute force's O(2ⁿ) — every state is computed exactly " +
+          "once instead of being re-derived on every path that needs it.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1). Here's why:\n\n" +
+          "- Only two rolling variables, `prev` and `curr`, are kept — never a full `dp` array of size n.\n" +
+          "- There's no recursion, so no call stack either.\n\n" +
+          "That's the space-optimization on top of the DP itself: a bottom-up table would already be O(n) time, " +
+          "but a naive table fill costs O(n) space too; collapsing it to the last two values, since `dp[i]` " +
+          "never reads anything further back, gets time and space to **O(n)** and **O(1)**.",
+      },
+    ],
+    testCases: [
+      { args: [1], expected: 1, note: "Smallest input allowed by the constraints — the base case, no transitions run." },
+      {
+        args: [9],
+        expected: 55,
+        note: "Small but past the base cases — exercises several chained transitions.",
+      },
+      {
+        args: [12],
+        expected: 233,
+        note: "Mid-size input; the answer has grown past three digits.",
+      },
+      {
+        args: [25],
+        expected: 121393,
+        note: "Large enough that the brute force's 2ⁿ recursive calls would be impractical, while the O(n) fill barely notices.",
+      },
+      {
+        args: [43],
+        expected: 701408733,
+        note: "Near the top of the allowed range (n <= 45); the running total stays a safe integer.",
+      },
+    ],
+  },
+
+  "coin-change": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(amount × coins.length). Here's why:\n\n" +
+          "- The outer loop runs once for every total from 1 up to `amount` — `amount` iterations.\n" +
+          "- The inner loop tries every coin at each total — `coins.length` work per iteration, each a constant-time comparison and update.\n\n" +
+          "So every `(total, coin)` pair is relaxed exactly once, for **O(amount × coins.length)** overall — down " +
+          "from the brute force's exponential blowup, since each total is now computed once instead of re-derived " +
+          "on every path that reaches it.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(amount). Here's why:\n\n" +
+          "- The `dp` array holds one entry per total from 0 to `amount` — O(amount) size.\n" +
+          "- There's no recursion, so no call stack to add on top.\n\n" +
+          "The `coins` array itself adds O(coins.length), but that's dwarfed by `amount` in the worst case, so it " +
+          "isn't counted separately.",
+      },
+    ],
+    testCases: [
+      {
+        args: [[3, 7], 0],
+        expected: 0,
+        note: "Zero amount needs zero coins, regardless of which coins are on hand.",
+      },
+      {
+        args: [[6], 6],
+        expected: 1,
+        note: "Single coin, exactly the amount — one coin does it.",
+      },
+      {
+        args: [[5], 3],
+        expected: -1,
+        note: "The only coin is bigger than the amount itself — no combination can ever reach it.",
+      },
+      {
+        args: [[3], 12],
+        expected: 4,
+        note: "One coin repeated evenly — the answer is just amount / coin, four uses of the same coin.",
+      },
+      {
+        args: [[1, 5], 13],
+        expected: 5,
+        note: "Exercises reusing the same coin multiple times (unbounded supply) alongside a second denomination: 5 + 5 + 1 + 1 + 1.",
+      },
+    ],
+  },
+
+  "house-robber": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- The loop runs once for every house in `nums` — n iterations total, with `prev`/`curr` seeded at 0 to " +
+          "stand in for the (nonexistent) houses before index 0, so no separate base-case pass is needed.\n" +
+          "- Each iteration does O(1) work: one addition, one comparison, and sliding `prev`/`curr` forward.\n\n" +
+          "So the whole fill is **O(n)**, down from the brute force's O(2ⁿ) — each house's best-haul-from-here " +
+          "answer is computed exactly once instead of re-derived on every rob/skip path that reaches it.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1). Here's why:\n\n" +
+          "- Only two rolling variables, `prev` and `curr`, are kept — never a full `dp` array of size n.\n" +
+          "- There's no recursion, so no call stack to add on top.\n\n" +
+          "Same story as climbing stairs: `dp[i]` only ever reads `dp[i-1]` and `dp[i-2]`, so the table collapses to " +
+          "**O(1)** instead of the O(n) a naive array-backed fill would use.",
+      },
+    ],
+    testCases: [
+      { args: [[]], expected: 0, note: "Empty street — nothing to rob." },
+      { args: [[7]], expected: 7, note: "Single house — no adjacency constraint to worry about, rob it outright." },
+      {
+        args: [[9, 1]],
+        expected: 9,
+        note: "Two houses — the constraint forces a choice between them; the larger one wins even though it comes first.",
+      },
+      {
+        args: [[2, 4, 8, 9, 9, 3]],
+        expected: 19,
+        note: "Irregular values with no obvious pattern — rob houses 0, 2, and 4 for 2 + 8 + 9 = 19.",
+      },
+      {
+        args: [[100, 1, 1, 100]],
+        expected: 200,
+        note: "Two big payouts separated by two small ones — skipping both small houses in a row to bank both big ones is optimal.",
+      },
+      {
+        args: [[6, 6, 6, 6, 6]],
+        expected: 18,
+        note: "All houses pay the same — robbing every other house (0, 2, 4) still beats any adjacent pair: 6 + 6 + 6 = 18.",
+      },
+    ],
+  },
+
+  "maximum-subarray": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- The loop runs once for every index from 1 up to the end — n - 1 iterations after `cur` and `best` are seeded at `nums[0]`.\n" +
+          "- Each iteration does O(1) work: two `Math.max` comparisons and two assignments.\n\n" +
+          "So the whole scan is **O(n)** — down from the brute force's O(n²), since each index's best-sum-ending-here " +
+          "answer is computed once instead of re-summed from every possible starting point.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1). Here's why:\n\n" +
+          "- Only two rolling variables, `cur` and `best`, are kept — never a full `dp` array of size n.\n" +
+          "- There's no recursion, so no call stack to add on top.\n\n" +
+          "Each `dp[i]` only ever depends on `dp[i-1]`, so the table collapses to **O(1)** instead of the O(n) a " +
+          "naive array-backed fill would use.",
+      },
+    ],
+    testCases: [
+      { args: [[7]], expected: 7, note: "Single element — no choice but to take it, even with nothing to compare it against." },
+      {
+        args: [[-8, -3, -6, -2, -5, -4]],
+        expected: -2,
+        note: "Every element negative — the best subarray is the least negative single element; the answer must not default to an empty subarray's sum of 0.",
+      },
+      {
+        args: [[4, 4, 4, 4]],
+        expected: 16,
+        note: "All-equal positive values — extending never hurts, so the whole array is the best subarray.",
+      },
+      {
+        args: [[-5, 2, 3, -1, 4]],
+        expected: 8,
+        note: "A negative first element drags down any subarray that includes it — the optimal run drops it and starts fresh at index 1: 2 + 3 - 1 + 4 = 8.",
+      },
+      {
+        args: [[6, -2, 6]],
+        expected: 10,
+        note: "A dip in the middle is still worth crossing when the values on both sides outweigh it: 6 - 2 + 6 = 10.",
+      },
+    ],
+  },
+
+  "unique-paths": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(m·n). Here's why:\n\n" +
+          "- The fill (whether kept as a full table or rolled into one row) computes exactly one value per cell of the m×n grid.\n" +
+          "- Each cell's value is a single addition of two already-known cells — O(1) work.\n\n" +
+          "So the whole fill is **O(m·n)** — down from the brute force's exponential O(2^(m+n)), since each " +
+          "cell is now computed exactly once instead of re-derived by every route that passes through it.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(n). Here's why:\n\n" +
+          "- The stored solution keeps only one rolling row of length n (the column count), never the full m×n table.\n" +
+          "- There's no recursion, so no call stack to add on top — unlike the brute force's O(m+n)-deep call stack.\n\n" +
+          "A full 2-D table would cost O(m·n); rolling it down to a single row that gets overwritten row by row " +
+          "drops that to **O(n)**.",
+      },
+    ],
+    testCases: [
+      { args: [1, 1], expected: 1, note: "Robot starts on the destination cell — one path, the empty one." },
+      {
+        args: [1, 8],
+        expected: 1,
+        note: "A single row — the robot has no choice but to move right the whole way; exactly one path.",
+      },
+      {
+        args: [9, 1],
+        expected: 1,
+        note: "A single column — the robot has no choice but to move down the whole way; exactly one path.",
+      },
+      {
+        args: [5, 5],
+        expected: 70,
+        note: "Square grid — exercises the general recurrence over several rows and columns.",
+      },
+      {
+        args: [2, 5],
+        expected: 5,
+        note: "Rectangular grid with more columns than rows — a smaller, easily hand-checked general case.",
+      },
+    ],
+  },
+
+  "longest-palindromic-substring": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n²). Here's why:\n\n" +
+          "- The outer loop runs once per index `i` (n iterations), trying both an odd center (`i, i`) and an even center (`i, i + 1`).\n" +
+          "- Each `expand` call can walk up to O(n) characters outward before it hits a mismatch or a string boundary — a string of all the same character never stops early.\n\n" +
+          "So the total work is n centers × O(n) expansion each = **O(n²)** — down from the brute force's O(n³), " +
+          "since checking a center's palindrome-ness no longer means re-scanning every candidate substring from scratch.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1). Here's why:\n\n" +
+          "- Only a handful of scalar variables are kept — `start`, `end`, and the `l`/`r` pair inside `expand` — never a 2-D `dp` table or a list of candidate substrings.\n" +
+          "- `expand` is a plain loop, not a recursive call, so there's no call stack to add on top.\n\n" +
+          "The final `s.slice(start, end + 1)` allocates the answer string, but that's the output, not extra " +
+          "working space — so the algorithm itself runs in **O(1)**.",
+      },
+    ],
+    testCases: [
+      { args: ["q"], expected: "q", note: "Single character — trivially its own longest palindrome." },
+      {
+        args: ["xy"],
+        expected: "x",
+        note:
+          "Two distinct characters — no palindrome longer than 1 exists; the strict `>` update never fires, so the reference keeps the very first character.",
+      },
+      {
+        args: ["eeee"],
+        expected: "eeee",
+        note: "Every character the same — expanding from the middle never fails until it runs off both edges, so the whole string wins.",
+      },
+      {
+        args: ["zaza"],
+        expected: "zaz",
+        note:
+          "Two overlapping length-3 palindromes tie ('zaz' at indices 0-2, 'aza' at indices 1-3); the strict `>` comparison keeps whichever was found first.",
+      },
+      {
+        args: ["abcddcbef"],
+        expected: "bcddcb",
+        note: "The longest palindrome sits away from either edge and is even-length — exercises a center between two different repeated characters.",
+      },
+    ],
+  },
+
+  "longest-common-subsequence": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(m·n). Here's why:\n\n" +
+          "- The fill computes exactly one value per cell of the `(m + 1) × (n + 1)` dp table.\n" +
+          "- Each cell does O(1) work — one character comparison, then either an addition or a `max` over two already-known neighbors.\n\n" +
+          "So the whole fill costs `(m + 1)(n + 1) × O(1)` = **O(m·n)** — down from the brute force's exponential " +
+          "O(2^(m+n)), since every `(i, j)` pair is now computed exactly once instead of re-derived by every " +
+          "match/skip path that reaches it.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(m·n). Here's why:\n\n" +
+          "- The stored solution keeps the full `(m + 1) × (n + 1)` dp table, since `dp[i][j]` reads `dp[i+1][j]` and `dp[i][j+1]` — the row below and this row's later columns.\n" +
+          "- There's no recursion, so no call stack to add on top — unlike the brute force's O(m+n)-deep call stack.\n\n" +
+          "The two input strings aren't counted as extra space — only what the algorithm allocates beyond them. " +
+          "That table costs **O(m·n)**; it could be rolled down to O(n) by keeping only the row below, the way " +
+          "Unique Paths rolls its table — though here a match reads the *diagonal* cell `dp[i+1][j+1]`, which " +
+          "gets overwritten as soon as the current row starts filling in, so the fold needs one extra saved " +
+          "value to hold it, not just a plain running sum.",
+      },
+    ],
+    testCases: [
+      { args: ["", "xyz"], expected: 0, note: "One string empty — no characters exist to match, so the LCS is empty regardless of the other string." },
+      { args: ["k", "k"], expected: 1, note: "Single matching character in both strings — the LCS is that one character." },
+      { args: ["p", "q"], expected: 0, note: "Two single, distinct characters — the smallest case with no common subsequence at all." },
+      {
+        args: ["zzz", "zz"],
+        expected: 2,
+        note: "Both strings are runs of the same character — the LCS length is capped by the shorter string's length (2), not the total number of occurrences.",
+      },
+      {
+        args: ["abab", "baba"],
+        expected: 3,
+        note: "Alternating repeated characters in both strings — several equally long common subsequences exist ('aba' or 'bab'), and the DP only needs the length, not which one.",
+      },
+    ],
+  },
+
+  "maximal-square": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(rows · cols). Here's why:\n\n" +
+          "- The DP fills each of the `rows * cols` cells of the table exactly once.\n" +
+          "- Each cell's value comes from three already-computed neighbours (up, left, diagonal) plus a constant number of comparisons — O(1) work per cell.\n\n" +
+          "So the whole fill costs `rows * cols` × O(1) = **O(rows · cols)** — down from the brute force's " +
+          "O(rows·cols·min(rows,cols)³), since each square's \"is it all 1s\" answer is now derived from its " +
+          "neighbours' already-known answers instead of re-verified from scratch.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(rows · cols). Here's why:\n\n" +
+          "- The stored solution keeps a full `dp` table shaped like the input, one entry per cell.\n" +
+          "- Nothing else scales with the input — `maxSide` and the loop counters are O(1).\n\n" +
+          "Each row of `dp` only ever reads the row directly above it, so the table is optimizable down to a " +
+          "single rolling row of O(cols) — not needed at the given bounds (up to 300×300), so the stored " +
+          "solution keeps the simpler full table, at **O(rows · cols)**.",
+      },
+    ],
+    testCases: [
+      { args: [[[0]]], expected: 0, note: "Smallest possible input — a single 0 cell, so no square of 1s exists." },
+      {
+        args: [[[0, 0], [0, 0]]],
+        expected: 0,
+        note: "All-zero grid — regardless of size, a grid with no 1 at all always answers 0.",
+      },
+      {
+        args: [[[1, 0, 0], [0, 0, 0], [0, 0, 0]]],
+        expected: 1,
+        note: "A single isolated 1 — the smallest possible positive answer, area 1.",
+      },
+      {
+        args: [[[1, 1, 1], [1, 1, 1]]],
+        expected: 4,
+        note: "All-ones rectangular grid — capped by the shorter dimension (2 rows), so the best square is 2x2, area 4.",
+      },
+      {
+        args: [[[1, 1, 1], [1, 1, 1], [1, 1, 0]]],
+        expected: 4,
+        note: "A 0 in one corner blocks the square from growing to 3x3, but two separate 2x2 squares still tie for the max — the answer only needs the largest side, not which square achieved it.",
+      },
+    ],
+  },
+
+  "knapsack": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n · cap). Here's why:\n\n" +
+          "- The fill computes exactly one value per cell of the `(n + 1) × (cap + 1)` dp table.\n" +
+          "- Each cell does O(1) work — one weight comparison, then either a single lookup (skip) or an addition and a `max` over two already-known cells (take vs. skip).\n\n" +
+          "So the whole fill costs `(n + 1)(cap + 1)` × O(1) = **O(n · cap)** — down from the brute force's exponential O(2^n), since each `(i, c)` state is now computed exactly once instead of re-derived by every subset that happens to reach it.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(n · cap). Here's why:\n\n" +
+          "- The stored solution keeps the full `(n + 1) × (cap + 1)` dp table, since `dp[i][c]` reads two cells from the *next* row, `dp[i+1][c]` and `dp[i+1][c - weights[i]]`.\n" +
+          "- There's no recursion, so no call stack on top of the table.\n\n" +
+          "That table costs **O(n · cap)**; since each row only ever reads the row directly below it, it's row-reducible to a single rolling row of O(cap) — the stored solution keeps the simpler full table for clarity.",
+      },
+    ],
+    testCases: [
+      { args: [7, [], []], expected: 0, note: "No items at all — nothing to pack regardless of capacity." },
+      { args: [10, [4], [50]], expected: 50, note: "Single item lighter than the capacity — it always fits, so the answer is just its value." },
+      { args: [0, [2, 3], [8, 8]], expected: 0, note: "Zero capacity — every item is forced out no matter what it's worth." },
+      {
+        args: [7, [3, 3, 3], [4, 4, 4]],
+        expected: 8,
+        note: "All items identical — each is still its own item slot, capping the count that fits (two of three, not a fractional third) rather than treating weight as infinitely divisible.",
+      },
+      {
+        args: [5, [4, 4], [9, 9]],
+        expected: 9,
+        note: "Two items sharing the same weight and value — capacity only allows one of them, so the DP mustn't secretly reuse the 'same' item twice.",
+      },
+      {
+        args: [6, [2, 3, 6], [5, 5, 11]],
+        expected: 11,
+        note: "A single heavy, high-value item beats combining the two lighter items that also fit (5 + 5 = 10 < 11) — the reason a greedy 'grab everything that fits' strategy fails on 0/1 knapsack.",
+      },
+    ],
+  },
+
+  "edit-distance": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(m·n). Here's why:\n\n" +
+          "- The fill computes exactly one value per cell of the conceptual `(m + 1) × (n + 1)` dp table, one row at a time.\n" +
+          "- Each cell does O(1) work — one character comparison, then either a lookup (match) or a `min` over three already-known cells (mismatch).\n\n" +
+          "So the whole fill costs `(m + 1)(n + 1)` × O(1) = **O(m·n)** — down from the brute force's exponential O(3^(m+n)), since every `(i, j)` pair is now computed exactly once instead of re-derived by every insert/delete/replace path that happens to reach it.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(n). Here's why:\n\n" +
+          "- The stored solution keeps only two rows at a time — `prev` (row i-1) and `curr` (the row being built) — each of length n+1, since `dp[i][j]` only ever reads the row directly above (`prev[j-1]`, `prev[j]`) and the current row's previous cell (`curr[j-1]`).\n" +
+          "- Once a row finishes, `prev` is replaced by `curr` and the old row is discarded — no history beyond one row back is kept.\n\n" +
+          "That's **O(n)** rather than the full O(m·n) table a naively-materialized 2-D array would need. It could be tightened further to O(min(m, n)) by always rolling over the shorter string, but the stored solution keeps it simple and always rolls over word2's length.",
+      },
+    ],
+    testCases: [
+      { args: ["", ""], expected: 0, note: "Two empty strings — the forced base case, zero operations." },
+      { args: ["", "cat"], expected: 3, note: "word1 is empty — every character of word2 must be inserted." },
+      { args: ["a", "z"], expected: 1, note: "Single differing character each — the smallest case that needs a real operation, a single replace." },
+      { args: ["xyz", "xyz"], expected: 0, note: "Identical strings — already equal, so zero operations regardless of length." },
+      {
+        args: ["bbbb", "bb"],
+        expected: 2,
+        note: "Repeated characters — every character already matches, so the distance collapses to just the length difference (two deletes); the DP mustn't overcount because of the repeats.",
+      },
+      {
+        args: ["ab", "ba"],
+        expected: 2,
+        note: "Smallest case where replacing both characters (2 replaces) ties with a delete-then-insert route — both cost 2, so the DP just needs the minimum, not a single 'correct' script.",
       },
     ],
   },

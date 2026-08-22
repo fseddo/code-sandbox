@@ -66,15 +66,20 @@ function longestPalindrome(s: string): string {
 \`O(n²)\` time, \`O(1)\` space.`,
       code: {
         javascript: `function longestPalindrome(s) {
+  // Fewer than 2 characters is trivially its own longest palindrome.
   if (s.length < 2) return s;
   let start = 0;
   let end = 0;
+  // Grow outward from a center (l, r) while the ends still match; return the palindrome's length.
   const expand = (l, r) => {
     while (l >= 0 && r < s.length && s[l] === s[r]) { l--; r++; }
     return r - l - 1;
   };
+  // Every palindrome has a center: a single character (odd length) or a gap between two (even length).
   for (let i = 0; i < s.length; i++) {
+    // Try both kinds of center rooted at i, and keep whichever grows further.
     const len = Math.max(expand(i, i), expand(i, i + 1));
+    // A strictly longer palindrome replaces the current best; ties keep the earlier one.
     if (len > end - start + 1) {
       start = i - Math.floor((len - 1) / 2);
       end = i + Math.floor(len / 2);
@@ -83,15 +88,20 @@ function longestPalindrome(s: string): string {
   return s.slice(start, end + 1);
 }`,
         typescript: `function longestPalindrome(s: string): string {
+  // Fewer than 2 characters is trivially its own longest palindrome.
   if (s.length < 2) return s;
   let start = 0;
   let end = 0;
+  // Grow outward from a center (l, r) while the ends still match; return the palindrome's length.
   const expand = (l: number, r: number): number => {
     while (l >= 0 && r < s.length && s[l] === s[r]) { l--; r++; }
     return r - l - 1;
   };
+  // Every palindrome has a center: a single character (odd length) or a gap between two (even length).
   for (let i = 0; i < s.length; i++) {
+    // Try both kinds of center rooted at i, and keep whichever grows further.
     const len = Math.max(expand(i, i), expand(i, i + 1));
+    // A strictly longer palindrome replaces the current best; ties keep the earlier one.
     if (len > end - start + 1) {
       start = i - Math.floor((len - 1) / 2);
       end = i + Math.floor(len / 2);
