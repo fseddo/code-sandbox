@@ -1198,6 +1198,310 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
     },
   ],
 
+  "jump-game": [
+    {
+      kind: "prose",
+      body:
+        "A first pass tracks every index that's reachable at all: mark index 0 reachable, then for every index " +
+        "already known to be reachable, mark each index its jump range can land on as reachable too.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — mark every index reachable from an already-reachable index: O(n²).",
+      source:
+        "function canJump(nums) {\n" +
+        "  const n = nums.length;\n" +
+        "  // reachable[i] tracks whether index i can be reached at all, starting from index 0.\n" +
+        "  const reachable = new Array(n).fill(false);\n" +
+        "  reachable[0] = true;\n" +
+        "  for (let i = 0; i < n; i++) {\n" +
+        "    if (!reachable[i]) continue; // nothing jumps from an index we can't even get to\n" +
+        "    // Mark every index this position's jump range can land on.\n" +
+        "    for (let step = 1; step <= nums[i] && i + step < n; step++) {\n" +
+        "      reachable[i + step] = true;\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return reachable[n - 1];\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(n²) — for a run of large jump values, the inner loop keeps re-marking indices that are already " +
+        "known to be reachable. Can we do better?\n\n" +
+        "Notice we never actually need to know *every* reachable index — only the single farthest one. If the " +
+        "farthest reachable index so far already passes some index `i`, then `i` (and everything between the last " +
+        "frontier and it) is reachable too, without re-deriving it index by index. That's the " +
+        "[Greedy](/study-guide/algos/topic/greedy) farthest-reach idea: keep one running `reach` value and push it " +
+        "outward as you scan, instead of maintaining a whole table of reachable indices.\n\n" +
+        "The stored solution folds the brute force's table down to that single variable: scan left to right, bail " +
+        "out the moment the current index is beyond `reach` (nothing earlier could have jumped this far), " +
+        "otherwise push `reach` out to `i + nums[i]`.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "nums = [3, 0, 0, 1, 4] — reach = farthest index reachable so far",
+      lane: [3, 0, 0, 1, 4],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "i", at: 0 }],
+          action: "reach = max(0, 0+3) = 3",
+          caption: "Index 0's value of 3 sends the frontier straight to index 3.",
+        },
+        {
+          pointers: [{ name: "i", at: 1 }],
+          marked: [0],
+          action: "reach = max(3, 1+0) = 3",
+          caption: "Index 1 is a zero — a dead end on its own — but the frontier already passed it, so it costs nothing.",
+        },
+        {
+          pointers: [{ name: "i", at: 2 }],
+          marked: [0, 1],
+          action: "reach = max(3, 2+0) = 3",
+          caption: "A second zero at index 2 is just as harmless — the frontier reached past it two steps ago.",
+        },
+        {
+          pointers: [{ name: "i", at: 3 }],
+          marked: [0, 1, 2],
+          action: "reach = max(3, 3+1) = 4",
+          caption: "Index 3 finally extends the frontier again, reaching the last index.",
+        },
+        {
+          pointers: [{ name: "i", at: 4 }],
+          marked: [0, 1, 2, 3],
+          action: "reach = max(4, 4+4) = 8; scan ends",
+          caption: "Index 4 — the last index — is within the frontier (4 ≤ 4), so it's reachable. The scan finishes without ever getting stuck: `true`.",
+        },
+      ],
+    },
+    {
+      kind: "walkthrough",
+      heading: "nums = [2, 1, 0, 0, 4] — a case that gets stuck",
+      lane: [2, 1, 0, 0, 4],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "i", at: 0 }],
+          action: "reach = max(0, 0+2) = 2",
+          caption: "Index 0 can jump up to 2 steps, pushing the frontier to index 2.",
+        },
+        {
+          pointers: [{ name: "i", at: 1 }],
+          marked: [0],
+          action: "reach = max(2, 1+1) = 2",
+          caption: "Index 1 only matches what the frontier already covers — no gain, but still safely reachable.",
+        },
+        {
+          pointers: [{ name: "i", at: 2 }],
+          marked: [0, 1],
+          action: "reach = max(2, 2+0) = 2",
+          caption: "Index 2 sits right at the edge of the frontier (2 ≤ 2) — reachable, but its value of 0 can't push the frontier any further.",
+        },
+        {
+          pointers: [{ name: "i", at: 3 }],
+          marked: [0, 1, 2],
+          action: "3 > reach (2) → return false",
+          caption: "Index 3 lies just beyond the frontier — nothing earlier jumped far enough to reach it, so the scan stops here: `false`.",
+        },
+      ],
+    },
+  ],
+
+  "gas-station": [
+    {
+      kind: "prose",
+      body:
+        "A first pass just tries every station as the starting point: simulate driving the whole circuit from " +
+        "there, and return the first station whose tank never runs dry.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — simulate the full circuit from every candidate start: O(n²).",
+      source:
+        "function gasStation(gas, cost) {\n" +
+        "  const n = gas.length;\n" +
+        "  // Try every station as a candidate start.\n" +
+        "  for (let start = 0; start < n; start++) {\n" +
+        "    let tank = 0;\n" +
+        "    let ok = true;\n" +
+        "    // Simulate one full lap starting from this station.\n" +
+        "    for (let step = 0; step < n; step++) {\n" +
+        "      const i = (start + step) % n; // wrap around the circle\n" +
+        "      tank += gas[i] - cost[i];\n" +
+        "      if (tank < 0) { // ran dry before completing the lap\n" +
+        "        ok = false;\n" +
+        "        break;\n" +
+        "      }\n" +
+        "    }\n" +
+        "    if (ok) return start; // completed the full circuit without going negative\n" +
+        "  }\n" +
+        "  return -1; // no starting station works\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(n²) — for every candidate start we might re-walk almost the whole circuit before it fails or " +
+        "succeeds. Can we do better?\n\n" +
+        "The key observation: if the running tank (the accumulated `gas[i] - cost[i]` since some candidate start) " +
+        "goes negative at station `i`, then *every* station between that candidate and `i` is disqualified too — " +
+        "each of them would inherit the same shortfall by the time it reached `i`, or worse. So the instant the " +
+        "tank dips below zero, it's safe to jump the candidate straight past `i` and reset the tank to zero, " +
+        "without ever re-walking the stations already ruled out. Accumulating a running total and resetting the " +
+        "candidate the moment it turns negative is the same lens the " +
+        "[Prefix sum](/study-guide/algos/topic/prefix-sum) chapter uses to locate the start of a subarray with a " +
+        "target running-sum property — this greedy search is a specialized case of it.\n\n" +
+        "One more piece: a single left-to-right scan (never wrapping back to re-simulate) is also enough to decide " +
+        "overall feasibility. If the total of `gas[i] - cost[i]` across every station is negative, no start works " +
+        "at all; if it's `>= 0`, the candidate `start` still standing at the end of the scan is guaranteed to " +
+        "complete the full circuit — including the stations skipped by earlier resets, whose shortfall is exactly " +
+        "covered by the surplus banked since `start`.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "gas = [2, 4, 1, 3, 2, 6, 2], cost = [3, 1, 5, 1, 3, 1, 1] — lane shows diff[i] = gas[i] − cost[i]",
+      lane: [-1, 3, -4, 2, -1, 5, 1],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "i", at: 0 }, { name: "start", at: 0 }],
+          action: "diff = 2 - 3 = -1; tank = -1 < 0 → reset",
+          caption: "Station 0 can't even cover its own leg to station 1. No station up to and including 0 can be a valid start, so bump start to 1 and zero the tank.",
+        },
+        {
+          pointers: [{ name: "i", at: 1 }, { name: "start", at: 1 }],
+          marked: [0],
+          action: "diff = 4 - 1 = 3; tank = 0 + 3 = 3",
+          caption: "The tank climbs back into positive territory — station 1 looks promising, but the circuit isn't finished yet.",
+        },
+        {
+          pointers: [{ name: "i", at: 2 }, { name: "start", at: 1 }],
+          marked: [0],
+          action: "diff = 1 - 5 = -4; tank = 3 - 4 = -1 < 0 → reset again",
+          caption: "A second dip: everything from start = 1 through here runs dry too. The greedy resets a second time — start jumps to 3, tank back to 0. This can happen more than once in a single scan.",
+        },
+        {
+          pointers: [{ name: "i", at: 6 }, { name: "start", at: 3 }],
+          marked: [0, 1, 2],
+          range: [3, 6],
+          action: "tank: 2 → 1 → 6 → 7 — never negative",
+          caption: "From the new start, the tank climbs through stations 3–6 without ever running dry.",
+        },
+        {
+          pointers: [{ name: "start", at: 3 }],
+          range: [0, 2],
+          action: "wrap: tank 7 → 6 → 9 → 5 — still never negative",
+          caption: "Total gas exceeds total cost overall (5 to spare), so continuing past station 6 back through the skipped stations 0–2 never runs the tank dry either — the surplus banked since station 3 covers their shortfall (the loop itself never re-visits these stations; this is the guarantee proven above).",
+        },
+        {
+          pointers: [{ name: "start", at: 3 }],
+          action: "total = 5 ≥ 0 → return start = 3",
+          caption: "The circuit closes back at station 3 with gas to spare the whole way around — station 3 is the unique valid start.",
+        },
+      ],
+    },
+  ],
+
+  "candy": [
+    {
+      kind: "prose",
+      body:
+        "A first pass starts everyone at 1 candy, then keeps re-scanning the line and bumping any child who breaks " +
+        "a neighbor rule, until a full scan makes no more changes.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — relax neighbor violations until nothing changes: O(n²).",
+      source:
+        "function candy(ratings) {\n" +
+        "  const n = ratings.length;\n" +
+        "  const candies = new Array(n).fill(1); // everyone starts at the floor of 1\n" +
+        "  let changed = true;\n" +
+        "  // Keep re-checking every neighbor rule until a full pass fixes nothing.\n" +
+        "  while (changed) {\n" +
+        "    changed = false;\n" +
+        "    for (let i = 0; i < n; i++) {\n" +
+        "      // Rule against the left neighbor.\n" +
+        "      if (i > 0 && ratings[i] > ratings[i - 1] && candies[i] <= candies[i - 1]) {\n" +
+        "        candies[i] = candies[i - 1] + 1;\n" +
+        "        changed = true;\n" +
+        "      }\n" +
+        "      // Rule against the right neighbor.\n" +
+        "      if (i < n - 1 && ratings[i] > ratings[i + 1] && candies[i] <= candies[i + 1]) {\n" +
+        "        candies[i] = candies[i + 1] + 1;\n" +
+        "        changed = true;\n" +
+        "      }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return candies.reduce((total, c) => total + c, 0);\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(n²) — a violation can only propagate one position per pass, so a long strictly-decreasing (or " +
+        "increasing) run needs a fresh full scan for every position in it before things stabilize. Can we do " +
+        "better?\n\n" +
+        "The key observation: each child's requirement only ever depends on *two* fixed comparisons — \"more than " +
+        "the left neighbor\" and \"more than the right neighbor.\" Neither direction needs to be re-checked once " +
+        "it's satisfied, so instead of relaxing repeatedly, satisfy each direction with **one pass**: sweep " +
+        "left-to-right so every child ranks correctly against its *left* neighbor, then sweep right-to-left so " +
+        "every child ranks correctly against its *right* neighbor too — taking the `max` of what both passes " +
+        "want, so the second pass never undoes what the first already secured. That's the " +
+        "[Greedy](/study-guide/algos/topic/greedy) chapter's two-pass local-constraint reconciliation technique: " +
+        "when a rule has to hold in both directions at once, one greedy pass can't see both sides, so run one pass " +
+        "per direction instead.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "ratings = [2, 4, 3, 1, 2, 5]",
+      lane: [2, 4, 3, 1, 2, 5],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "i", at: 1 }],
+          action: "ratings[1]=4 > ratings[0]=2 → candies[1] = candies[0]+1 = 2",
+          caption: "Left-to-right pass: child 1 outranks child 0, so it needs one more candy. Running total so far: [1, 2, _, _, _, _].",
+        },
+        {
+          pointers: [{ name: "i", at: 2 }],
+          marked: [1],
+          action: "ratings[2]=3 not > ratings[1]=4 → candies[2] stays 1",
+          caption: "Child 2 rates lower than child 1, so the left pass leaves it at the floor of 1 — even though child 2 also outranks child 3, a direction this pass can't see yet.",
+        },
+        {
+          pointers: [{ name: "i", at: 5 }],
+          marked: [1, 2, 3, 4],
+          action: "ratings[5]=5 > ratings[4]=2 → candies[5] = candies[4]+1 = 3",
+          caption: "Left pass complete: [1, 2, 1, 1, 2, 3]. Every 'higher than the left neighbor' rule holds, but child 2 (rating 3) still sits at 1 despite outranking child 3 (rating 1).",
+        },
+        {
+          pointers: [{ name: "i", at: 2 }],
+          marked: [4, 3],
+          action: "ratings[2]=3 > ratings[3]=1 → candies[2] = max(1, candies[3]+1) = max(1, 2) = 2",
+          caption: "Right-to-left pass: children 4 and 3 were already swept (neither outranks its right neighbor, so neither changed) before reaching child 2, which outranks child 3 and needs more than its 1. The max keeps the left pass's work intact — candies[2] rises from 1 to 2.",
+        },
+        {
+          pointers: [{ name: "i", at: 1 }],
+          action: "ratings[1]=4 > ratings[2]=3 → candies[1] = max(2, candies[2]+1) = max(2, 3) = 3",
+          caption: "Child 1 is the peak, outranking both neighbors. The left pass already gave it 2; the right pass now demands one more than child 2's updated 2, so it climbs again to 3.",
+        },
+        {
+          pointers: [{ name: "i", at: 0 }],
+          action: "sum([1, 3, 2, 1, 2, 3]) = 12",
+          caption: "Right pass complete: [1, 3, 2, 1, 2, 3]. Every neighbor rule holds in both directions — the minimum total is 12 candies.",
+        },
+      ],
+    },
+  ],
+
   "geometric-sequence-triplets": [
     {
       kind: "prose",
@@ -7996,6 +8300,94 @@ export const PROBLEM_EXTRAS: Record<string, { complexity?: Section[]; testCases?
         expected: [[-2, 0, 2], [-2, 1, 1]],
         note: "Duplicates that must not yield repeated triplets.",
       },
+    ],
+  },
+
+  "jump-game": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- The scan visits each of the `n` indices exactly once.\n" +
+          "- At each index, comparing `i` against `reach` and updating `reach` with `Math.max` is O(1) work.\n\n" +
+          "So the whole scan is a single pass — **O(n)** — instead of the brute force's O(n²) of re-marking " +
+          "already-known-reachable indices.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1). Here's why:\n\n" +
+          "- Only `reach` and the loop index `i` are kept, regardless of the input's length.\n" +
+          "- No table of reachable indices is built, unlike the brute force's O(n) `reachable[]` array.\n\n" +
+          "So the greedy scan uses **O(1)** auxiliary space beyond the input itself.",
+      },
+    ],
+    testCases: [
+      { args: [[7]], expected: true, note: "Single element — already at the last index, regardless of its value." },
+      { args: [[0, 5]], expected: false, note: "Smallest impossible case — index 0's value of 0 means you can never leave it." },
+      { args: [[2, 2, 2]], expected: true, note: "All-equal jump values — still reachable since the frontier compounds each step." },
+      { args: [[2, 2, 2, 2, 1]], expected: true, note: "Repeated jump values keep the frontier exactly one step ahead of the scan the whole way, clearing the last index just in time." },
+      { args: [[1, 1, 1, 1, 0]], expected: true, note: "Tight fit — the frontier lands exactly on the last index, whose own value of 0 doesn't matter." },
+    ],
+  },
+
+  "gas-station": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- The scan visits each of the `n` stations exactly once.\n" +
+          "- At each station, computing `diff`, updating `total`/`tank`, and possibly resetting `start` are all " +
+          "O(1) work.\n\n" +
+          "So the whole scan is a single pass — **O(n)** — instead of the brute force's O(n²) of re-simulating up " +
+          "to `n` stations from as many as `n` different candidate starts.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1). Here's why:\n\n" +
+          "- Only `total`, `tank`, `start`, and the loop index `i` are kept, regardless of the input's length.\n" +
+          "- No per-station table or copy of `gas`/`cost` is built.\n\n" +
+          "So the greedy scan uses **O(1)** auxiliary space beyond the input arrays themselves.",
+      },
+    ],
+    testCases: [
+      { args: [[0], [0]], expected: 0, note: "Smallest possible input — gas and cost both zero, breaking even exactly at the only station." },
+      { args: [[1, 1], [2, 2]], expected: -1, note: "Smallest no-solution case — total gas falls short of total cost, so no start survives." },
+      { args: [[2, 2, 2], [2, 2, 2]], expected: 0, note: "All-equal gas and cost — every station breaks even, so the tank never dips negative and station 0 already works." },
+      { args: [[1, 1, 5, 1, 1], [2, 2, 1, 1, 1]], expected: 2, note: "Repeated shortfalls at stations 0 and 1 trigger two separate resets before the surplus at station 2 finally holds all the way through." },
+      { args: [[4, 1, 1], [1, 1, 1]], expected: 0, note: "Gas comfortably covers cost at every station, so no reset ever triggers — station 0 already works." },
+    ],
+  },
+
+  "candy": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- The left-to-right pass visits each of the `n` children once, doing O(1) work per child.\n" +
+          "- The right-to-left pass does the same, visiting each child once more.\n\n" +
+          "Two linear passes back to back is still **O(n)** — a fixed constant factor of two passes, not the " +
+          "brute force's repeated re-scanning.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(n). Here's why:\n\n" +
+          "- The `candies` array holds one entry per child — O(n) auxiliary space.\n" +
+          "- Both passes otherwise only keep a loop index and a couple of comparisons — O(1) beyond that array.\n\n" +
+          "So the overall auxiliary space is **O(n)**, dominated by the `candies` array itself.",
+      },
+    ],
+    testCases: [
+      { args: [[9]], expected: 1, note: "Single child — always exactly 1 candy, regardless of rating." },
+      { args: [[6, 6, 6, 6, 6]], expected: 5, note: "All-equal ratings — no strict difference anywhere, so every child stays at the floor of 1." },
+      { args: [[1, 2, 2, 1]], expected: 6, note: "A tied plateau in the middle — ties impose no ordering, so no bonus candy is forced across them." },
+      { args: [[1, 1, 5, 1, 1]], expected: 6, note: "An isolated peak surrounded by flat ground on both sides — only the peak itself needs extra candy." },
+      { args: [[5, 3, 1, 3, 5]], expected: 11, note: "A valley between two peaks — exercises the right-to-left pass overriding what the left pass gave both peaks." },
     ],
   },
 

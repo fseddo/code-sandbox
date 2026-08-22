@@ -24,13 +24,13 @@
 | Tries | `tries` | yes |
 | Graphs | `graphs` | yes |
 | Backtracking | `backtracking` | yes |
-| **Dynamic Programming** | `dynamic-programming` | **this run** |
-| Greedy | `greedy` | no |
+| Dynamic Programming | `dynamic-programming` | yes |
+| **Greedy** | `greedy` | **this run** |
 | Sort and Search | `sorting` | no |
 | Bit Manipulation | `bit-manipulation` | no |
 | Math and Geometry | `math` | no |
 
-Per-chapter problem counts (deduped BBG problems): Intervals 3 · Prefix Sums 4 · Trees 14 · Tries 3 · Graphs 11 · Backtracking 5 · Dynamic Programming 9 BBG + 1 non-BBG extra (10 built) · Greedy 3 · Sort and Search 7 · Bit Manipulation 4 · Math and Geometry 6.
+Per-chapter problem counts (deduped BBG problems): Intervals 3 · Prefix Sums 4 · Trees 14 · Tries 3 · Graphs 11 · Backtracking 5 · Dynamic Programming 9 BBG + 1 non-BBG extra (10 built) · Greedy 3 (confirmed) · Sort and Search 7 · Bit Manipulation 4 · Math and Geometry 6.
 
 > Column legend — **In bank already?** is true iff the *suggested* bank id already exists as a key in `src/problems/data/problems/index.ts`. "off-catalog" = a BBG-original problem with no clean public LeetCode twin (lower mapping confidence; import from a self-contained spec). "sandbox concern" flags problems whose I/O shape (streaming, design/class, randomized, graph-build) may be awkward for the judge harness.
 
@@ -145,13 +145,15 @@ Per-chapter problem counts (deduped BBG problems): Intervals 3 · Prefix Sums 4 
 
 ---
 
-## Greedy (3)
+## Greedy (3 — built)
+
+**Resolved (2026-08):** re-fetched `python3/Greedy/` directly from the BBG repo tree during the build (per-file check, not the manifest estimate). The directory contains exactly **3 files** — `jump_to_the_end.py`, `gas_stations.py`, `candies.py` — no hidden 4th problem, no `_brute_force`/`_optimized` variants to collapse. The original 3-row estimate below was **correct**, and the LC mappings were verified against the actual BBG source (read, not guessed): `jump_to_the_end` reverse-greedy-reachability is exactly LC 55 Jump Game; `gas_stations` is LC 134's start-index/tank-reset greedy; `candies` is LC 135's two-pass (left-to-right, then right-to-left) greedy. All three imported/confirmed at **high** confidence — no corrections needed to this chapter's row.
 
 | BBG problem name | Suggested bank id/slug | In bank already? | Mapping confidence | Notes |
 | --- | --- | --- | --- | --- |
 | Jump to the End | `jump-game` | yes | high | LC 55 — already in bank. |
-| Gas Stations | `gas-station` | no | high | LC 134. |
-| Candies | `candy` | no | high | LC 135. Two-pass greedy. |
+| Gas Stations | `gas-station` | **imported #158** | high | LC 134. Start-index reset + running-tank greedy; -1 if total gas < total cost. |
+| Candies | `candy` | **imported #159** | high | LC 135. Two-pass greedy (left-to-right "greater than left neighbor", then right-to-left "greater than right neighbor", taking the max). |
 
 ---
 

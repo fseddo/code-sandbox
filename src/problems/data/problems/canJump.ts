@@ -71,20 +71,20 @@ function canJump(nums: number[]): boolean {
 \`O(n)\` time, \`O(1)\` space.`,
       code: {
         javascript: `function canJump(nums) {
-  let reach = 0;
+  let reach = 0; // farthest index reachable so far
   for (let i = 0; i < nums.length; i++) {
-    if (i > reach) return false;
-    reach = Math.max(reach, i + nums[i]);
+    if (i > reach) return false; // this index is unreachable — stuck for good
+    reach = Math.max(reach, i + nums[i]); // extend the frontier as far as this jump allows
   }
-  return true;
+  return true; // scanned every index without ever getting stuck
 }`,
         typescript: `function canJump(nums: number[]): boolean {
-  let reach = 0;
+  let reach = 0; // farthest index reachable so far
   for (let i = 0; i < nums.length; i++) {
-    if (i > reach) return false;
-    reach = Math.max(reach, i + nums[i]);
+    if (i > reach) return false; // this index is unreachable — stuck for good
+    reach = Math.max(reach, i + nums[i]); // extend the frontier as far as this jump allows
   }
-  return true;
+  return true; // scanned every index without ever getting stuck
 }`,
       },
     },

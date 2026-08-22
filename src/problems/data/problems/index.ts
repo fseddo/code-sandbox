@@ -157,6 +157,8 @@ import { coinChange } from "./coinChange";
 import { longestCommonSubsequence } from "./longestCommonSubsequence";
 import { maximalSquare } from "./maximalSquare";
 import { knapsack } from "./knapsack";
+import { gasStation } from "./gasStation";
+import { candy } from "./candy";
 
 /**
  * The problem bank, keyed by id. Authored modules keep their precise generics for
@@ -321,6 +323,8 @@ export const problems = {
   "longest-common-subsequence": longestCommonSubsequence,
   "maximal-square": maximalSquare,
   knapsack,
+  "gas-station": gasStation,
+  candy,
 } satisfies Record<string, AnyProblem>;
 
 export type ProblemId = keyof typeof problems;
