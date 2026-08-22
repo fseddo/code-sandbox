@@ -25,12 +25,12 @@
 | Graphs | `graphs` | yes |
 | Backtracking | `backtracking` | yes |
 | Dynamic Programming | `dynamic-programming` | yes |
-| **Greedy** | `greedy` | **this run** |
-| Sort and Search | `sorting` | no |
+| Greedy | `greedy` | yes |
+| Sort and Search | `sorting` | yes |
 | Bit Manipulation | `bit-manipulation` | no |
 | Math and Geometry | `math` | no |
 
-Per-chapter problem counts (deduped BBG problems): Intervals 3 · Prefix Sums 4 · Trees 14 · Tries 3 · Graphs 11 · Backtracking 5 · Dynamic Programming 9 BBG + 1 non-BBG extra (10 built) · Greedy 3 (confirmed) · Sort and Search 7 · Bit Manipulation 4 · Math and Geometry 6.
+Per-chapter problem counts (deduped BBG problems): Intervals 3 · Prefix Sums 4 · Trees 14 · Tries 3 · Graphs 11 · Backtracking 5 · Dynamic Programming 9 BBG + 1 non-BBG extra (10 built) · Greedy 3 (confirmed) · Sort and Search 4 (confirmed) · Bit Manipulation 4 · Math and Geometry 6.
 
 > Column legend — **In bank already?** is true iff the *suggested* bank id already exists as a key in `src/problems/data/problems/index.ts`. "off-catalog" = a BBG-original problem with no clean public LeetCode twin (lower mapping confidence; import from a self-contained spec). "sandbox concern" flags problems whose I/O shape (streaming, design/class, randomized, graph-build) may be awkward for the judge harness.
 
@@ -157,17 +157,23 @@ Per-chapter problem counts (deduped BBG problems): Intervals 3 · Prefix Sums 4 
 
 ---
 
-## Sort and Search (7)
+## Sort and Search (4 — confirmed)
+
+**Resolved (2026-08):** re-fetched `python3/Sort and Search/` directly from the BBG repo tree (GitHub API directory listing, not the manifest estimate) during the build. The directory contains exactly **7 files**, but they collapse to **4 distinct problems** — the original 7-row estimate below double-counted every multi-solution problem as a separate row:
+
+- `sort_array_counting_sort.py`, `sort_array_quicksort.py`, `sort_array_quicksort_optimized.py` — three solutions (counting sort, quicksort, randomized-pivot quicksort) of **one** problem, `sort_array(nums)` → sort an integer array. This is LC 912 Sort an Array, **not** LC 75 — the original manifest's "Counting Sort" row wrongly mapped this BBG problem to `sort-colors`. Corrected to `sort-an-array`.
+- `dutch_national_flag.py` — one problem, in-place 3-way partition on a `{0,1,2}` array. This **is** the genuine LC 75 Sort Colors match.
+- `kth_largest_integer_min_heap.py`, `kth_largest_integer_quickselect.py` — two solutions of one problem, `kth_largest_integer(nums, k)` → LC 215.
+- `sort_linked_list.py` — one problem, merge sort on a linked list → LC 148.
+
+So the chapter is genuinely **4 problems**, confirmed by reading file contents (not just filenames) to verify which files share a function/problem identity.
 
 | BBG problem name | Suggested bank id/slug | In bank already? | Mapping confidence | Notes |
 | --- | --- | --- | --- | --- |
-| Sort Array (Quicksort) | `sort-an-array` | no | high | LC 912. Teaching quicksort. Off-catalog framing also fine. |
-| Counting Sort | `sort-colors` | yes | mid | BBG's counting-sort example maps cleanly to LC 75 Sort Colors (already in bank); a generic counting-sort would be off-catalog. |
-| Kth Largest Integer | `kth-largest-element-in-an-array` | no | high | LC 215. Quickselect / heap. |
-| Dutch National Flag | `sort-colors` | yes | high | LC 75 — already in bank (the canonical Dutch-flag problem). Overlaps the counting-sort row; treat as one bank entry. |
+| Sort Array (counting sort / quicksort / optimized quicksort) | `sort-an-array` | no | high | LC 912. Three BBG solution files, one problem. Corrected from the original manifest, which wrongly split this into a separate "Counting Sort" row mapped to `sort-colors`. |
+| Dutch National Flag | `sort-colors` | yes | high | LC 75 — already in bank (in-place 3-way partition). |
+| Kth Largest Integer (min-heap / quickselect) | `kth-largest-element-in-an-array` | no | high | LC 215. Two BBG solution files, one problem. |
 | Sort a Linked List | `sort-list` | no | high | LC 148. Merge sort on a list. Linked-list reference type. |
-| (Quickselect variant) | `kth-largest-element-in-an-array` | — | high | Collapsed into Kth Largest above. |
-| (Search foundation extra) | — | — | low | Several repo files are quicksort/quickselect/heap variants of the above; confirm distinct set against the book. |
 
 ---
 

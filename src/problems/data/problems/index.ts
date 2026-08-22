@@ -19,6 +19,8 @@ import { makeStringSubsequenceCyclic } from "./makeStringSubsequenceCyclic";
 import { inorderTraversal } from "./inorderTraversal";
 import { mergeKLists } from "./mergeKLists";
 import { sortColors } from "./sortColors";
+import { sortArray } from "./sortArray";
+import { kthLargestElementInAnArray } from "./kthLargestElementInAnArray";
 import { maxArea } from "./maxArea";
 import { integerToRoman } from "./integerToRoman";
 import { romanToInteger } from "./romanToInteger";
@@ -109,6 +111,7 @@ import { buildDebouncedAutocomplete } from "./buildDebouncedAutocomplete";
 import { numberOfProvinces } from "./numberOfProvinces";
 import { geometricTriplets } from "./geometricTriplets";
 import { reverseList } from "./reverseList";
+import { sortList } from "./sortList";
 import { palindromeLinkedList } from "./palindromeLinkedList";
 import { intersectionOfTwoLinkedLists } from "./intersectionOfTwoLinkedLists";
 import { findAnagrams } from "./findAnagrams";
@@ -185,6 +188,8 @@ export const problems = {
   "binary-tree-inorder-traversal": inorderTraversal,
   "merge-k-sorted-lists": mergeKLists,
   "sort-colors": sortColors,
+  "sort-an-array": sortArray,
+  "kth-largest-element-in-an-array": kthLargestElementInAnArray,
   "container-with-most-water": maxArea,
   "integer-to-roman": integerToRoman,
   "roman-to-integer": romanToInteger,
@@ -275,6 +280,7 @@ export const problems = {
   "number-of-provinces": numberOfProvinces,
   "geometric-sequence-triplets": geometricTriplets,
   "reverse-linked-list": reverseList,
+  "sort-list": sortList,
   "palindrome-linked-list": palindromeLinkedList,
   "intersection-of-two-linked-lists": intersectionOfTwoLinkedLists,
   "find-all-anagrams-in-a-string": findAnagrams,

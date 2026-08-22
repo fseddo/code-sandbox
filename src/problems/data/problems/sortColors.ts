@@ -71,40 +71,48 @@ function sortColors(nums: number[]): number[] {
 \`O(n)\` time, \`O(1)\` extra space.`,
       code: {
         javascript: `function sortColors(nums) {
-  let low = 0;
-  let mid = 0;
-  let high = nums.length - 1;
+  let low = 0; // next open slot for a 0, growing from the left
+  let mid = 0; // scans forward; everything before it is already resolved
+  let high = nums.length - 1; // next open slot for a 2, growing from the right
   while (mid <= high) {
     if (nums[mid] === 0) {
+      // 0 belongs ahead of low — swap it there and grow both regions.
       [nums[low], nums[mid]] = [nums[mid], nums[low]];
       low++;
       mid++;
     } else if (nums[mid] === 2) {
+      // 2 belongs past high — swap it there and shrink the high boundary.
+      // Don't advance mid: the value just swapped in from high is unexamined.
       [nums[high], nums[mid]] = [nums[mid], nums[high]];
       high--;
     } else {
+      // 1 already belongs in the middle region — just move past it.
       mid++;
     }
   }
-  return nums;
+  return nums; // same array instance, now sorted in place
 }`,
         typescript: `function sortColors(nums: number[]): number[] {
-  let low = 0;
-  let mid = 0;
-  let high = nums.length - 1;
+  let low = 0; // next open slot for a 0, growing from the left
+  let mid = 0; // scans forward; everything before it is already resolved
+  let high = nums.length - 1; // next open slot for a 2, growing from the right
   while (mid <= high) {
     if (nums[mid] === 0) {
+      // 0 belongs ahead of low — swap it there and grow both regions.
       [nums[low], nums[mid]] = [nums[mid], nums[low]];
       low++;
       mid++;
     } else if (nums[mid] === 2) {
+      // 2 belongs past high — swap it there and shrink the high boundary.
+      // Don't advance mid: the value just swapped in from high is unexamined.
       [nums[high], nums[mid]] = [nums[mid], nums[high]];
       high--;
     } else {
+      // 1 already belongs in the middle region — just move past it.
       mid++;
     }
   }
-  return nums;
+  return nums; // same array instance, now sorted in place
 }`,
       },
     },

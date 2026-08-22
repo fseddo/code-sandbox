@@ -7470,6 +7470,540 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
       ],
     },
   ],
+
+  "sort-an-array": [
+    {
+      kind: "prose",
+      body:
+        "A first pass sorts the way you'd sort a hand of playing cards: grow a sorted prefix one element at a " +
+        "time, sliding each new value left past every already-placed value that's bigger than it.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — insertion sort: O(n²).",
+      source:
+        "function sortArray(nums) {\n" +
+        "  // Grow a sorted prefix nums[0..i-1] one element at a time.\n" +
+        "  for (let i = 1; i < nums.length; i++) {\n" +
+        "    const current = nums[i]; // the value being inserted into the sorted prefix\n" +
+        "    let j = i - 1;\n" +
+        "    // Shift every larger value in the sorted prefix one slot right...\n" +
+        "    while (j >= 0 && nums[j] > current) {\n" +
+        "      nums[j + 1] = nums[j];\n" +
+        "      j--;\n" +
+        "    }\n" +
+        "    // ...then drop current into the gap that shifting opened up.\n" +
+        "    nums[j + 1] = current;\n" +
+        "  }\n" +
+        "  return nums;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(n²) — each insertion can shift the entire sorted prefix, so a reverse-sorted input does " +
+        "roughly n²/2 shifts. Can we do better?\n\n" +
+        "The key move: pick a **pivot** value and, in a single pass over the range, split everything ≤ it from " +
+        "everything > it. That one pass drops the pivot into its final sorted position — and, crucially, the " +
+        "two sides can now be sorted completely independently, since every value on the left is already ≤ every " +
+        "value on the right. Recurse into each side and the whole array ends up sorted; this is the " +
+        "[Divide and conquer](/study-guide/algos/topic/divide-and-conquer) pattern, specialized into quicksort's " +
+        "partition step.\n\n" +
+        "The catch: a **fixed** pivot choice (always the first or last element) has an input that defeats it — " +
+        "an already-sorted or reverse-sorted array makes every partition peel off just a single element, " +
+        "degrading to O(n²) time and O(n) recursion depth. Randomizing the pivot on every call, as the stored " +
+        "solution does, means no single input can reliably trigger that worst case; the expected running time " +
+        "stays O(n log n) regardless of the input's initial order.\n\n" +
+        "In the stored solution, the region built by \"everything ≤ pivot so far\" is tracked by a `boundary` " +
+        "index, while a scan pointer `i` walks the rest of the range one step at a time; the walkthrough below " +
+        "marks only the pivot directly (as `pivot`) and narrates `boundary`/`i` in the captions, so the names " +
+        "line up when you get to the code. Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "quicksort([7, 2, 5, 9, 1]) — choose a pivot",
+      lane: [7, 2, 5, 9, 1],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "pivot", at: 2 }],
+          action: "pivot = nums[2] = 5 (random index)",
+          caption:
+            "The pivot is drawn at random on every call — not fixed to index 0 or the last index — so no single " +
+            "crafted input (like an already-sorted array) can force the O(n²) worst case.",
+        },
+      ],
+    },
+    {
+      kind: "walkthrough",
+      heading: "after partitioning around 5",
+      lane: [2, 1, 5, 9, 7],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "pivot", at: 2 }],
+          range: [0, 1],
+          action: "boundary ends at index 2 → pivot swaps into place",
+          caption:
+            "One pass over the range swapped 2 and 1 (≤ 5) ahead of the boundary; 5 has landed in its final " +
+            "sorted position, with the left partition (indices 0–1) holding everything smaller.",
+        },
+        {
+          pointers: [{ name: "pivot", at: 2 }],
+          range: [3, 4],
+          action: "right partition: indices 3–4",
+          caption:
+            "7 and 9 (> 5) end up on the other side. Each partition recurses independently — quicksort never " +
+            "has to compare across the two sides again.",
+        },
+      ],
+    },
+    {
+      kind: "walkthrough",
+      heading: "after the left partition [2, 1] sorts itself",
+      lane: [1, 2, 5, 9, 7],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "pivot", at: 0 }],
+          range: [0, 1],
+          action: "pivot = 1 (last element of the subrange) → boundary stays at 0",
+          caption:
+            "2 is > 1, so it stays right of the pivot; the left partition finishes as [1, 2]. Both sides are " +
+            "now single elements, so recursion on that half stops.",
+        },
+      ],
+    },
+    {
+      kind: "walkthrough",
+      heading: "after the right partition [9, 7] sorts itself — fully sorted",
+      lane: [1, 2, 5, 7, 9],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "pivot", at: 4 }],
+          range: [3, 4],
+          action: "pivot = 9 → 7 (≤ 9) swaps ahead of it, boundary ends at 4",
+          caption:
+            "The right partition finishes as [7, 9]. Every partition landed its pivot and never needed to look " +
+            "at the other side — that recursive independence, applied down to single-element base cases, is " +
+            "what turns one partition into a full sort.",
+        },
+      ],
+    },
+  ],
+
+  "sort-colors": [
+    {
+      kind: "prose",
+      body:
+        "A first pass just counts how many 0s, 1s, and 2s are in the array, then a second pass overwrites " +
+        "the array with that many 0s, followed by that many 1s, then that many 2s.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption:
+        "Brute force — counting sort: tally each value, then overwrite the array by color. O(n) time across " +
+        "two full passes, O(1) extra space.",
+      source:
+        "function sortColors(nums) {\n" +
+        "  // Tally how many 0s, 1s, and 2s appear — the only three possible values.\n" +
+        "  const counts = [0, 0, 0];\n" +
+        "  for (let i = 0; i < nums.length; i++) {\n" +
+        "    counts[nums[i]]++; // counts[value]++\n" +
+        "  }\n" +
+        "  // Second pass: overwrite the array with that many 0s, then 1s, then 2s.\n" +
+        "  let index = 0;\n" +
+        "  for (let color = 0; color <= 2; color++) {\n" +
+        "    for (let copy = 0; copy < counts[color]; copy++) {\n" +
+        "      nums[index] = color;\n" +
+        "      index++;\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return nums; // same array instance, now sorted in place\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "Counting sort here is already O(n) — the flaw isn't the big-O, it's the shape: it needs **two full " +
+        "passes**, one to tally every value before it can place anything, and a second to actually write the " +
+        "result. It can't resolve a single element's final position until the whole array has been scanned once. " +
+        "Can we do it in one pass, with no upfront tally?\n\n" +
+        "Since there are only three possible values, we don't need a general comparator at all — track **three " +
+        "regions** directly instead. Everything before a `low` pointer is known to be 0s, everything from `low` " +
+        "up to `mid` is known to be 1s, and everything after a `high` pointer is known to be 2s; `mid` is the " +
+        "only pointer still scanning unexplored territory. It's the [Two pointers](/study-guide/algos/topic/two-pointers) " +
+        "converge-from-both-ends idea, just widened from two regions to three — the classic *Dutch national " +
+        "flag* partition.\n\n" +
+        "Each region grows by a single swap: a 0 at `mid` swaps down to `low` and, since `low`'s old value is " +
+        "now known to be a 1, `mid` can safely advance too. A 2 at `mid` swaps up to `high` and shrinks the high " +
+        "boundary, but `mid` must **not** advance — the value that just moved in from `high` hasn't been looked " +
+        "at yet. A 1 at `mid` is already home, so `mid` just steps forward. One left-to-right pass resolves " +
+        "every element, in place.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "start: low = mid = 0, high = 6",
+      lane: [1, 0, 2, 1, 0, 2, 1],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "low", at: 0 }, { name: "mid", at: 0 }, { name: "high", at: 6 }],
+          action: "nums[mid] = 1 → mid++",
+          caption: "1-no-op: 1 already belongs in the middle region, so mid just steps forward — nothing to swap.",
+        },
+        {
+          pointers: [{ name: "low", at: 0 }, { name: "mid", at: 1 }, { name: "high", at: 6 }],
+          action: "nums[mid] = 0 → swap(low, mid); low++, mid++",
+          caption:
+            "0-swap-left: 0 belongs ahead of low, so swap it there. mid can move forward too — the slot it " +
+            "left behind is now known to hold a 1.",
+        },
+      ],
+    },
+    {
+      kind: "walkthrough",
+      heading: "after the 0-swap: low = 1, mid = 2, high = 6",
+      lane: [0, 1, 2, 1, 0, 2, 1],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "low", at: 1 }, { name: "mid", at: 2 }, { name: "high", at: 6 }],
+          action: "nums[mid] = 2 → swap(mid, high); high--",
+          caption:
+            "2-swap-right: 2 belongs past high, so swap it up there and shrink the high boundary. mid does " +
+            "NOT advance — the value just swapped in from high is still unexamined.",
+        },
+      ],
+    },
+    {
+      kind: "walkthrough",
+      heading: "after the 2-swap: low = 1, mid = 2, high = 5",
+      lane: [0, 1, 1, 1, 0, 2, 2],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "low", at: 1 }, { name: "mid", at: 2 }, { name: "high", at: 5 }],
+          action: "nums[mid] = 1, then 1 again → mid += 2",
+          caption:
+            "The value swapped in from high turns out to be a 1 (and so does the next one, at index 3) — two " +
+            "more no-ops, mid just keeps scanning.",
+        },
+        {
+          pointers: [{ name: "low", at: 1 }, { name: "mid", at: 4 }, { name: "high", at: 5 }],
+          action: "nums[mid] = 0 → swap(low, mid); low++, mid++",
+          caption: "Another 0 turns up mid-scan — swap it back to low, same move as before.",
+        },
+      ],
+    },
+    {
+      kind: "walkthrough",
+      heading: "after the second 0-swap — scan ends: low = 2, mid = 5, high = 5",
+      lane: [0, 0, 1, 1, 1, 2, 2],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "low", at: 2 }, { name: "mid", at: 5 }, { name: "high", at: 5 }],
+          action: "nums[mid] = 2 → swap(mid, high) with itself; high--; mid (5) > high (4) → stop",
+          caption:
+            "mid and high meet at the last 2. The swap is with itself, high drops below mid, and the loop " +
+            "ends — every element resolved into its region in a single pass: [0, 0, 1, 1, 1, 2, 2].",
+        },
+      ],
+    },
+  ],
+
+  "kth-largest-element-in-an-array": [
+    {
+      kind: "prose",
+      body:
+        "A first pass just fully sorts the array, then reads off the value that ends up `k` slots from the end.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — fully sort, then index from the end: O(n log n).",
+      source:
+        "function findKthLargest(nums, k) {\n" +
+        "  // Sort ascending on a copy, so the input array isn't mutated.\n" +
+        "  const sorted = [...nums].sort((a, b) => a - b);\n" +
+        "  // The kth largest lands at this index once everything is fully ordered.\n" +
+        "  return sorted[sorted.length - k];\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(n log n) — and it computes a strict order for *every* element, even though the question only " +
+        "ever asks for the one value sitting at a single rank. Can we do better?\n\n" +
+        "The key move: reuse the same **partition** step [Sort an Array](/study-guide/algos/problem/sort-an-array)'s " +
+        "quicksort uses — pick a pivot and, in one pass, split everything ≤ it from everything > it, which drops " +
+        "the pivot into its final sorted position. Quicksort then recurses into *both* halves to finish ordering " +
+        "the whole array; quickselect recurses into only **one** — whichever half contains the target rank — and " +
+        "throws the other half's internal order away entirely, since it was never asked for.\n\n" +
+        "Every partition reveals the pivot's exact final rank for free: the position it lands at (`pivotIndex`, " +
+        "the count of everything ≤ it) *is* that rank. Compare it to `targetIndex` — `nums.length - k`, the index " +
+        "the kth largest would sit at if the array were fully sorted ascending. If they match, the pivot itself " +
+        "is the answer; otherwise `targetIndex` lies entirely on one side, so recurse into only that side.\n\n" +
+        "Discarding half the remaining work at every round, instead of recursing into both halves, is the same " +
+        "win [Binary Search](/study-guide/algos/topic/binary-search) gets from halving a search range each " +
+        "step — except here each discarded half is an *unsorted* partition rather than a single midpoint check. " +
+        "Expected: each partition costs O(size of its range), and that range is expected to shrink by a constant " +
+        "factor every round — n + n/2 + n/4 + … — a geometric series that sums to O(n) total, instead of the " +
+        "O(n) *per level* × O(log n) *levels* a full sort pays for touching both halves every time.\n\n" +
+        "In the stored solution, `low`/`high` bound the current search range, `pivotIndex` is what `partition` " +
+        "returns (called `boundary` inside `partition` itself), and `targetIndex` is fixed once at the top as " +
+        "`nums.length - k`. The walkthrough below marks only the pivot directly (as `pivot`) and narrates " +
+        "`low`/`high`/`pivotIndex`/`targetIndex` in the captions, so the names line up when you get to the code. " +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "findKthLargest([9, 3, 7, 1, 8, 2], k = 2) — targetIndex = nums.length - k = 4",
+      lane: [9, 3, 7, 1, 8, 2],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "pivot", at: 2 }],
+          action: "pivot = nums[2] = 7 (random index in low=0..high=5)",
+          caption:
+            "We want the value that lands at index 4 once nums is sorted ascending — the 2nd largest. Partition " +
+            "around a random pivot; quickselect will only ever look at the side that could contain index 4, " +
+            "never both.",
+        },
+      ],
+    },
+    {
+      kind: "walkthrough",
+      heading: "after partitioning around 7 — pivotIndex = 3",
+      lane: [3, 2, 1, 7, 8, 9],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "pivot", at: 3 }],
+          range: [0, 2],
+          action: "boundary lands 7 at index 3 — 3 elements ≤ 7 sit to its left",
+          caption:
+            "One pass swapped everything ≤ 7 ahead of the boundary; 7 itself lands at index 3. That position is " +
+            "7's exact sorted rank, revealed for free — neither side has been sorted, only separated.",
+        },
+        {
+          pointers: [{ name: "pivot", at: 3 }],
+          range: [4, 5],
+          marked: [0, 1, 2],
+          action: "targetIndex(4) > pivotIndex(3) → recurse into low=4..high=5 only",
+          caption:
+            "Index 4 sits to the right of the pivot, so the answer lives in the right partition. The left " +
+            "partition [3, 2, 1] is discarded completely — its internal order is never computed, which is " +
+            "exactly the work a full sort would have wasted.",
+        },
+      ],
+    },
+    {
+      kind: "walkthrough",
+      heading: "partition low=4..high=5 around 9 — pivotIndex = 5",
+      lane: [3, 2, 1, 7, 8, 9],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "pivot", at: 5 }],
+          range: [4, 5],
+          action: "pivot = nums[5] = 9 (random index in low=4..high=5); 8 ≤ 9 → boundary stays put",
+          caption:
+            "Only two elements remain in range. The pass confirms 9 is already in its final position at index 5 " +
+            "— pivotIndex = 5.",
+        },
+        {
+          pointers: [{ name: "pivot", at: 5 }],
+          marked: [5],
+          action: "targetIndex(4) < pivotIndex(5) → recurse into low=4..high=4",
+          caption:
+            "Index 4 sits to the left of this pivot, so narrow again — this time down to the single index 4.",
+        },
+      ],
+    },
+    {
+      kind: "walkthrough",
+      heading: "low === high === 4 — done",
+      lane: [3, 2, 1, 7, 8, 9],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "pivot", at: 4 }],
+          action: "low === high → return nums[4]",
+          caption:
+            "The range has shrunk to one element: nums[4] = 8. That's the 2nd largest of the original array, " +
+            "reached in two partition rounds — the left partition's order was never needed.",
+        },
+      ],
+    },
+  ],
+
+  "sort-list": [
+    {
+      kind: "prose",
+      body:
+        "A first pass ignores the list structure entirely: copy every node's value into a plain array, let a " +
+        "comparison sort put the array in order, then walk the list a second time overwriting each node's " +
+        "value with the sorted array, in order.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption:
+        "Brute force — dump values to an array, sort the array, then overwrite the list in that order: " +
+        "O(n log n) time, O(n) extra space.",
+      source:
+        "function sortList(head) {\n" +
+        "  // Collect every node's value into a plain array.\n" +
+        "  const values = [];\n" +
+        "  for (let node = head; node; node = node.next) {\n" +
+        "    values.push(node.val);\n" +
+        "  }\n" +
+        "  // Numeric sort — the default comparator would sort lexicographically.\n" +
+        "  values.sort((a, b) => a - b);\n" +
+        "  // Walk the list again, overwriting each node's value in sorted order.\n" +
+        "  let node = head;\n" +
+        "  let i = 0;\n" +
+        "  while (node) {\n" +
+        "    node.val = values[i];\n" +
+        "    i++;\n" +
+        "    node = node.next;\n" +
+        "  }\n" +
+        "  return head; // same nodes, same head — only the values changed\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(n log n) time — the array sort dominates — but it treats the list purely as a bag of values: " +
+        "it needs a whole separate array to hold them, and it never rewires a single `next` pointer. Can we do " +
+        "better on space?\n\n" +
+        "The key observation: a linked list already supports O(1) splice — unlike an array, no shifting is " +
+        "needed to cut it in two or stitch two pieces back together. That means merge sort can run **directly " +
+        "on the list**, with no auxiliary buffer: find the midpoint with the fast/slow pointer technique (the " +
+        "same [Linked lists](/study-guide/algos/topic/linked-lists) fast/slow scan that finds a list's middle " +
+        "node), sever the list there into two standalone sublists, recursively sort each half, then merge the " +
+        "two sorted halves back together node-by-node — the identical splice used to solve *Merge Two Sorted " +
+        "Lists*.\n\n" +
+        "All of that work is pointer rewiring, not allocation, so the extra space drops from O(n) for the array " +
+        "down to O(log n) for the recursion stack. The stored solution's merge step builds the result with a " +
+        "`dummy` head and a `tail` cursor that always attaches the smaller of the two current heads (`a`/`b`) " +
+        "and advances it — the walkthrough below uses the exact same names, labeling the dummy `d`.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "listWalkthrough",
+      heading: "sortList([6, 2, 8, 4]) — find the midpoint with fast/slow",
+      nodes: [6, 2, 8, 4],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "slow", at: 0 }, { name: "fast", at: 1 }],
+          action: "slow = head; fast = head.next",
+          caption:
+            "fast starts one node ahead of slow (at head.next) so, on an even-length list, slow ends up on the " +
+            "first of the two middle nodes.",
+        },
+        {
+          pointers: [{ name: "slow", at: 1 }, { name: "fast", at: 3 }],
+          action: "slow = slow.next; fast = fast.next.next",
+          caption:
+            "One iteration: fast jumps two nodes to index 3, slow moves one to index 1. fast.next is now null, " +
+            "so the loop stops here — slow marks the midpoint.",
+        },
+        {
+          pointers: [{ name: "slow", at: 1 }, { name: "fast", at: 3 }],
+          links: { 1: null },
+          active: [2, 3],
+          action: "secondHalf = slow.next (index 2); slow.next = null",
+          caption:
+            "Severing index 1's link splits one list into two standalone chains: 6 -> 2 (indices 0–1) and " +
+            "8 -> 4 (indices 2–3, no longer reachable from the first half).",
+        },
+      ],
+    },
+    {
+      kind: "listWalkthrough",
+      heading: "left half [6, 2] sorts itself to 2 -> 6",
+      nodes: [2, 6],
+      frames: [
+        {
+          active: [0, 1],
+          action: "sortList([6, 2]) recurses to the base cases 6 and 2, then merges them",
+          caption:
+            "6 and 2 are each a single node — already \"sorted\" on their own. Merging them picks the smaller " +
+            "head first: 2, then 6.",
+        },
+      ],
+    },
+    {
+      kind: "listWalkthrough",
+      heading: "right half [8, 4] sorts itself to 4 -> 8",
+      nodes: [4, 8],
+      frames: [
+        {
+          active: [0, 1],
+          action: "sortList([8, 4]) recurses to the base cases 8 and 4, then merges them",
+          caption:
+            "Same pattern: 8 and 4 are each already \"sorted\" alone. Merging them puts the smaller head, 4, " +
+            "first.",
+        },
+      ],
+    },
+    {
+      kind: "listWalkthrough",
+      heading: "merging 2 -> 6 with 4 -> 8 (d = dummy head)",
+      nodes: ["d", 2, 6, 4, 8],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "tail", at: 0 }, { name: "a", at: 1 }, { name: "b", at: 3 }],
+          links: { 0: null, 2: null },
+          action: "tail = dummy; a = left head (2); b = right head (4)",
+          caption:
+            "Two sorted sublists — a: 2 -> 6, b: 4 -> 8 — ready to merge. The dummy head (d) avoids " +
+            "special-casing the very first node of the result.",
+        },
+        {
+          pointers: [{ name: "tail", at: 1 }, { name: "a", at: 2 }, { name: "b", at: 3 }],
+          links: { 2: null },
+          action: "2 <= 4 → tail.next = a; a = a.next (6); tail = 2",
+          caption:
+            "2 is the smaller of the two heads, so the dummy's next is wired straight to it. a advances to its " +
+            "next node, 6.",
+        },
+        {
+          pointers: [{ name: "tail", at: 3 }, { name: "a", at: 2 }, { name: "b", at: 4 }],
+          links: { 1: 3, 2: null },
+          action: "6 <= 4? No → tail.next = b; b = b.next (8); tail = 4",
+          caption:
+            "6 loses this round to 4, so node 2's link is rewired to point at 4 instead of its old neighbor, " +
+            "6. b advances to 8.",
+        },
+        {
+          pointers: [{ name: "tail", at: 2 }, { name: "a", at: null }, { name: "b", at: 4 }],
+          links: { 1: 3, 3: 2, 2: null },
+          action: "6 <= 8 → tail.next = a; a = a.next = null; tail = 6",
+          caption:
+            "6 finally gets spliced in — node 4's link is rewired to point at it. a is now exhausted (null): " +
+            "the left sublist is fully merged in.",
+        },
+        {
+          pointers: [{ name: "tail", at: 2 }, { name: "b", at: 4 }],
+          links: { 1: 3, 3: 2, 2: 4 },
+          action: "a is null → tail.next = b; loop ends",
+          caption:
+            "Whatever's left of b (just node 8) is spliced on wholesale. Reading from the dummy's next: " +
+            "2 -> 4 -> 6 -> 8 — the two sublists are fully merged into one sorted chain.",
+        },
+      ],
+    },
+  ],
 };
 
 /**
@@ -10372,6 +10906,194 @@ export const PROBLEM_EXTRAS: Record<string, { complexity?: Section[]; testCases?
         args: ["ab", "ba"],
         expected: 2,
         note: "Smallest case where replacing both characters (2 replaces) ties with a delete-then-insert route — both cost 2, so the DP just needs the minimum, not a single 'correct' script.",
+      },
+    ],
+  },
+
+  "sort-an-array": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n log n) expected. Here's why:\n\n" +
+          "- Each call to `partition` does a single O(k) pass over the k-element range it's given, swapping values around the pivot.\n" +
+          "- With a randomized pivot, each partition is expected to split its range reasonably evenly, so the recursion is expected to be O(log n) levels deep.\n" +
+          "- Every level's partition calls together touch every element once, so each level costs O(n) — O(n) work × O(log n) levels.\n\n" +
+          "So the expected running time is **O(n log n)**. An unlucky sequence of random pivots can still produce lopsided splits, so the worst case remains O(n²) — but with a random pivot on every call, no fixed input can force that case; it only happens by chance, with vanishing probability as n grows.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(log n) expected. Here's why:\n\n" +
+          "- `partition` sorts in place — it only swaps elements within `nums`, so it allocates no auxiliary array.\n" +
+          "- The only extra space is the call stack from recursing into each side; its depth tracks how balanced the splits are, which is expected O(log n) with a random pivot.\n\n" +
+          "The output isn't a separate structure (the input array is mutated and returned), and the worst-case call-stack depth — if every partition happened to split off just one element — would be **O(n)**.",
+      },
+    ],
+    testCases: [
+      { args: [[]], expected: [], note: "Empty array — nothing to sort." },
+      { args: [[-9]], expected: [-9], note: "Single element — already sorted by definition." },
+      { args: [[4, 4]], expected: [4, 4], note: "Smallest all-equal case — no swaps are ever needed." },
+      { args: [[3, -3, 3, -3, 0]], expected: [-3, -3, 0, 3, 3], note: "Duplicates straddling zero — repeated values must land adjacent, on both sides of 0." },
+      {
+        args: [[5, 4, 3, 2, 1]],
+        expected: [1, 2, 3, 4, 5],
+        note: "Reverse-sorted — the classic input that drives a fixed-pivot quicksort toward O(n²); a randomized pivot keeps this fast.",
+      },
+    ],
+  },
+
+  "sort-colors": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- Both the counting-sort brute force and the Dutch-flag partition below visit every element a constant " +
+          "number of times, so both are already O(n) — this is a case where the brute force isn't asymptotically " +
+          "slower.\n" +
+          "- The three-pointer scan makes exactly one pass: at each step, `mid` either advances by one (a 1, or " +
+          "the value just swapped down from `low`) or a swap resolves one more element into its region.\n" +
+          "- Each of the n elements is examined and placed into its final region in O(1) amortized work.\n\n" +
+          "So both approaches run in **O(n)** — the optimal solution's advantage is doing it in a single pass " +
+          "with no separate counting phase, not a better big-O.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1). Here's why:\n\n" +
+          "- The scan only tracks `low`, `mid`, and `high` — three integers, regardless of the array's length.\n" +
+          "- All rearranging happens through in-place swaps on the input array itself; no auxiliary array or " +
+          "counts table is built, unlike the brute force's `counts` array (also O(1), but only usable after two " +
+          "full passes).\n\n" +
+          "So the optimal solution uses **O(1)** auxiliary space — the same asymptotic space as the brute force, " +
+          "but true single-pass in-place rearrangement instead of a count-then-overwrite rebuild.",
+      },
+    ],
+    testCases: [
+      {
+        args: [[0, 0]],
+        expected: [0, 0],
+        note: "All-0 pair — smallest all-equal case at the low boundary; every swap the scan makes is a self-swap, since low and mid stay in lockstep.",
+      },
+      {
+        args: [[1, 0]],
+        expected: [0, 1],
+        note: "Smallest genuine 0-swap: mid finds a 0 sitting one slot after low, and a single real swap slides it into place.",
+      },
+      {
+        args: [[2, 1]],
+        expected: [1, 2],
+        note: "Smallest genuine 2-swap: mid finds a 2 immediately and swaps it up to high, shrinking the high boundary to meet mid; the swapped-in value turns out to be a 1, so mid takes one more no-op step before the scan ends.",
+      },
+      {
+        args: [[2, 2]],
+        expected: [2, 2],
+        note: "All-2 pair — smallest all-equal case at the high boundary; high shrinks step by step until it drops below mid and the scan stops.",
+      },
+      {
+        args: [[1, 2, 0, 2, 1, 0, 2, 0, 1]],
+        expected: [0, 0, 0, 1, 1, 1, 2, 2, 2],
+        note: "Nine elements, three of each color, shuffled — exercises repeated 0- and 2-swaps back to back and confirms the single pass still lands every duplicate in its region.",
+      },
+    ],
+  },
+
+  "kth-largest-element-in-an-array": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n) expected. Here's why:\n\n" +
+          "- Each call to `partition` makes a single O(range size) pass over the `low..high` window it's given.\n" +
+          "- With a randomized pivot, each partition is expected to roughly halve the size of the remaining " +
+          "search range.\n" +
+          "- Only one side is ever recursed into, so the work across rounds is n + n/2 + n/4 + … — a geometric " +
+          "series that sums to O(n) total, not the O(n) per level × O(log n) levels a full sort pays for.\n\n" +
+          "So the expected running time is **O(n)**. An unlucky sequence of random pivots can still degrade " +
+          "toward O(n²) — for example if every partition happened to peel off only one element — but with a " +
+          "random pivot on every call no fixed input can force that; it only happens by chance, with vanishing " +
+          "probability as n grows.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1) expected extra space. Here's why:\n\n" +
+          "- `partition` rearranges `nums` in place — no auxiliary array is built.\n" +
+          "- `quickselect` is written as a loop that reassigns `low`/`high`, not a recursive call, so narrowing " +
+          "the range doesn't grow any call stack — unlike quicksort, which keeps a stack frame per recursion " +
+          "level since it recurses into both sides.\n\n" +
+          "So beyond a handful of loop variables, the optimal solution uses **O(1)** space — better than the " +
+          "brute force's O(n) for the sorted copy (plus the sort's own O(log n) call-stack space).",
+      },
+    ],
+    testCases: [
+      { args: [[42], 1], expected: 42, note: "Single element — k must be 1, and it's trivially the answer." },
+      {
+        args: [[5, 9], 2],
+        expected: 5,
+        note: "Two elements, k = length — the smallest value is the worst rank, found in one partition pass.",
+      },
+      {
+        args: [[6, 6, 6, 3, 3, 9, 9, 1], 4],
+        expected: 6,
+        note: "Duplicates clustered right at the target rank — three 6s straddle position 4, but the sorted " +
+          "position (not the value) decides which copy is returned.",
+      },
+      {
+        args: [[3, 3, 3, 3], 2],
+        expected: 3,
+        note: "All-equal — every partition round is a wash, since everything is simultaneously ≤ and ≥ the pivot.",
+      },
+      {
+        args: [[-5, -2, -9, -1, -7], 1],
+        expected: -1,
+        note: "All negative, k = 1 — asks for the maximum, which is the least-negative value.",
+      },
+      {
+        args: [[8, -3, 0, 5, -3, 2], 6],
+        expected: -3,
+        note: "k = length asks for the minimum — the search range collapses all the way down to a single index.",
+      },
+    ],
+  },
+
+  "sort-list": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n log n). Here's why:\n\n" +
+          "- Finding the midpoint with the fast/slow scan takes O(k) for a list of length k, so splitting a " +
+          "list of length n costs O(n) at that level.\n" +
+          "- Halving the length at each level of the recursion means there are O(log n) levels before the " +
+          "sublists bottom out at length 1.\n" +
+          "- At each level, the merges together touch every node in the list exactly once, so each level costs " +
+          "O(n) total (not per merge call — summed across all the merges at that level).\n\n" +
+          "So it's O(n) work per level × O(log n) levels — the overall time is **O(n log n)**.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(log n). Here's why:\n\n" +
+          "- The split step and the merge step both just rewire existing nodes' `next` pointers — no new nodes " +
+          "are allocated (the `dummy` node created inside each merge call is discarded once that call returns).\n" +
+          "- The only real extra space is the call stack from recursing into each half; its depth is how many " +
+          "times the list can be halved before reaching length 1, which is O(log n).\n\n" +
+          "The sorted list isn't a separate structure — it's the same nodes, relinked — so it isn't counted as " +
+          "extra space. (The brute force's array of values, by contrast, is O(n) extra space on top of the " +
+          "list itself.)",
+      },
+    ],
+    testCases: [
+      { args: [[]], expected: [], note: "Empty list — nothing to split or merge; returns immediately." },
+      { args: [[-7]], expected: [-7], note: "Single node — the base case, already \"sorted\" by definition." },
+      { args: [[10, -3]], expected: [-3, 10], note: "Two nodes out of order — the smallest merge that actually swaps anything." },
+      { args: [[7, 7, 7]], expected: [7, 7, 7], note: "All-equal values — every merge comparison ties, and ties must still preserve every copy." },
+      {
+        args: [[4, 1, 4, 2, 1]],
+        expected: [1, 1, 2, 4, 4],
+        note: "Duplicates scattered across both halves of the initial split, exercising dedup-free merging (equal values are kept, not collapsed).",
       },
     ],
   },
