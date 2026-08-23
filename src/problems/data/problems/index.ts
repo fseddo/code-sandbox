@@ -162,6 +162,9 @@ import { maximalSquare } from "./maximalSquare";
 import { knapsack } from "./knapsack";
 import { gasStation } from "./gasStation";
 import { candy } from "./candy";
+import { countingBits } from "./countingBits";
+import { singleNumber } from "./singleNumber";
+import { swapOddEvenBits } from "./swapOddEvenBits";
 
 /**
  * The problem bank, keyed by id. Authored modules keep their precise generics for
@@ -331,6 +334,9 @@ export const problems = {
   knapsack,
   "gas-station": gasStation,
   candy,
+  "counting-bits": countingBits,
+  "single-number": singleNumber,
+  "swap-odd-even-bits": swapOddEvenBits,
 } satisfies Record<string, AnyProblem>;
 
 export type ProblemId = keyof typeof problems;

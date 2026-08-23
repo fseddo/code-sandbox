@@ -8004,6 +8004,269 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
       ],
     },
   ],
+
+  "counting-bits": [
+    {
+      kind: "prose",
+      body:
+        "A first pass just counts each number's bits on its own: for every `i` from `0` to `n`, repeatedly " +
+        "check the lowest bit and shift right until nothing's left, tallying however many bits were set.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — count each number's bits independently, one shift per bit position: O(n log n).",
+      source:
+        "function countingBits(n) {\n" +
+        "  const ans = new Array(n + 1);\n" +
+        "  // Every number from 0 to n gets its own, independent bit-counting pass.\n" +
+        "  for (let i = 0; i <= n; i++) {\n" +
+        "    let x = i;\n" +
+        "    let count = 0;\n" +
+        "    // Peel off the lowest bit and shift right until nothing's left.\n" +
+        "    while (x > 0) {\n" +
+        "      count += x & 1; // tally the lowest bit\n" +
+        "      x >>= 1; // drop it and look at the next bit up\n" +
+        "    }\n" +
+        "    ans[i] = count;\n" +
+        "  }\n" +
+        "  return ans;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(n log n) — each of the `n` numbers pays for its own O(log n) walk down through its bits, even " +
+        "though most of those numbers share almost all their bits with a number counted just a few steps earlier. " +
+        "Can we do better?\n\n" +
+        "The key observation: dropping `x`'s lowest bit (`x >> 1`) is the same as halving it, and the bit count " +
+        "of that halved value — `dp[x >> 1]` — has *already been computed* earlier in the same pass, since " +
+        "`x >> 1` is always smaller than `x`. So `dp[x] = dp[x >> 1] + (x & 1)` reuses that earlier answer " +
+        "instead of recounting `x`'s bits from scratch. This is " +
+        "[dynamic programming](/study-guide/algos/topic/dynamic-programming) over the integers themselves rather " +
+        "than over array indices — the same overlapping-subproblems idea, just with the \"index\" doubling as the " +
+        "value being decomposed.\n\n" +
+        "The stored solution's variable names already match this walkthrough — `dp` is the array being filled " +
+        "and `x` is the index (and value) being decomposed — so no bridging is needed.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "dp[x] = set bits in x, for x = 0..7 (n = 7)",
+      lane: [0, 1, 1, 2, 1, 2, 2, 3],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "x", at: 0 }],
+          action: "dp[0] = 0",
+          caption: "Base case: zero has no set bits.",
+        },
+        {
+          pointers: [{ name: "x", at: 1 }],
+          marked: [0],
+          action: "dp[1] = dp[0] + (1 & 1) = 0 + 1 = 1",
+          caption: "1 is odd (its lowest bit is 1), and halving it (1 >> 1 = 0) lands right back on the base case.",
+        },
+        {
+          pointers: [{ name: "x", at: 2 }],
+          marked: [0, 1],
+          action: "dp[2] = dp[1] + (2 & 1) = 1 + 0 = 1",
+          caption: "2 is even (lowest bit 0) — it reuses dp[1] (2 >> 1 = 1) unchanged.",
+        },
+        {
+          pointers: [{ name: "x", at: 3 }],
+          marked: [0, 1, 2],
+          action: "dp[3] = dp[1] + (3 & 1) = 1 + 1 = 2",
+          caption: "3 is odd; 3 >> 1 = 1, so it reuses dp[1] and adds its own lowest bit back.",
+        },
+        {
+          pointers: [{ name: "x", at: 4 }],
+          marked: [0, 1, 2, 3],
+          action: "dp[4] = dp[2] + (4 & 1) = 1 + 0 = 1",
+          caption:
+            "Power-of-two boundary: dp resets to 1. 4 >> 1 = 2 skips back two indices, not one — the recurrence " +
+            "reads whatever dp[x >> 1] holds, which needn't be the immediately preceding cell.",
+        },
+        {
+          pointers: [{ name: "x", at: 7 }],
+          marked: [0, 1, 2, 3, 4, 5, 6],
+          action: "dp[7] = dp[3] + (7 & 1) = 2 + 1 = 3",
+          caption: "Final state: 7 is 0b111, three set bits — matching what the brute force would count the slow way.",
+        },
+      ],
+    },
+  ],
+
+  "single-number": [
+    {
+      kind: "prose",
+      body:
+        "A first pass just counts how many times each value shows up — tally every element in a hash map, then " +
+        "scan the tallies for the one value whose count is 1.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — tally occurrences in a hash map, then scan for the one that appears once: O(n) time, O(n) extra space.",
+      source:
+        "function singleNumber(nums) {\n" +
+        "  // Tally how many times each value shows up.\n" +
+        "  const counts = new Map();\n" +
+        "  for (const num of nums) {\n" +
+        "    counts.set(num, (counts.get(num) || 0) + 1);\n" +
+        "  }\n" +
+        "  // The one value with a count of 1 never got paired up — return it.\n" +
+        "  for (const [num, count] of counts) {\n" +
+        "    if (count === 1) return num;\n" +
+        "  }\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This already runs in O(n) time, but it spends O(n) *extra* space on the hash map — exactly what the " +
+        "problem rules out (\"no hash map or counting structure\", \"constant extra space\"). Can we do better?\n\n" +
+        "The key observation is XOR: it's self-cancelling (`x ^ x = 0`) and identity-preserving (`x ^ 0 = x`). " +
+        "Folding every element through a single running XOR value, order doesn't matter (XOR is commutative and " +
+        "associative) — every value that appears twice cancels itself back out, leaving only the value that " +
+        "appeared once. That's this chapter's XOR fold technique from the intro: one integer standing in for the " +
+        "whole hash map, no structure to store counts in at all.\n\n" +
+        "The stored solution's variable name already matches this walkthrough — `result` is the running XOR " +
+        "value — so no bridging is needed.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "nums = [8, 3, 8, 5, 3] — result = running XOR fold",
+      lane: [8, 3, 8, 5, 3],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "result", at: 0 }],
+          action: "result = 0 ^ 8 = 8",
+          caption: "Start folding: the running result picks up the first value untouched.",
+        },
+        {
+          pointers: [{ name: "result", at: 1 }],
+          marked: [0],
+          action: "result = 8 ^ 3 = 11",
+          caption: "3 hasn't been seen yet, so it folds straight in — result is now 11, a value that doesn't even appear in the array.",
+        },
+        {
+          pointers: [{ name: "result", at: 2 }],
+          marked: [0, 1],
+          action: "result = 11 ^ 8 = 3",
+          caption: "The second 8 cancels the first (8 ^ 8 = 0), stripping it back out — result drops back to 3, the pending value from before.",
+        },
+        {
+          pointers: [{ name: "result", at: 3 }],
+          marked: [0, 1, 2],
+          action: "result = 3 ^ 5 = 6",
+          caption: "5 only appears once total, so it folds in and stays — nothing will cancel it later.",
+        },
+        {
+          pointers: [{ name: "result", at: 4 }],
+          marked: [0, 1, 2, 3],
+          action: "result = 6 ^ 3 = 5",
+          caption: "The second 3 cancels the first (3 ^ 3 = 0), leaving only the 5 that was folded in earlier. Loop ends: return 5.",
+        },
+      ],
+    },
+  ],
+
+  "swap-odd-even-bits": [
+    {
+      kind: "prose",
+      body:
+        "A first pass walks all 16 adjacent bit-position pairs one at a time: for each pair `(2k, 2k + 1)`, it " +
+        "extracts the even bit and the odd bit individually with a shift-and-mask, then re-inserts them into the " +
+        "result with their positions swapped.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption:
+        "Brute force — 16 pairs, extracting and re-inserting two bits at a time: O(1) time (a fixed 32-bit " +
+        "word), but far more operations than the masked version.",
+      source:
+        "function swapOddEvenBits(n) {\n" +
+        "  let result = 0;\n" +
+        "  // Walk all 16 adjacent bit-position pairs: (0,1), (2,3), ..., (30,31).\n" +
+        "  for (let k = 0; k < 16; k++) {\n" +
+        "    const evenPos = 2 * k;\n" +
+        "    const oddPos = evenPos + 1;\n" +
+        "    // Extract each bit individually by shifting it down to position 0.\n" +
+        "    const evenBit = (n >>> evenPos) & 1;\n" +
+        "    const oddBit = (n >>> oddPos) & 1;\n" +
+        "    // Re-insert them into the result with their positions swapped.\n" +
+        "    if (evenBit) result |= (1 << oddPos);\n" +
+        "    if (oddBit) result |= (1 << evenPos);\n" +
+        "  }\n" +
+        "  // Unsigned-coerce in case bit 31 ended up set in the result.\n" +
+        "  return result >>> 0;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is still O(1) — a fixed 32-bit word caps the loop at 16 iterations no matter what `n` is — but " +
+        "each iteration does four separate operations (extract the even bit, extract the odd bit, insert one, " +
+        "insert the other) just to move two bits. That's up to 64 individual bitwise operations to process a " +
+        "single word. Can we do better?\n\n" +
+        "The key observation: swapping bit 0 with bit 1 uses the *exact same* shift-by-one move as swapping bit " +
+        "2 with bit 3, bit 4 with bit 5, and every other pair — the loop repeats one identical operation 16 " +
+        "times instead of doing it once across the whole word. AND, OR, and shift all apply to every bit " +
+        "position at once, so instead of handling each pair individually you can mask out *all* the even-" +
+        "position bits as one group and *all* the odd-position bits as one other group, shift each group by one " +
+        "in a single operation, and OR the two groups back together. That's this chapter's own " +
+        "[shift-and-merge bit reordering](/study-guide/algos/topic/bit-manipulation) technique — isolate two " +
+        "interleaved groups, shift each toward the other's original position, then recombine — turning 16 small " +
+        "per-pair operations into a fixed handful of whole-word ones.",
+    },
+    {
+      kind: "callout",
+      tone: "warn",
+      items: [
+        "**The signed/unsigned 32-bit trap.** `n` can reach `2^32 - 1`, so bit 31 can be set — but JS's bitwise " +
+          "operators coerce every operand to a *signed* 32-bit integer first. Once bit 31 is involved, an " +
+          "intermediate like `evenBits << 1` or the final OR can come back **negative** even though the value " +
+          "is meant as unsigned.",
+        "**The fix:** `>>> 0` (unsigned right-shift by zero) reinterprets the same 32 bits as unsigned without " +
+          "changing any of them. The stored solution applies it after each mask (`evenBits`, `oddBits`), after " +
+          "the left shift (`shiftedEven`), and on the final OR — skip any one of those and a large `n` can " +
+          "silently return a negative number instead of the swapped unsigned value.",
+      ],
+    },
+    {
+      kind: "prose",
+      body:
+        "The stored solution's variable names already match this idea — `EVEN_MASK`/`ODD_MASK` isolate the two " +
+        "groups, `evenBits`/`oddBits` hold them, `shiftedEven`/`shiftedOdd` move them into place — so no " +
+        "bridging is needed.\n\n" +
+        "A single 32-bit integer doesn't have a natural \"sequence being scanned\" the way an array walkthrough " +
+        "does, and forcing a pointer diagram here would just redraw the pair-by-pair loop we're trying to move " +
+        "past. So instead, here's the mask → shift → OR pipeline traced directly on one worked example. Walking " +
+        "it through:",
+    },
+    {
+      kind: "prose",
+      body:
+        "- **n = 182** — binary `0b10110110` (bit 7 down to bit 0: `1 0 1 1 0 1 1 0`).\n" +
+        "- **evenBits = n & EVEN_MASK** — keep only the bits at positions 0, 2, 4, 6 and zero out the rest: bits " +
+          "2 and 4 survive → `0b00010100` = 20.\n" +
+        "- **oddBits = n & ODD_MASK** — keep only the bits at positions 1, 3, 5, 7: bits 1, 5, and 7 survive → " +
+          "`0b10100010` = 162.\n" +
+        "- **shiftedEven = (evenBits << 1) >>> 0** — every even bit slides up into its odd neighbor's slot: " +
+          "`0b00101000` = 40.\n" +
+        "- **shiftedOdd = oddBits >>> 1** — every odd bit slides down into its even neighbor's slot: " +
+          "`0b01010001` = 81.\n" +
+        "- **result = (shiftedEven | shiftedOdd) >>> 0** — merge the two shifted groups in one OR: " +
+          "`0b01111001` = 121.\n\n" +
+        "One pass over the whole word swapped every pair at once — bit 6/7 flips (`0,1` → `1,0`), bit 4/5 stays " +
+        "put (`1,1` → `1,1`, a no-op the same way a matched pair is in the brute force), bit 2/3 flips " +
+        "(`1,0` → `0,1`), bit 0/1 flips (`0,1` → `1,0`) — with no per-pair branch anywhere in the pipeline.",
+    },
+  ],
 };
 
 /**
@@ -11094,6 +11357,149 @@ export const PROBLEM_EXTRAS: Record<string, { complexity?: Section[]; testCases?
         args: [[4, 1, 4, 2, 1]],
         expected: [1, 1, 2, 4, 4],
         note: "Duplicates scattered across both halves of the initial split, exercising dedup-free merging (equal values are kept, not collapsed).",
+      },
+    ],
+  },
+
+  "counting-bits": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- Building the array visits each index `x` from `1` to `n` exactly once.\n" +
+          "- At each index, computing `dp[x >> 1] + (x & 1)` is one array lookup plus two O(1) bitwise ops.\n\n" +
+          "So the whole array fills in a single pass — **O(n)** — instead of the brute force's O(n log n) of " +
+          "re-deriving every count's bits from scratch.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(n). Here's why:\n\n" +
+          "- The `dp` array holds `n + 1` entries, one per index from `0` to `n` — and it *is* the function's " +
+          "required return value.\n" +
+          "- Beyond the array itself, only the loop variable `x` is extra — O(1).\n\n" +
+          "Counting only auxiliary space (not the required output), the algorithm uses O(1) extra; counting the " +
+          "output too, the total is **O(n)**.",
+      },
+    ],
+    testCases: [
+      { args: [0], expected: [0], note: "Smallest possible input — a single index, zero set bits." },
+      { args: [6], expected: [0, 1, 1, 2, 1, 2, 2], note: "General case, landing just below the next power-of-two boundary (8)." },
+      {
+        args: [9],
+        expected: [0, 1, 1, 2, 1, 2, 2, 3, 1, 2],
+        note: "One index past a power-of-two boundary — dp[8] resets to 1, then dp[9] climbs back to 2.",
+      },
+      {
+        args: [20],
+        expected: [0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4, 1, 2, 2, 3, 2],
+        note: "Larger, unaligned n — the final index isn't itself a power-of-two boundary.",
+      },
+      {
+        args: [31],
+        expected: [
+          0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4, 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+        ],
+        note: "One index short of the next power-of-two boundary (32) — the run of a full block of bit widths.",
+      },
+    ],
+  },
+
+  "single-number": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- The loop visits each of the `n` elements exactly once.\n" +
+          "- Each step does one O(1) XOR and reassignment.\n\n" +
+          "So the whole fold is a single linear pass — **O(n)** — matching the brute force's time bound, but " +
+          "without ever building a supporting structure.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1). Here's why:\n\n" +
+          "- Only the single `result` accumulator (and the loop variable) are kept, regardless of the input's " +
+          "length.\n" +
+          "- Unlike the brute force's hash map, which grows to hold up to `n / 2 + 1` entries in the worst case, " +
+          "nothing here scales with the input.\n\n" +
+          "So the XOR fold uses **O(1)** auxiliary space — meeting the constant-space requirement the brute " +
+          "force couldn't.",
+      },
+    ],
+    testCases: [
+      { args: [[9]], expected: 9, note: "Single-element array — the one value is automatically the answer." },
+      {
+        args: [[4, 4, 0]],
+        expected: 0,
+        note: "0 is the unpaired value; XOR's identity property (x ^ 0 = x) lets it pass through the fold untouched while the 4/4 pair cancels out.",
+      },
+      {
+        args: [[5, 5, 2, 2, 3]],
+        expected: 3,
+        note: "Two duplicate pairs, with the single value sitting at the end.",
+      },
+      {
+        args: [[-2, -2, -7]],
+        expected: -7,
+        note: "Negative values fold the same way — XOR treats the sign bit like any other bit.",
+      },
+      {
+        args: [[1, 1, 2, 2, 3, 3, 4]],
+        expected: 4,
+        note: "Three duplicate pairs before the single value, confirming the fold generalizes beyond one pair.",
+      },
+    ],
+  },
+
+  "swap-odd-even-bits": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(1). Here's why:\n\n" +
+          "- Every step — the two ANDs (`n & EVEN_MASK`, `n & ODD_MASK`), the two shifts (`evenBits << 1`, " +
+          "`oddBits >>> 1`), the OR, and the `>>> 0` coercions — touches all 32 bits of a fixed-width word at " +
+          "once, not one bit at a time.\n" +
+          "- The number of operations doesn't depend on `n`'s value or how many bits are set — it's the same " +
+          "handful of instructions whether `n` is 0 or `2^32 - 1`.\n\n" +
+          "So the whole swap runs in **O(1)** — a constant number of word-wide operations, instead of the " +
+          "brute force's 16 iterations of per-pair extract-and-insert work.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1). Here's why:\n\n" +
+          "- Only a fixed set of intermediates (`evenBits`, `oddBits`, `shiftedEven`, `shiftedOdd`) are kept, " +
+          "each a single 32-bit integer.\n" +
+          "- None of them grow with `n` — there's no array, map, or recursion stack.\n\n" +
+          "So the algorithm uses **O(1)** space, matching the brute force's space bound while doing far less " +
+          "work to get there.",
+      },
+    ],
+    testCases: [
+      { args: [0], expected: 0, note: "Smallest possible input — no bits set, nothing to swap." },
+      {
+        args: [5],
+        expected: 10,
+        note: "Two set bits split across two different pairs, exercising both the even and odd mask groups in one call.",
+      },
+      {
+        args: [12],
+        expected: 12,
+        note: "A fixed point below the top of the word — the (bit 2, bit 3) pair is already matched (1, 1), so swapping it is a no-op.",
+      },
+      {
+        args: [0x80000001],
+        expected: 1073741826,
+        note: "Bit 31 set alongside bit 0 — exercises the signed/unsigned trap at the very top of the word while also touching the bottom pair.",
+      },
+      {
+        args: [0x87654321],
+        expected: 0x4b9a8312,
+        note: "General mixed-nibble value with both matched and swapped pairs throughout the word.",
       },
     ],
   },

@@ -27,10 +27,10 @@
 | Dynamic Programming | `dynamic-programming` | yes |
 | Greedy | `greedy` | yes |
 | Sort and Search | `sorting` | yes |
-| Bit Manipulation | `bit-manipulation` | no |
+| Bit Manipulation | `bit-manipulation` | yes |
 | Math and Geometry | `math` | no |
 
-Per-chapter problem counts (deduped BBG problems): Intervals 3 · Prefix Sums 4 · Trees 14 · Tries 3 · Graphs 11 · Backtracking 5 · Dynamic Programming 9 BBG + 1 non-BBG extra (10 built) · Greedy 3 (confirmed) · Sort and Search 4 (confirmed) · Bit Manipulation 4 · Math and Geometry 6.
+Per-chapter problem counts (deduped BBG problems): Intervals 3 · Prefix Sums 4 · Trees 14 · Tries 3 · Graphs 11 · Backtracking 5 · Dynamic Programming 9 BBG + 1 non-BBG extra (10 built) · Greedy 3 (confirmed) · Sort and Search 4 (confirmed) · Bit Manipulation 3 (confirmed) · Math and Geometry 6.
 
 > Column legend — **In bank already?** is true iff the *suggested* bank id already exists as a key in `src/problems/data/problems/index.ts`. "off-catalog" = a BBG-original problem with no clean public LeetCode twin (lower mapping confidence; import from a self-contained spec). "sandbox concern" flags problems whose I/O shape (streaming, design/class, randomized, graph-build) may be awkward for the judge harness.
 
@@ -177,14 +177,23 @@ So the chapter is genuinely **4 problems**, confirmed by reading file contents (
 
 ---
 
-## Bit Manipulation (4)
+## Bit Manipulation (3 — confirmed)
+
+**Resolved (2026-08):** re-fetched `python3/Bit Manipulation/` directly from the BBG repo tree (GitHub API directory listing + file contents, not the manifest estimate) during the build. The directory contains exactly **4 files** collapsing to **3 distinct problems** — `hamming_weights_of_integers.py` and `hamming_weights_of_integers_dp.py` are two solutions (linear count-bits loop, and an O(n) DP-over-all-integers-up-to-n build) of **one** problem. The original manifest's 4-row estimate, including "Reverse Bits", was wrong: `reverse_32_bit_integer.py` **lives in `python3/Math and Geometry/`, not `python3/Bit Manipulation/`** — confirmed by directory listing. It is **not** a Bit Manipulation-chapter member and was correctly excluded from this chapter (it's already tracked as a Math and Geometry row via `reverse-integer`, LC 7, already in the bank — note that's *reverse the integer's value*, not *reverse its bits*; LC 190 Reverse Bits is not a BBG chapter file in either directory and is out of scope for this build).
+
+Read each file's contents (not just filenames) to confirm the exact function signature BBG uses:
+
+- `hamming_weights_of_integers(n) -> List[int]` — returns the set-bit count for every integer `0..n` (an array result, not a single count). This is exactly **LC 338 Counting Bits**, confirming the manifest's original `counting-bits` mapping — not LC 191 (single-int `number-of-1-bits`), which was only offered as a "simpler twin," not the actual BBG signature.
+- `lonely_integer(nums) -> int` — XOR fold over an int array. Exactly **LC 136 Single Number**, confirming `single-number`.
+- `swap_odd_and_even_bits(n) -> int` — mask (`0x55555555`/`0xAAAAAAAA`) + shift + OR on a 32-bit int. Off-catalog (no standard LC id), confirming `swap-odd-even-bits` as a faithful off-catalog import.
 
 | BBG problem name | Suggested bank id/slug | In bank already? | Mapping confidence | Notes |
 | --- | --- | --- | --- | --- |
-| Hamming Weights of Integers | `counting-bits` | no | high | LC 338 Counting Bits (the DP variant `hamming_weights_of_integers_dp` is exactly this). Single-int `number-of-1-bits` (LC 191) is the simpler twin. |
-| Lonely Integer | `single-number` | no | high | LC 136. XOR fold. |
-| Swap Odd and Even Bits | `swap-odd-even-bits` | no | mid | Off-catalog (no standard LC id). Self-contained spec: mask odd/even bits, shift, OR. Clean int→int function. |
-| Reverse Bits | `reverse-bits` | no | mid | LC 190 — likely a chapter member; verify against the book (repo has `reverse_32_bit_integer` but that's filed under Math). |
+| Hamming Weights of Integers (loop / DP) | `counting-bits` | no | high | LC 338. Two BBG solution files, one problem — `hamming_weights_of_integers(n)` returns `List[int]` of set-bit counts for `0..n`. |
+| Lonely Integer | `single-number` | no | high | LC 136. XOR fold, `lonely_integer(nums) -> int`. |
+| Swap Odd and Even Bits | `swap-odd-even-bits` | no | high | Off-catalog (no standard LC id) but the BBG source was read directly — faithful spec: `swap_odd_and_even_bits(n) -> int`, mask odd/even bits, shift each toward the other, OR merge. |
+
+*Confirmed exclusion:* "Reverse Bits" / `reverse_32_bit_integer.py` is a **Math and Geometry** chapter file, not Bit Manipulation — do not pull it into this chapter.
 
 ---
 
