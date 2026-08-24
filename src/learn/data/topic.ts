@@ -374,6 +374,12 @@ export type LearnTopic = {
   /** One-liner for the landing card and search index. */
   summary: string;
   tags?: LearnTag[];
+  /**
+   * The slug of a broader topic this one is a facet of (e.g. `breadth-first-search` → `graphs`). Purely a
+   * catalog/display grouping — it doesn't change article content or routing. Untyped against `TopicSlug` to
+   * avoid a circular import with the topic registry; an id that doesn't resolve is just not grouped.
+   */
+  parent?: string;
   /** Study-plan priority (see {@link Priority}). Optional during rollout. */
   priority?: Priority;
   /** Rough time to study the topic, in minutes — feeds the study-plan time budget. */
@@ -383,4 +389,4 @@ export type LearnTopic = {
 };
 
 /** Client-safe projection for the landing grid + search — the body sections stay out of the list payload. */
-export type TopicSummary = Pick<LearnTopic, "slug" | "title" | "category" | "summary" | "tags">;
+export type TopicSummary = Pick<LearnTopic, "slug" | "title" | "category" | "summary" | "tags" | "parent">;

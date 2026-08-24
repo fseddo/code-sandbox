@@ -5,6 +5,8 @@ export const bigO = {
   title: "Big-O & complexity",
   category: "complexity",
   summary: "How time and space scale with input size — the shared language for comparing approaches.",
+  priority: "mid",
+  estimatedMinutes: 20,
   parts: {
     definition: [
       {

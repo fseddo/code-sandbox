@@ -153,6 +153,8 @@ import { isBipartite } from "./isBipartite";
 import { longestIncreasingPath } from "./longestIncreasingPath";
 import { wordLadder } from "./wordLadder";
 import { courseSchedule } from "./courseSchedule";
+import { courseScheduleII } from "./courseScheduleII";
+import { redundantConnection } from "./redundantConnection";
 import { networkDelayTime } from "./networkDelayTime";
 import { minCostConnectPoints } from "./minCostConnectPoints";
 import { houseRobber } from "./houseRobber";
@@ -165,6 +167,9 @@ import { candy } from "./candy";
 import { countingBits } from "./countingBits";
 import { singleNumber } from "./singleNumber";
 import { swapOddEvenBits } from "./swapOddEvenBits";
+import { maxPointsOnALine } from "./maxPointsOnALine";
+import { josephusProblem } from "./josephusProblem";
+import { triangleNumbers } from "./triangleNumbers";
 
 /**
  * The problem bank, keyed by id. Authored modules keep their precise generics for
@@ -325,6 +330,8 @@ export const problems = {
   "longest-increasing-path-in-a-matrix": longestIncreasingPath,
   "word-ladder": wordLadder,
   "course-schedule": courseSchedule,
+  "course-schedule-ii": courseScheduleII,
+  "redundant-connection": redundantConnection,
   "network-delay-time": networkDelayTime,
   "min-cost-to-connect-all-points": minCostConnectPoints,
   "house-robber": houseRobber,
@@ -337,6 +344,9 @@ export const problems = {
   "counting-bits": countingBits,
   "single-number": singleNumber,
   "swap-odd-even-bits": swapOddEvenBits,
+  "max-points-on-a-line": maxPointsOnALine,
+  "josephus-problem": josephusProblem,
+  "triangle-numbers": triangleNumbers,
 } satisfies Record<string, AnyProblem>;
 
 export type ProblemId = keyof typeof problems;

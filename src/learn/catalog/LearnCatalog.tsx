@@ -18,9 +18,50 @@ import {
 } from "./learnFacets";
 import { LearnSidebar } from "./LearnSidebar";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 /** A topic row shaped for the generic `searchCatalog` (title + tags + companies); topics carry no companies. */
 type TopicRow = TopicSummary & { tags: string[]; companies: string[] };
+
+/** One top-level row plus the visible children whose `parent` points at it (e.g. BFS/DFS under Graphs). */
+type TopicGroup = { topic: TopicRow; children: TopicRow[] };
+
+/**
+ * Nest each visible child under its parent, provided the parent is also visible — a child whose parent got
+ * filtered/searched out stays at top level instead of disappearing. Order otherwise follows `rows` (registry order).
+ */
+const groupTopicRows = (rows: TopicRow[]): TopicGroup[] => {
+  const visibleSlugs = new Set(rows.map((row) => row.slug));
+  const childrenByParent = new Map<string, TopicRow[]>();
+  for (const row of rows) {
+    if (row.parent && visibleSlugs.has(row.parent)) {
+      childrenByParent.set(row.parent, [...(childrenByParent.get(row.parent) ?? []), row]);
+    }
+  }
+  return rows
+    .filter((row) => !(row.parent && visibleSlugs.has(row.parent)))
+    .map((topic) => ({ topic, children: childrenByParent.get(topic.slug) ?? [] }));
+};
+
+/** One catalog row; `compact` renders a child topic nested under its parent (indented, smaller title). */
+const TopicListRow = ({ topic, compact }: { topic: TopicRow; compact?: boolean }) => (
+  <Link
+    href={`/concepts/${topic.slug}`}
+    className={cn(
+      "group flex items-center justify-between gap-4 px-4 py-3 transition-colors hover:bg-muted/50",
+      compact && "pl-9",
+    )}
+  >
+    <div className="min-w-0 flex-1 space-y-0.5">
+      <div className="flex items-center gap-2">
+        <span className={cn("truncate font-medium", compact && "text-sm text-muted-foreground")}>{topic.title}</span>
+        <CategoryBadge category={topic.category} />
+      </div>
+      <p className="truncate text-sm text-muted-foreground">{topic.summary}</p>
+    </div>
+    <LuArrowRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
+  </Link>
+);
 
 /** Add or remove a value from a facet's selection, dropping the key entirely when it empties. */
 const toggleValue = (selection: LearnSelection, key: LearnFacetKey, value: string): LearnSelection => {
@@ -49,6 +90,7 @@ export const LearnCatalog = ({ topics }: { topics: TopicSummary[] }) => {
     }));
     return searchCatalog(rows, query);
   }, [topics, selection, query]);
+  const groups = useMemo(() => groupTopicRows(visible), [visible]);
 
   const toggle = (key: LearnFacetKey, value: string) => setSelection((prev) => toggleValue(prev, key, value));
   const clearFacet = (key: LearnFacetKey) =>
@@ -113,21 +155,13 @@ export const LearnCatalog = ({ topics }: { topics: TopicSummary[] }) => {
           </div>
         ) : (
           <div className="shrink-0 divide-y divide-border overflow-hidden rounded-lg border border-border">
-            {visible.map((topic) => (
-              <Link
-                key={topic.slug}
-                href={`/concepts/${topic.slug}`}
-                className="group flex items-center justify-between gap-4 px-4 py-3 transition-colors hover:bg-muted/50"
-              >
-                <div className="min-w-0 flex-1 space-y-0.5">
-                  <div className="flex items-center gap-2">
-                    <span className="truncate font-medium">{topic.title}</span>
-                    <CategoryBadge category={topic.category} />
-                  </div>
-                  <p className="truncate text-sm text-muted-foreground">{topic.summary}</p>
-                </div>
-                <LuArrowRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
-              </Link>
+            {groups.map(({ topic, children }) => (
+              <div key={topic.slug} className="divide-y divide-border/60">
+                <TopicListRow topic={topic} />
+                {children.map((child) => (
+                  <TopicListRow key={child.slug} topic={child} compact />
+                ))}
+              </div>
             ))}
           </div>
         )}

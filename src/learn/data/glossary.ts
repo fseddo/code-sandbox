@@ -1,10 +1,12 @@
 import { getTopic, type TopicSlug } from "@/learn/data/topics";
 
 /**
- * A definable SWE term, marked in prose as `[[term]]`. Two shapes, one mechanism:
+ * A definable SWE term, marked in prose as `[[term]]` or `[[term|display label]]`. Two shapes, one mechanism:
  * - `definition` — a short inline blurb shown on hover (tooltip-only term).
  * - `topicSlug` — the term has a full topic page; the blurb reuses that topic's `summary` and the hover
  *   card links to it. A term "graduates" from blurb-only to linked simply by gaining a topic — no prose change.
+ * A term that isn't in this curated list but matches a real topic slug (e.g. `[[hash-maps]]`) auto-resolves
+ * against the topic registry — this is how a Full topic cross-links a sibling per learn-authoring.md.
  */
 export type GlossaryEntry = { definition: string } | { topicSlug: TopicSlug };
 
@@ -31,14 +33,24 @@ const GLOSSARY = {
 /** The render-ready shape: display text, the hover blurb, and an optional link to a full topic. */
 export type ResolvedTerm = { label: string; blurb: string; href?: string };
 
-/** Look a `[[term]]` up (case-insensitive). Returns null for an unknown term so prose falls back to plain text. */
+/**
+ * Look a `[[term]]` or `[[term|display label]]` up (term case-insensitive). Checks the curated glossary first,
+ * then falls back to a direct topic-slug match. Returns null for an unknown term so prose falls back to plain text.
+ */
 export const resolveTerm = (raw: string): ResolvedTerm | null => {
-  const entry = GLOSSARY[raw.toLowerCase() as keyof typeof GLOSSARY];
-  if (!entry) return null;
-  if ("topicSlug" in entry) {
-    const topic = getTopic(entry.topicSlug);
-    if (!topic) return { label: raw, blurb: "" };
-    return { label: raw, blurb: topic.summary, href: `/concepts/${entry.topicSlug}` };
+  const [term, displayLabel] = raw.split("|");
+  const label = displayLabel ?? term;
+  const key = term.toLowerCase();
+
+  const entry = GLOSSARY[key as keyof typeof GLOSSARY];
+  if (entry) {
+    if ("topicSlug" in entry) {
+      const topic = getTopic(entry.topicSlug);
+      return topic ? { label, blurb: topic.summary, href: `/concepts/${entry.topicSlug}` } : { label, blurb: "" };
+    }
+    return { label, blurb: entry.definition };
   }
-  return { label: raw, blurb: entry.definition };
+
+  const topic = getTopic(key);
+  return topic ? { label, blurb: topic.summary, href: `/concepts/${key}` } : null;
 };

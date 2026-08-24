@@ -43,6 +43,7 @@ The `parts` model makes the gradient natural — a stub just omits parts. Don't 
 - `priority`: `"high" | "mid" | "low"` — interview weight, **not** difficulty (difficulty belongs to the practice problems). Set it on every non-stub topic; it powers the catalog facet + study-plan ordering.
 - `estimatedMinutes`: rough study time; feeds the study-plan budget. ~30 for a simple structure, 60–120 for a meaty technique.
 - `tags`: reuse the problem taxonomy so the topic shares a vocabulary with the problems it links.
+- `parent`: set this instead of writing a full standalone page when a topic is really a *facet* of one already covered elsewhere — e.g. BFS/DFS/Union-Find/Topological-Sort set `parent: "graphs"` because [graphs.ts](../../src/learn/data/topics/graphs.ts) already carries the shared 101 (representations, how the tools compare). A child page should skip re-deriving that ground and instead cover what the parent didn't have room for — its own variants/techniques, its own worked walkthrough, its own pitfalls — then link back with `[[parent-slug]]` for the basics. See [features/learn.md](learn.md) for how this renders (catalog nesting + a "Part of {parent}" link on the child's page).
 
 ## Skeleton
 

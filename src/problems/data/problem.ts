@@ -52,6 +52,7 @@ export type TopicTag =
   | "memoization"
   | "breadth-first-search"
   | "graph"
+  | "topological-sort"
   | "union-find"
   | "queue"
   | "interval"

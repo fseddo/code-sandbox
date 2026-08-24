@@ -6,6 +6,8 @@ export const binarySearchTrees = {
   category: "data-structures",
   summary: "Ordered binary trees — O(log n) search when balanced, O(n) when they degenerate to a chain.",
   tags: ["binary-search-tree", "tree"],
+  priority: "mid",
+  estimatedMinutes: 45,
   parts: {
     definition: [
       {

@@ -107,10 +107,11 @@ export const listTopics = (): LearnTopic[] => Object.values(topics);
 
 /** Client-safe list for the landing grid + search — drops the article `sections`. */
 export const listTopicSummaries = (): TopicSummary[] =>
-  listTopics().map(({ slug, title, category, summary, tags }) => ({
+  listTopics().map(({ slug, title, category, summary, tags, parent }) => ({
     slug,
     title,
     category,
     summary,
     tags,
+    parent,
   }));

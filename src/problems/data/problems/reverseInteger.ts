@@ -60,25 +60,35 @@ After each push, check whether \`result\` has left the signed 32-bit range; if s
 \`O(d)\` time where \`d\` is the digit count (at most 10), \`O(1)\` space.`,
       code: {
         javascript: `function reverse(x) {
+  // Signed 32-bit bounds the rebuilt number must never cross.
   const MIN = -(2 ** 31);
   const MAX = 2 ** 31 - 1;
   let result = 0;
   while (x !== 0) {
+    // Peel off the last digit; JS's % keeps the sign of x, so negatives reverse correctly for free.
     const digit = x % 10;
+    // Drop that digit from x (exact division since digit was the remainder).
     x = (x - digit) / 10;
+    // Push the digit onto the front of the rebuilt (reversed) number.
     result = result * 10 + digit;
+    // Bail out the instant the running result leaves the 32-bit range.
     if (result < MIN || result > MAX) return 0;
   }
   return result;
 }`,
         typescript: `function reverse(x: number): number {
+  // Signed 32-bit bounds the rebuilt number must never cross.
   const MIN = -(2 ** 31);
   const MAX = 2 ** 31 - 1;
   let result = 0;
   while (x !== 0) {
+    // Peel off the last digit; JS's % keeps the sign of x, so negatives reverse correctly for free.
     const digit = x % 10;
+    // Drop that digit from x (exact division since digit was the remainder).
     x = (x - digit) / 10;
+    // Push the digit onto the front of the rebuilt (reversed) number.
     result = result * 10 + digit;
+    // Bail out the instant the running result leaves the 32-bit range.
     if (result < MIN || result > MAX) return 0;
   }
   return result;

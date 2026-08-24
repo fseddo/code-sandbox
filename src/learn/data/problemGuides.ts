@@ -8267,6 +8267,568 @@ export const PROBLEM_GUIDES: Record<string, Section[]> = {
         "(`1,0` → `0,1`), bit 0/1 flips (`0,1` → `1,0`) — with no per-pair branch anywhere in the pipeline.",
     },
   ],
+
+  "spiral-matrix": [
+    {
+      kind: "prose",
+      body:
+        "A direct way to trace the spiral is to walk the grid like a robot: keep moving in the current " +
+        "direction, and only turn — clockwise — the moment the next cell would leave the grid or has already " +
+        "been visited, tracking every visited cell in its own boolean grid.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — simulate the walk, turning on a wall or a revisited cell: O(m·n) time, O(m·n) extra space.",
+      source:
+        "function spiralOrder(matrix) {\n" +
+        "  const rows = matrix.length;\n" +
+        "  const cols = matrix[0].length;\n" +
+        "  const result = [];\n" +
+        "  // Remember every cell already emitted — \"already visited\" is how we know when to turn.\n" +
+        "  const visited = Array.from({ length: rows }, () => new Array(cols).fill(false));\n" +
+        "  // Clockwise order: right, down, left, up.\n" +
+        "  const directions = [[0, 1], [1, 0], [0, -1], [-1, 0]];\n" +
+        "  let dir = 0;\n" +
+        "  let row = 0;\n" +
+        "  let col = 0;\n" +
+        "  for (let step = 0; step < rows * cols; step++) {\n" +
+        "    result.push(matrix[row][col]);\n" +
+        "    visited[row][col] = true;\n" +
+        "    const [dr, dc] = directions[dir];\n" +
+        "    const nextRow = row + dr;\n" +
+        "    const nextCol = col + dc;\n" +
+        "    // Turn clockwise the instant the next cell falls off the grid or was already emitted.\n" +
+        "    const blocked = nextRow < 0 || nextRow >= rows || nextCol < 0 || nextCol >= cols || visited[nextRow][nextCol];\n" +
+        "    if (blocked) dir = (dir + 1) % 4;\n" +
+        "    row += directions[dir][0];\n" +
+        "    col += directions[dir][1];\n" +
+        "  }\n" +
+        "  return result;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This still visits every cell exactly once — O(m·n) time either way — but it pays for an O(m·n) " +
+        "visited grid just to answer one question at each step: *have I been here before?* Can we do better?\n\n" +
+        "The key observation: the spiral doesn't need to ask that per cell, because it only ever turns at the " +
+        "same four moments each lap — right after finishing the top row, the right column, the bottom row, and " +
+        "the left column. So instead of remembering *which cells* are done, track *which rows and columns* are " +
+        "done, with four numbers: `top`, `bottom`, `left`, `right`. Walk one full edge along each bound, shrink " +
+        "that bound inward by one, and repeat until the bounds cross. It's the same \"has this region already " +
+        "been consumed\" bookkeeping that shows up across [Matrices & grids](/study-guide/algos/topic/matrix) " +
+        "ring-walk problems (matrix rotation, border traversal) — just four numbers standing in for a full " +
+        "visited grid.\n\n" +
+        "The one wrinkle is a matrix that isn't square: after the top-row and right-column passes, a single " +
+        "remaining row or column would otherwise get walked twice — once as the \"bottom row\", again as the " +
+        "\"left column\" — unless those two passes are guarded with `if (top <= bottom)` and `if (left <= " +
+        "right)` and skipped once nothing is left along that edge.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "gridWalkthrough",
+      heading: "matrix = [[1,2,3,4],[5,6,7,8],[9,10,11,12]]",
+      showIndices: true,
+      grid: [
+        [1, 2, 3, 4],
+        [5, 6, 7, 8],
+        [9, 10, 11, 12],
+      ],
+      frames: [
+        {
+          active: [[0, 0], [0, 1], [0, 2], [0, 3]],
+          action: "top row → right: 1, 2, 3, 4; top++ (top = 1)",
+          caption: "Walk the current top row left to right, then move the top bound down past it.",
+        },
+        {
+          active: [[1, 3], [2, 3]],
+          action: "right col → down: 8, 12; right-- (right = 2)",
+          caption: "Walk the right column top to bottom — row 0's corner was already taken — then pull the right bound in.",
+        },
+        {
+          active: [[2, 2], [2, 1], [2, 0]],
+          action: "top (1) ≤ bottom (2) → bottom row → left: 11, 10, 9; bottom-- (bottom = 1)",
+          caption: "The guard passes: top hasn't crossed bottom yet, so the bottom row still has cells the first pass never touched.",
+        },
+        {
+          active: [[1, 0]],
+          action: "left (0) ≤ right (2) → left col → up: 5; left++ (left = 1)",
+          caption: "Same guard on the other axis: left hasn't crossed right, so there's one cell left above the corner already taken.",
+        },
+        {
+          active: [[1, 1], [1, 2]],
+          action: "top row → right: 6, 7; top++ (top = 2)",
+          caption: "The bounds now describe a single remaining row — a 1×2 sliver. It's still a valid ring, so the same top-row pass walks it.",
+        },
+        {
+          action: "top (2) > bottom (1) → bottom row skipped; loop ends",
+          caption: "The right-column and left-column passes run but find nothing left in their range, and the `if (top <= bottom)` guard now evaluates false — exactly the check that stops the bottom row from being walked a second time on a matrix that isn't square. Result: 1, 2, 3, 4, 8, 12, 11, 10, 9, 5, 6, 7.",
+        },
+      ],
+    },
+  ],
+
+  "reverse-integer": [
+    {
+      kind: "prose",
+      body:
+        "A first pass converts `x` to a string, reverses the characters, and parses the result back into a " +
+        "number — leaning on the fact that a JavaScript number can briefly hold a value far outside the signed " +
+        "32-bit range while we check it.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — round-trip through a string, then check the bound: O(d) time, O(d) extra space.",
+      source:
+        "function reverse(x) {\n" +
+        "  // Remember the sign separately; we only reverse the digits of the magnitude.\n" +
+        "  const sign = x < 0 ? -1 : 1;\n" +
+        "  const digits = Math.abs(x).toString(); // e.g. -123 -> \"123\"\n" +
+        "  const reversedDigits = digits.split('').reverse().join(''); // \"123\" -> \"321\"\n" +
+        "  // parseInt drops any leading zeros that appear after reversing, e.g. \"021\" -> 21.\n" +
+        "  const result = sign * parseInt(reversedDigits, 10);\n" +
+        "  // Only now, after the *whole* reversed number already exists, do we check that it fits in 32 bits.\n" +
+        "  if (result < -(2 ** 31) || result > 2 ** 31 - 1) return 0;\n" +
+        "  return result;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This works, but it leans on a string round-trip and on the reversed number briefly existing in full, " +
+        "outside the 32-bit range, before we ever check it — exactly the *\"64-bit integer support\"* the " +
+        "problem statement tells us not to rely on. Can we do better?\n\n" +
+        "Notice we don't need the *whole* reversed number before we can tell it's too big: once `result` folds " +
+        "in a digit and crosses the bound, it will only grow further out of range as more digits are folded in " +
+        "— so the overflow can be caught **while** the number is being rebuilt, one digit at a time.\n\n" +
+        "That's the same digit-by-digit discipline behind most [Math & geometry](/study-guide/algos/topic/math) " +
+        "problems: peel a digit off with `% 10`, shrink `x` with integer division, and push the digit onto an " +
+        "accumulator with `result * 10 + digit` — long division, run in reverse. Checking the running `result` " +
+        "against `[-2^31, 2^31 - 1]` after *every* push means the function can bail out the instant it goes out " +
+        "of range, and never needs to hold a value wider than 32 bits to notice.\n\n" +
+        "One more simplification falls out for free: JavaScript's `%` keeps the sign of its left operand, so a " +
+        "negative `x` peels off negative digits and reverses straight into a negative `result` — no separate " +
+        "sign bookkeeping like the string version above needed.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "x = 6423 — peeling digits from the ones place and rebuilding result",
+      lane: [6, 4, 2, 3],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "pop", at: 3 }],
+          action: "digit = 3 → result = 0×10 + 3 = 3",
+          caption: "Pop the ones digit off with x % 10 and push it onto result.",
+        },
+        {
+          pointers: [{ name: "pop", at: 2 }],
+          marked: [3],
+          action: "digit = 2 → result = 3×10 + 2 = 32",
+          caption: "x shrinks to 64 (integer-divide away the digit just consumed); repeat.",
+        },
+        {
+          pointers: [{ name: "pop", at: 1 }],
+          marked: [3, 2],
+          action: "digit = 4 → result = 32×10 + 4 = 324",
+          caption: "Every push is checked against ±(2^31 − 1) — still nowhere close to the bound.",
+        },
+        {
+          pointers: [{ name: "pop", at: 0 }],
+          marked: [3, 2, 1],
+          action: "digit = 6 → result = 324×10 + 6 = 3246",
+          caption: "x is now 0, so this was the last digit.",
+        },
+        {
+          marked: [3, 2, 1, 0],
+          action: "x == 0 → loop ends, return 3246",
+          caption: "Every digit has migrated from x into result, in reversed order.",
+        },
+      ],
+    },
+    {
+      kind: "walkthrough",
+      heading: "x = 2147483645 — the same peel, but the last digit tips result over the 32-bit ceiling",
+      lane: [2, 1, 4, 7, 4, 8, 3, 6, 4, 5],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "pop", at: 9 }],
+          action: "digit = 5 → result = 5",
+          caption: "Peeling starts from the ones digit, same as before.",
+        },
+        {
+          pointers: [{ name: "pop", at: 6 }],
+          marked: [9, 8, 7],
+          action: "digits 5, 4, 6 already in (result = 546); digit = 3 → result = 546×10 + 3 = 5463",
+          caption: "Building up steadily — nothing so far is close to the 2^31 − 1 ceiling.",
+        },
+        {
+          pointers: [{ name: "pop", at: 1 }],
+          marked: [9, 8, 7, 6, 5, 4, 3, 2],
+          action: "result = 546384741 after the ninth digit",
+          caption: "Nine digits folded in, result is still a 9-digit number — comfortably inside range, and every check so far has passed.",
+        },
+        {
+          pointers: [{ name: "pop", at: 0 }],
+          marked: [9, 8, 7, 6, 5, 4, 3, 2, 1],
+          action: "digit = 2 → result = 546384741×10 + 2 = 5463847412",
+          caption: "One digit left — the leading 2 of the original number.",
+        },
+        {
+          marked: [9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
+          action: "5463847412 > 2^31 − 1 → return 0",
+          caption: "The last digit tips the rebuilt number past the signed 32-bit ceiling. The guard catches it on the spot and returns 0 instead of the (wrong, oversized) reversed value.",
+        },
+      ],
+    },
+  ],
+
+  "max-points-on-a-line": [
+    {
+      kind: "prose",
+      body:
+        "A first pass treats every pair of points as a candidate line and, for each pair, rescans the rest " +
+        "of the points to count how many others fall on that same line — using the integer cross product " +
+        "instead of a slope, so there's no division or floating-point rounding to worry about yet.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — every pair as a candidate line, checked against every other point: O(n³).",
+      source:
+        "function maxPointsOnALine(points) {\n" +
+        "  const n = points.length;\n" +
+        "  // Any 0, 1, or 2 points trivially lie on some line together.\n" +
+        "  if (n <= 2) return n;\n" +
+        "\n" +
+        "  let best = 2;\n" +
+        "  // Try every pair of points as the two points that define a candidate line.\n" +
+        "  for (let i = 0; i < n; i++) {\n" +
+        "    for (let j = i + 1; j < n; j++) {\n" +
+        "      const [x1, y1] = points[i];\n" +
+        "      const [x2, y2] = points[j];\n" +
+        "      let count = 2; // the pair itself already lies on its own line\n" +
+        "      // Check every other point for collinearity with this pair.\n" +
+        "      for (let k = 0; k < n; k++) {\n" +
+        "        if (k === i || k === j) continue;\n" +
+        "        const [x3, y3] = points[k];\n" +
+        "        // Cross product of (P2-P1) and (P3-P1): zero area means the three points are collinear.\n" +
+        "        const cross = (x2 - x1) * (y3 - y1) - (y2 - y1) * (x3 - x1);\n" +
+        "        if (cross === 0) count++;\n" +
+        "      }\n" +
+        "      if (count > best) best = count; // remember the largest line seen so far\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return best;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This checks every pair as a candidate line, then rescans **all** the other points for each pair — " +
+        "O(n³) time. It never has to worry about slope precision, but pairs `(i, j)` and `(i, j')` both " +
+        "re-derive everything about point `i` from scratch. Can we do better?\n\n" +
+        "Key observation: **fix one point as a \"focal point\"** and look at the slope from it to every other " +
+        "point. Points that share that slope with the focal point are exactly the points collinear with it — " +
+        "so instead of testing pair by pair, group the other points by slope in a hash map and read the " +
+        "biggest group straight off. That's the same [hash map](/study-guide/algos/topic/hash-maps) grouping " +
+        "idea behind frequency-counting problems generally, just keyed by slope instead of by value.\n\n" +
+        "The slope can't be a floating-point `dy/dx`, though — nearby-but-distinct fractions can collide, or " +
+        "worse, fail to collide when they should, due to rounding. So the key is the reduced `(dy, dx)` pair, " +
+        "cut down by their `gcd`, with a fixed sign convention (`dx` non-negative, or `dx === 0` forced to a " +
+        "dedicated vertical-line key) so equivalent fractions like `(2, -4)` and `(-1, 2)` always land in the " +
+        "same bucket.\n\n" +
+        "In the stored solution these read as `slopeCounts` (the hash map for the current focal point), " +
+        "`localBest` (its biggest bucket), and `best` (the running max across every focal point) — the " +
+        "walkthrough below builds exactly that map, one other point at a time, from a single focal point's " +
+        "point of view.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "focal point (0,0) — slope to each other point, bucketed by reduced (dy, dx)",
+      lane: ["(2,4)", "(3,6)", "(0,5)", "(-1,2)"],
+      showIndices: false,
+      frames: [
+        {
+          pointers: [{ name: "j", at: 0 }],
+          action: "dy=4, dx=2 → gcd=2 → key (2,1)",
+          caption: "Reduce the rise and run to (0,0) by their gcd instead of dividing — an integer key, so no rounding to worry about. Start its bucket at 1.",
+        },
+        {
+          pointers: [{ name: "j", at: 1 }],
+          marked: [0],
+          action: "dy=6, dx=3 → gcd=3 → key (2,1) again",
+          caption: "(3,6) has completely different raw rise and run than (2,4), but the same reduced slope — exactly the collision a float dy/dx could miss. Bucket (2,1) grows to 2.",
+        },
+        {
+          pointers: [{ name: "j", at: 2 }],
+          marked: [0, 1],
+          action: "dx=0 → vertical-line sentinel key (1,0)",
+          caption: "(0,5) shares the focal point's x-coordinate — an undefined slope, so it gets its own reserved key instead of dividing by zero.",
+        },
+        {
+          pointers: [{ name: "j", at: 3 }],
+          marked: [0, 1, 2],
+          action: "dy=2, dx=-1 → gcd=1 → sign-normalize → key (-2,1)",
+          caption: "(-1,2) doesn't match the leading bucket at all — a genuinely different line through the focal point, so it starts a bucket of its own instead of joining the winner.",
+        },
+        {
+          marked: [0, 1, 2, 3],
+          action: "max bucket = 2 (key (2,1)) → localBest + 1 = 3",
+          caption: "The biggest bucket holds (2,4) and (3,6); adding the focal point itself gives 3 collinear points. The full algorithm repeats this scan with every point as the focal point and keeps the largest result across all of them.",
+        },
+      ],
+    },
+  ],
+
+  "josephus-problem": [
+    {
+      kind: "prose",
+      body:
+        "A first pass just simulates the circle literally: keep an array of everyone still standing, and " +
+        "repeatedly compute the index the next count of `k` lands on, removing that person, until only one " +
+        "remains.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — simulate the circle with an array, removing one person at a time: O(n²) time.",
+      source:
+        "function josephusProblem(n, k) {\n" +
+        "  // Track everyone still standing, indexed by their original position.\n" +
+        "  const circle = Array.from({ length: n }, (_, i) => i);\n" +
+        "  // \"current\" always points at the position where the next count of k starts.\n" +
+        "  let current = 0;\n" +
+        "  while (circle.length > 1) {\n" +
+        "    // Count k people starting at current (current itself is count 1),\n" +
+        "    // wrapping past the end of the (shrinking) circle back to the front.\n" +
+        "    current = (current + k - 1) % circle.length;\n" +
+        "    // Remove the eliminated person; every later element shifts down by one.\n" +
+        "    circle.splice(current, 1);\n" +
+        "    // current already points at the next person to start counting from.\n" +
+        "  }\n" +
+        "  // One person remains — their original position is the answer.\n" +
+        "  return circle[0];\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "Every elimination removes one element from an array, which is O(n) work on its own (everything after " +
+        "it has to shift down), and there are up to `n - 1` eliminations — O(n²) total. Can we do better?\n\n" +
+        "Key observation: solving the elimination for `n` people is really just solving it for `n - 1` people, " +
+        "then correcting for the one extra person who joined the circle. If we already know the survivor's " +
+        "position `J(m - 1)` in a circle of `m - 1` people, adding one more person and re-running the exact " +
+        "same k-counting rule shifts everyone's numbering by the same amount — the survivor's position in the " +
+        "`m`-person circle is always `(J(m - 1) + k) mod m`. That's the same bottom-up recurrence idea behind " +
+        "[Dynamic programming](/study-guide/algos/topic/dynamic-programming): solve the smallest subproblem " +
+        "first (a circle of one person trivially survives at position 0) and build the answer up to the full " +
+        "size, one person at a time, without ever touching an array.\n\n" +
+        "In the stored solution this collapses to a single running variable, `survivor`, updated once per " +
+        "iteration of `people` from `2` up to `n` — the same names used below.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "n = 5, k = 2 — rebuilding the survivor from a 1-person circle up to 5",
+      lane: [1, 2, 3, 4, 5],
+      showIndices: false,
+      frames: [
+        {
+          pointers: [{ name: "people", at: 0 }],
+          action: "survivor = J(1) = 0",
+          caption: "Base case: a circle of one person needs no elimination — they trivially survive at position 0.",
+        },
+        {
+          pointers: [{ name: "people", at: 1 }],
+          marked: [0],
+          action: "survivor = (0 + 2) % 2 = 0",
+          caption: "Grow to 2 people: the previous survivor's position shifts by k (=2), wrapped mod the new circle size.",
+        },
+        {
+          pointers: [{ name: "people", at: 2 }],
+          marked: [0, 1],
+          action: "survivor = (0 + 2) % 3 = 2",
+          caption: "Growing to 3 people finally moves the survivor away from position 0.",
+        },
+        {
+          pointers: [{ name: "people", at: 3 }],
+          marked: [0, 1, 2],
+          action: "survivor = (2 + 2) % 4 = 0",
+          caption: "At 4 people the shift wraps back around to 0 — the mod is doing real work here, not just adding.",
+        },
+        {
+          pointers: [{ name: "people", at: 4 }],
+          marked: [0, 1, 2, 3],
+          action: "survivor = (0 + 2) % 5 = 2; loop ends",
+          caption: "The circle reaches its full size of 5 and the recurrence returns 2 — the same survivor a full hand simulation of the eliminations (1, 3, 0, 4) produces.",
+        },
+      ],
+    },
+    {
+      kind: "walkthrough",
+      heading: "n = 4, k = 6 — k larger than the circle itself; the mod folds the wraparound in for free",
+      lane: [1, 2, 3, 4],
+      showIndices: false,
+      frames: [
+        {
+          pointers: [{ name: "people", at: 0 }],
+          action: "survivor = J(1) = 0",
+          caption: "Base case, same as always: one person needs no elimination.",
+        },
+        {
+          pointers: [{ name: "people", at: 1 }],
+          marked: [0],
+          action: "survivor = (0 + 6) % 2 = 0",
+          caption: "k (=6) is three times the circle size, but the mod folds the extra laps in automatically — no special-casing k > people needed.",
+        },
+        {
+          pointers: [{ name: "people", at: 2 }],
+          marked: [0, 1],
+          action: "survivor = (0 + 6) % 3 = 0",
+          caption: "Still 0 — the running survivor hasn't had to move yet at this size.",
+        },
+        {
+          pointers: [{ name: "people", at: 3 }],
+          marked: [0, 1, 2],
+          action: "survivor = (0 + 6) % 4 = 2; loop ends",
+          caption: "At the full circle of 4 the same formula lands on position 2 — matching a hand simulation where the count of 6 wraps a full lap of 4 plus 2 more before each elimination.",
+        },
+      ],
+    },
+  ],
+
+  "triangle-numbers": [
+    {
+      kind: "prose",
+      body:
+        "A first pass builds the actual row: start from row 1 (`[1]`) and, row by row, sum each entry's up-to-" +
+        "three parents from the row above, until row `n` is built — then scan that row left to right for the " +
+        "first even value.",
+    },
+    {
+      kind: "code",
+      lang: "javascript",
+      caption: "Brute force — build row n directly, then scan for the first even value: O(n²) time, O(n) space.",
+      source:
+        "function triangleNumbers(n) {\n" +
+        "  // Row 1 is just [1]; row[i] holds the entry at position i (0-indexed) of the current row.\n" +
+        "  let row = [1];\n" +
+        "  // Build each row from the one before it, up to row n.\n" +
+        "  for (let r = 2; r <= n; r++) {\n" +
+        "    // Row r has two more entries than row r - 1: one extra sticking out on each side.\n" +
+        "    const next = new Array(row.length + 2).fill(0);\n" +
+        "    // Every entry of the previous row fans out into the three positions below it\n" +
+        "    // (above-left, above, above-right) in the new row.\n" +
+        "    for (let i = 0; i < row.length; i++) {\n" +
+        "      next[i] += row[i];     // above-left parent\n" +
+        "      next[i + 1] += row[i]; // above parent\n" +
+        "      next[i + 2] += row[i]; // above-right parent\n" +
+        "    }\n" +
+        "    row = next;\n" +
+        "  }\n" +
+        "  // Scan the finished row left to right for the first even value.\n" +
+        "  for (let i = 0; i < row.length; i++) {\n" +
+        "    if (row[i] % 2 === 0) return i + 1; // 1-indexed position\n" +
+        "  }\n" +
+        "  // No even value anywhere in the row.\n" +
+        "  return -1;\n" +
+        "}",
+    },
+    {
+      kind: "prose",
+      body:
+        "This is O(n²) time to build every row up to `n` — each of the `n` rows is itself up to `2n - 1` " +
+        "entries long, and only the current and next row are ever live at once, so the space is O(n), not " +
+        "O(n²). Worse, the entries themselves grow combinatorially, overflowing ordinary number types long " +
+        "before `n` gets anywhere near the stated 10^9 bound. Can we do better?\n\n" +
+        "Key observation: we never actually need the row's *values* — only which entries are even. Since every " +
+        "entry is the sum of up to three parents, whether an entry is even or odd depends only on the " +
+        "**parities** of its parents, not their magnitudes. Reducing the whole triangle mod 2 turns it into a " +
+        "much smaller, self-similar pattern driven by `n`'s binary representation — the same kind of parity " +
+        "reasoning behind [Bit manipulation](/study-guide/algos/topic/bit-manipulation).\n\n" +
+        "Tracking that reduced pattern shows a fixed rule that holds for every row from 3 onward: an **odd** " +
+        "row number always puts the first even entry at position 2; a row number **divisible by 4** always " +
+        "puts it at position 3; and a row number that's even but **not** divisible by 4 always puts it at " +
+        "position 4. Rows 1 and 2 are the only two rows that are entirely odd, so they're handled as a direct " +
+        "special case instead.\n\n" +
+        "**Bridging the two:** the walkthrough below still scans an actual row left to right, because that's " +
+        "the clearest way to *see* what \"first even position\" means — but the stored optimal solution never " +
+        "builds a row at all. It reads off `n`'s parity and `n % 4` and returns the position directly, in " +
+        "O(1). Row 6 below is even with `6 % 4 == 2`, and the scan lands on position 4 — exactly what the " +
+        "closed-form formula returns for `n = 6`, without ever materializing a single row entry.\n\n" +
+        "Walking it through:",
+    },
+    {
+      kind: "walkthrough",
+      heading: "row 6 = [1, 5, 15, 30, 45, 51, 45, 30, 15, 5, 1] — scanning for the first even value",
+      lane: [1, 5, 15, 30, 45, 51, 45, 30, 15, 5, 1],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "i", at: 0 }],
+          action: "row[0] = 1 is odd → i++",
+          caption: "Start scanning from the left; row 6 opens with three odd entries in a row.",
+        },
+        {
+          pointers: [{ name: "i", at: 1 }],
+          marked: [0],
+          action: "row[1] = 5 is odd → i++",
+          caption: "Still odd — nothing to report yet.",
+        },
+        {
+          pointers: [{ name: "i", at: 2 }],
+          marked: [0, 1],
+          action: "row[2] = 15 is odd → i++",
+          caption: "A third odd entry; the scan keeps moving right.",
+        },
+        {
+          pointers: [{ name: "i", at: 3 }],
+          marked: [0, 1, 2],
+          action: "row[3] = 30 is even → return i + 1",
+          caption: "The first even value, 30, sits at 1-indexed position 4 — matching the closed form's " +
+            "\"n even, n % 4 == 2 → 4\" rule for n = 6.",
+        },
+      ],
+    },
+    {
+      kind: "walkthrough",
+      heading: "row 2 = [1, 1, 1] — the only nontrivial row with no even value at all",
+      lane: [1, 1, 1],
+      showIndices: true,
+      frames: [
+        {
+          pointers: [{ name: "i", at: 0 }],
+          action: "row[0] = 1 is odd → i++",
+          caption: "Row 2 is entirely odd. Start the same left-to-right scan.",
+        },
+        {
+          pointers: [{ name: "i", at: 1 }],
+          marked: [0],
+          action: "row[1] = 1 is odd → i++",
+          caption: "Still odd.",
+        },
+        {
+          pointers: [{ name: "i", at: 2 }],
+          marked: [0, 1],
+          action: "row[2] = 1 is odd → i++",
+          caption: "The last entry is also odd.",
+        },
+        {
+          marked: [0, 1, 2],
+          action: "i reaches row.length (3) → loop exits → return -1",
+          caption: "The scan finishes without ever finding an even value. Rows 1 and 2 are the only two rows " +
+            "this happens for — the closed-form solution special-cases n = 1 and n = 2 directly instead of " +
+            "scanning.",
+        },
+      ],
+    },
+  ],
 };
 
 /**
@@ -11500,6 +12062,260 @@ export const PROBLEM_EXTRAS: Record<string, { complexity?: Section[]; testCases?
         args: [0x87654321],
         expected: 0x4b9a8312,
         note: "General mixed-nibble value with both matched and swapped pairs throughout the word.",
+      },
+    ],
+  },
+
+  "spiral-matrix": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(m·n). Here's why:\n\n" +
+          "- Each of the four edge passes (top row, right column, bottom row, left column) advances a bound " +
+          "that only ever shrinks, so across the whole run each bound moves inward at most `m` or `n` times " +
+          "total.\n" +
+          "- Together the four passes partition the grid into concentric rings, and every cell is pushed to " +
+          "the output exactly once as its ring is walked.\n\n" +
+          "So the total work is proportional to the cell count: **O(m·n)**, where `m` and `n` are the matrix's " +
+          "dimensions. We can't do better — any correct solution has to look at every cell at least once.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1) extra, not counting the output. Here's why:\n\n" +
+          "- The brute-force baseline keeps a `visited` boolean grid with one entry per cell — O(m·n) extra " +
+          "space.\n" +
+          "- The stored solution drops that grid entirely: it tracks only the four bound variables `top`, " +
+          "`bottom`, `left`, `right` — O(1) extra space, regardless of the matrix's size.\n\n" +
+          "So the optimization trades the O(m·n) visited grid for **O(1)** extra space. The only space that " +
+          "scales with the input is the `out` array holding the `m × n` result values, which every correct " +
+          "solution has to produce.",
+      },
+    ],
+    testCases: [
+      {
+        args: [[[42]]],
+        expected: [42],
+        note: "1×1 matrix — the top-row pass emits the only cell, then both bounds immediately cross.",
+      },
+      {
+        args: [[[10, 20, 30]]],
+        expected: [10, 20, 30],
+        note: "A single row: only the top-row pass ever fires; the guarded bottom-row pass never runs because bottom < top right after it.",
+      },
+      {
+        args: [[[1], [2], [3], [4]]],
+        expected: [1, 2, 3, 4],
+        note: "A single column: the top-row pass takes one cell, then the (unguarded) right-column pass walks the rest top to bottom.",
+      },
+      {
+        args: [[[5, 5], [5, 5]]],
+        expected: [5, 5, 5, 5],
+        note: "Every value identical — the walk is purely positional, so four indistinguishable values still come out in the right order.",
+      },
+      {
+        args: [[[1, 2, 1], [2, 1, 2]]],
+        expected: [1, 2, 1, 2, 1, 2],
+        note: "Repeated values scattered across the grid — the algorithm tracks indices, not values, so duplicates don't confuse the walk.",
+      },
+    ],
+  },
+
+  "reverse-integer": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(d), where `d` is the number of decimal digits in `x`. Here's why:\n\n" +
+          "- The `while` loop runs once per digit: each iteration does O(1) work — a `% 10`, an integer " +
+          "division, and a bound check.\n" +
+          "- A signed 32-bit integer has at most 10 decimal digits, so the loop runs at most 10 times no matter " +
+          "how large `x` gets within that range.\n\n" +
+          "So the time is **O(d)** — and since `d` is bounded by the fixed 32-bit input width, it's effectively " +
+          "**O(1)** for this problem.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1). Here's why:\n\n" +
+          "- Only a fixed handful of scalars are kept — `result`, `digit`, and the two bound constants — " +
+          "regardless of how many digits `x` has.\n" +
+          "- Unlike the brute-force string version, no intermediate string or array is ever built.\n\n" +
+          "So the extra space is **O(1)**, not counting the input and output integers themselves.",
+      },
+    ],
+    testCases: [
+      { args: [0], expected: 0, note: "Zero reverses to itself — the loop body never runs." },
+      { args: [5], expected: 5, note: "A single digit has nothing to reverse." },
+      {
+        args: [-45],
+        expected: -54,
+        note: "Negative input — JS's sign-preserving % carries the sign through without extra bookkeeping.",
+      },
+      {
+        args: [1200],
+        expected: 21,
+        note: "Two trailing zeros in x become leading zeros after reversal, and integer arithmetic drops them for free.",
+      },
+      {
+        args: [5555],
+        expected: 5555,
+        note: "All digits identical — the rebuilt number matches the input exactly.",
+      },
+      {
+        args: [-2147483642],
+        expected: 0,
+        note: "Reverses to -2463847412, past the signed 32-bit floor of -2^31 — the guard fires and returns 0.",
+      },
+    ],
+  },
+
+  "max-points-on-a-line": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n²). Here's why:\n\n" +
+          "- The outer loop tries each of the `n` points in turn as the focal point.\n" +
+          "- For each focal point, the inner loop visits the other `n - 1` points, doing O(1) hash-map " +
+          "get/set work plus a `gcd` reduction that's effectively O(1) over this problem's bounded " +
+          "coordinate range.\n\n" +
+          "So the two nested loops multiply to **O(n²)** — down from the pairwise cross-product brute " +
+          "force's O(n³), since fixing one focal point collapses what used to be a fresh O(n) rescan for " +
+          "every candidate pair into a single grouping pass.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(n). Here's why:\n\n" +
+          "- The `slopeCounts` map holds one entry per distinct slope seen from the current focal point — " +
+          "up to `n - 1` entries if every other point sits on its own line through it.\n" +
+          "- Only one focal point's map is alive at a time; it's discarded and rebuilt fresh for the next " +
+          "focal point, so the maps never stack up.\n\n" +
+          "So the algorithm uses **O(n)** auxiliary space beyond the input, not counting the handful of " +
+          "scalar variables (`best`, `localBest`, the loop indices).",
+      },
+    ],
+    testCases: [
+      { args: [[[5, 5]]], expected: 1, note: "Smallest possible input — one point trivially lies on a line by itself." },
+      { args: [[[1, 2], [3, 4]]], expected: 2, note: "Any two distinct points always lie on some line together." },
+      {
+        args: [[[0, 0], [1, 0], [0, 1]]],
+        expected: 2,
+        note: "Smallest case where no line passes through three points — the best any pair can manage is 2.",
+      },
+      {
+        args: [[[2, -3], [2, 0], [2, 5], [7, 1]]],
+        expected: 3,
+        note: "Three points share x=2 (dx=0), exercising the vertical-line sentinel key; the fourth point sits off that line.",
+      },
+      {
+        args: [[[0, 0], [2, 3], [4, 6], [6, 9]]],
+        expected: 4,
+        note: "Every other point's slope from the origin reduces to 3/2 via gcd despite different raw rise/run — the integer key merges them into one bucket instead of drifting apart the way a float slope could.",
+      },
+    ],
+  },
+
+  "josephus-problem": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(n). Here's why:\n\n" +
+          "- The loop runs once for each circle size from `2` up to `n` — exactly `n - 1` iterations.\n" +
+          "- Each iteration does O(1) work: one addition, one modulo, one assignment — no inner loop and no " +
+          "array operation.\n\n" +
+          "So the total time is `(n - 1) × O(1)` = **O(n)** — a strict improvement over the O(n²) array " +
+          "simulation, and asymptotically optimal, since the survivor genuinely depends on the shift at every " +
+          "circle size from 1 up to n.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1). Here's why:\n\n" +
+          "- Only a single running scalar, `survivor`, carries information from one iteration to the next.\n" +
+          "- Unlike the brute-force simulation, no array holding all `n` people is ever built.\n\n" +
+          "So the extra space is **O(1)**, regardless of how large `n` gets — a strict improvement over the " +
+          "brute force's O(n) circle array.",
+      },
+    ],
+    testCases: [
+      { args: [1, 1], expected: 0, note: "Smallest possible circle — one person survives with no eliminations at all." },
+      {
+        args: [2, 5],
+        expected: 1,
+        note: "Two people; k's parity (here odd) is all that matters — 5 mod 2 behaves just like k = 1.",
+      },
+      {
+        args: [4, 1],
+        expected: 3,
+        note: "k = 1 always eliminates the immediately-next person in order, so the last person standing is always index n - 1.",
+      },
+      {
+        args: [5, 12],
+        expected: 2,
+        note: "k (12) far exceeds the circle size at every step — the mod folds the extra laps in without any special-casing.",
+      },
+      {
+        args: [9, 4],
+        expected: 0,
+        note: "A moderate circle where the survivor lands back at the very first position, even though person 0 isn't eliminated first.",
+      },
+    ],
+  },
+
+  "triangle-numbers": {
+    complexity: [
+      {
+        kind: "prose",
+        body:
+          "**Time complexity:** O(1). Here's why:\n\n" +
+          "- The base-case check (`n === 1 || n === 2`) and the two parity checks that follow it (`n % 2`, " +
+          "`n % 4`) are each a single comparison.\n" +
+          "- No loop ever touches `n` — the same handful of operations run whether `n` is 3 or 10^9.\n\n" +
+          "So the total time is a fixed number of operations regardless of input size — **O(1)** — a decisive " +
+          "improvement over the brute force's O(n²) row-building, which wouldn't finish anywhere near the " +
+          "stated bound.",
+      },
+      {
+        kind: "prose",
+        body:
+          "**Space complexity:** O(1). Here's why:\n\n" +
+          "- Only the input `n` and a couple of comparison results are ever held — no row or auxiliary array " +
+          "is allocated.\n" +
+          "- Contrast with the brute force, which keeps a full row in memory (up to `2n - 1` entries, each " +
+          "growing combinatorially large).\n\n" +
+          "So the extra space is **O(1)**, independent of how large `n` gets.",
+      },
+    ],
+    testCases: [
+      { args: [1], expected: -1, note: "Row 1 — a single odd entry, so there's no even value at all." },
+      {
+        args: [2],
+        expected: -1,
+        note: "Row 2 — still entirely odd ([1, 1, 1]); the only other row with no even value.",
+      },
+      {
+        args: [11],
+        expected: 2,
+        note: "Odd row number: the first even value always sits at position 2, for every row from 3 on.",
+      },
+      {
+        args: [16],
+        expected: 3,
+        note: "Row number divisible by 4: the first even value always sits at position 3.",
+      },
+      {
+        args: [18],
+        expected: 4,
+        note: "Even row number that isn't divisible by 4 (18 % 4 == 2): the first even value always sits at position 4.",
+      },
+      {
+        args: [123456789],
+        expected: 2,
+        note: "A large odd row number — the closed form answers instantly regardless of scale, unlike the O(n²) row-building brute force.",
       },
     ],
   },

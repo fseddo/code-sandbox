@@ -6,6 +6,8 @@ export const divideAndConquer = {
   category: "algorithms",
   summary: "Split into independent subproblems, solve recursively, combine — merge sort is the archetype.",
   tags: ["divide-and-conquer"],
+  priority: "mid",
+  estimatedMinutes: 45,
   parts: {
     definition: [
       {

@@ -93,20 +93,27 @@ function spiralOrder(matrix: number[][]): number[] {
       code: {
         javascript: `function spiralOrder(matrix) {
   const out = [];
+  // Four bounds mark the current outer ring; each shrinks inward once its edge is walked.
   let top = 0;
   let bottom = matrix.length - 1;
   let left = 0;
   let right = matrix[0].length - 1;
   while (top <= bottom && left <= right) {
+    // Top row, left to right.
     for (let j = left; j <= right; j++) out.push(matrix[top][j]);
     top++;
+    // Right column, top to bottom (row "top" is now one past the row just consumed).
     for (let i = top; i <= bottom; i++) out.push(matrix[i][right]);
     right--;
+    // Guard: a single remaining row would already be exhausted by the two passes above.
     if (top <= bottom) {
+      // Bottom row, right to left.
       for (let j = right; j >= left; j--) out.push(matrix[bottom][j]);
       bottom--;
     }
+    // Guard: a single remaining column would already be exhausted by the passes above.
     if (left <= right) {
+      // Left column, bottom to top.
       for (let i = bottom; i >= top; i--) out.push(matrix[i][left]);
       left++;
     }
@@ -115,20 +122,27 @@ function spiralOrder(matrix: number[][]): number[] {
 }`,
         typescript: `function spiralOrder(matrix: number[][]): number[] {
   const out: number[] = [];
+  // Four bounds mark the current outer ring; each shrinks inward once its edge is walked.
   let top = 0;
   let bottom = matrix.length - 1;
   let left = 0;
   let right = matrix[0].length - 1;
   while (top <= bottom && left <= right) {
+    // Top row, left to right.
     for (let j = left; j <= right; j++) out.push(matrix[top][j]);
     top++;
+    // Right column, top to bottom (row "top" is now one past the row just consumed).
     for (let i = top; i <= bottom; i++) out.push(matrix[i][right]);
     right--;
+    // Guard: a single remaining row would already be exhausted by the two passes above.
     if (top <= bottom) {
+      // Bottom row, right to left.
       for (let j = right; j >= left; j--) out.push(matrix[bottom][j]);
       bottom--;
     }
+    // Guard: a single remaining column would already be exhausted by the passes above.
     if (left <= right) {
+      // Left column, bottom to top.
       for (let i = bottom; i >= top; i--) out.push(matrix[i][left]);
       left++;
     }

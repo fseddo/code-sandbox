@@ -28,9 +28,9 @@
 | Greedy | `greedy` | yes |
 | Sort and Search | `sorting` | yes |
 | Bit Manipulation | `bit-manipulation` | yes |
-| Math and Geometry | `math` | no |
+| Math and Geometry | `math` | yes |
 
-Per-chapter problem counts (deduped BBG problems): Intervals 3 · Prefix Sums 4 · Trees 14 · Tries 3 · Graphs 11 · Backtracking 5 · Dynamic Programming 9 BBG + 1 non-BBG extra (10 built) · Greedy 3 (confirmed) · Sort and Search 4 (confirmed) · Bit Manipulation 3 (confirmed) · Math and Geometry 6.
+Per-chapter problem counts (deduped BBG problems): Intervals 3 · Prefix Sums 4 · Trees 14 · Tries 3 · Graphs 11 · Backtracking 5 · Dynamic Programming 9 BBG + 1 non-BBG extra (10 built) · Greedy 3 (confirmed) · Sort and Search 4 (confirmed) · Bit Manipulation 3 (confirmed) · Math and Geometry 5 (confirmed).
 
 > Column legend — **In bank already?** is true iff the *suggested* bank id already exists as a key in `src/problems/data/problems/index.ts`. "off-catalog" = a BBG-original problem with no clean public LeetCode twin (lower mapping confidence; import from a self-contained spec). "sandbox concern" flags problems whose I/O shape (streaming, design/class, randomized, graph-build) may be awkward for the judge harness.
 
@@ -197,17 +197,22 @@ Read each file's contents (not just filenames) to confirm the exact function sig
 
 ---
 
-## Math and Geometry (6)
+## Math and Geometry (5 — confirmed)
+
+**Resolved (2026-08):** re-fetched `python3/Math and Geometry/` directly from the BBG repo tree (GitHub API directory listing + file contents) during the build, and cross-checked lesson numbering against the book's own table of contents (an offline mirror of the "Coding Interview Patterns" practice site lists all 120 lessons by number/title — chapter 19 "Math and Geometry" is lessons 115–120: one intro + **5** problems, not 6). The original 6-row estimate was wrong on two counts:
+
+- The directory has 6 files, but `josephus.py` (recursive) and `josephus_optimized.py` (iterative O(n)) are two solutions of **one** problem — same collapsing pattern as every other chapter. So 6 files → 5 distinct problems, matching the book's own lesson count exactly. There is no "unconfirmed 6th member" — the row was padding.
+- **"Triangle Numbers" is *not* LC 611 Valid Triangle Number.** Reading `triangle_numbers.py` shows a 3-line closed-form `n → {2,3,4}` function that doesn't match LC 611's signature (a triple-counting problem) at all. Reverse-engineered against a HackerRank problem of the same name and mechanics (found via web search, then independently verified by simulation for n=3..200 with zero mismatches): it's a **trinomial-triangle parity puzzle** — row 1 is the single vertex `[1]`; each further row is built by summing, for every position, the value directly above plus its two upper diagonal neighbors (missing neighbors = 0), so row `n` has `2n-1` entries; given `n`, return the 1-indexed position (from the left) of the first even number in that row, or `-1` if the row has none (true only for n=1, n=2 — every row n≥3 has one). BBG's O(1) formula (`n%2!=0→2`; `n%4==0→3`; else→4) is a closed-form shortcut for this, valid for n≥3. Off-catalog, no LC twin; imported from this self-derived spec, not scraped verbatim from either source.
+- `reverse_32_bit_integer.py`'s presence here (not in Bit Manipulation) was already confirmed during the Bit Manipulation chapter build — re-confirmed here: it's LC 7 Reverse Integer (value reversal, not bit reversal), already in the bank as `reverse-integer`.
 
 | BBG problem name | Suggested bank id/slug | In bank already? | Mapping confidence | Notes |
 | --- | --- | --- | --- | --- |
-| Spiral Matrix | `spiral-matrix` | yes | high | LC 54 — already in bank. |
-| Reverse 32-Bit Integer | `reverse-integer` | yes | high | LC 7 — already in bank. |
-| Maximum Collinear Points | `max-points-on-a-line` | no | high | LC 149. Slope-counting via hash map; **floating-point/gcd** care needed. Sandbox concern: slope keys. |
-| The Josephus Problem | `josephus-problem` | no | mid | Off-catalog (classic, no single LC id; LC 1823 "Find the Winner of the Circular Game" is the closest). Clean (n, k) → int function. |
-| Triangle Numbers | `valid-triangle-number` | no | mid | LC 611 Valid Triangle Number (count triples forming a triangle) is the likely match — verify; BBG framing may differ. |
-| (Geometry extra) | — | — | low | 6 distinct repo problems after collapsing josephus variants; confirm against the book. |
+| Spiral Traversal | `spiral-matrix` | yes | high | LC 54 — already in bank. |
+| Reverse 32-Bit Integer | `reverse-integer` | yes | high | LC 7 — already in bank. Reverses the integer's *value* (with INT32 overflow → 0), not its bits — not LC 190. |
+| Maximum Collinear Points | `max-points-on-a-line` | no | high | LC 149. Slope-counting via hash map, focal-point technique; slope stored as a reduced `(rise, run)` integer pair (via GCD) to avoid float-precision collisions — read directly from BBG source. |
+| The Josephus Problem | `josephus-problem` | no | high | Off-catalog (no single LC id; LC 1823 "Find the Winner of the Circular Game" is a close cousin but distinct framing). Two BBG solution files (recursive `O(n)` recurrence `f(n,k) = (f(n-1,k)+k) % n`, and its iterative unwind) collapse to one problem: `josephus(n, k) -> int`. |
+| Triangle Numbers | `triangle-numbers` (off-catalog) | no | high (definition reverse-engineered + independently verified, see above) | Not LC 611. Trinomial-triangle first-even-position puzzle; `triangleNumbers(n) -> int`, 1-indexed position or `-1`. |
 
 ---
 
-*Last sourced: 2026-05. Re-source if the BBG repo restructures its chapter directories.*
+*Last sourced: 2026-08 (Math and Geometry re-verified against the BBG repo tree + book TOC). Re-source if the BBG repo restructures its chapter directories.*

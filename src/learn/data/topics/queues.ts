@@ -6,6 +6,8 @@ export const queues = {
   category: "data-structures",
   summary: "First-in, first-out — enqueue at the back, dequeue from the front. The engine behind BFS.",
   tags: ["queue"],
+  priority: "low",
+  estimatedMinutes: 20,
   parts: {
     definition: [
       {

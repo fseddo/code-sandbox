@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { LuArrowLeft } from "react-icons/lu";
 import type { ArticlePartDetail, ArticlePartKey, LearnTopic } from "@/learn/data/topic";
 import { ARTICLE_PARTS } from "@/learn/data/topic";
+import { getTopic } from "@/learn/data/topics";
 import { cn, typedEntries } from "@/lib/utils";
 import { FILTER_CACHE_KEY } from "@/lib/filterParams";
 import { FilteredBackLink } from "@/components/FilteredBackLink";
@@ -20,6 +22,8 @@ export const LearnArticle = ({
   problemsById: Record<string, ProblemSummary>;
 }) => {
   const accent = CATEGORY_ACCENT[topic.category];
+  // A facet of a broader topic (e.g. BFS under Graphs) — resolved server-side, same posture as `problemsById`.
+  const parentTopic = topic.parent ? getTopic(topic.parent) : undefined;
   // Top-level parts that have content — the "On this page" jump list (nested subsections are omitted).
   const navParts = typedEntries<ArticlePartKey, ArticlePartDetail>(ARTICLE_PARTS).filter(
     ([key, detail]) => !detail.parent && (topic.parts[key]?.length ?? 0) > 0,
@@ -37,6 +41,14 @@ export const LearnArticle = ({
           <LuArrowLeft className="size-3.5" />
           Concepts
         </FilteredBackLink>
+        {parentTopic && (
+          <Link
+            href={`/concepts/${parentTopic.slug}`}
+            className="inline-flex w-fit items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+          >
+            Part of {parentTopic.title}
+          </Link>
+        )}
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="mr-1 text-2xl font-semibold tracking-tight">{topic.title}</h1>
           <CategoryBadge category={topic.category} />

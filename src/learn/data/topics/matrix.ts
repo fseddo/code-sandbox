@@ -6,6 +6,8 @@ export const matrix = {
   category: "data-structures",
   summary: "2D arrays addressed by [row][col] — many grid problems are implicit graphs.",
   tags: ["matrix"],
+  priority: "mid",
+  estimatedMinutes: 30,
   parts: {
     definition: [
       {

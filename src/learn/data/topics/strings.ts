@@ -6,6 +6,8 @@ export const strings = {
   category: "data-structures",
   summary: "Immutable character sequences — indexing is O(1), but every 'edit' builds a new string.",
   tags: ["string"],
+  priority: "high",
+  estimatedMinutes: 45,
   parts: {
     definition: [
       {
