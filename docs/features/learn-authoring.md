@@ -22,10 +22,12 @@ The `parts` model makes the gradient natural — a stub just omits parts. Don't 
 | `operations` *(nested)* | Per-operation Big-O. Data structures, not techniques. | `complexity` | 1 table |
 | `whenToUse` | The recognition cue — what in a prompt signals this tool. | `prose` | 1 para |
 | `techniques` *(nested)* | The named variants (fixed/variable window; inward/fast-slow/staged). | `prose` | 1 para, **bold** each variant |
-| `relatedStructures` *(nested)* | How it relates to a sibling topic; link with `[[slug]]`. | `prose` | 2–3 sentences |
+| `relatedStructures` *(nested)* — renders as **Related concepts** | How it relates to a sibling topic; link with `[[slug]]`. | `prose` | 2–3 sentences |
 | `implementation` | The reusable template, lightly commented. | `code` (+ `caption`) | 1 snippet |
 | `example` | 1–3 *worked* problems: prose intuition → `walkthrough` → `code` → a closing complexity sentence. | `prose`, `walkthrough`, `code` | the centerpiece |
+| `tradeoffs` | *(optional here)* What the technique costs. Mainly a system-design part — see [system-design-authoring.md](system-design-authoring.md). | `comparison`, `prose` | 1 table |
 | `pitfalls` | The mistakes that cost interviews. | `callout` tone `warn` | 2–4 bullets |
+| `interviewAngle` | *(optional here)* How it comes up and the follow-up it attracts. Mainly a system-design part. | `callout` tone `tip` | 3–5 bullets |
 | `cornerCases` | Inputs that break a naïve solution. | `callout` tone `info` | 3–5 bullets |
 | `practice` | Bank problems to attempt. | `practice` | 2 essential + 2–4 recommended |
 | `resources` | Curated external links — **must be real URLs**, not invented. | `resources` | 2–4 items |

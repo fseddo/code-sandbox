@@ -195,6 +195,24 @@ export type TreeWalkthroughFrame = {
   caption?: string;
 };
 
+/** Which band of a system an architecture node sits in — drives its left→right column in the diagram. */
+export type ArchitectureTier = "client" | "edge" | "service" | "data";
+
+/** One component in an architecture diagram. `tier` places it; `note` renders as a smaller second line. */
+export type ArchitectureNode = { id: string; label: string; tier: ArchitectureTier; note?: string };
+
+/** A directed connection between two architecture nodes, labeled with what flows across it. */
+export type ArchitectureEdge = { from: string; to: string; label?: string; dashed?: boolean };
+
+/** One message in a sequence diagram. `from === to` draws a self-call; `dashed` marks a response/async hop. */
+export type SequenceStep = { from: string; to: string; label: string; note?: string; dashed?: boolean };
+
+/** One row of a comparison table — the row's label plus one cell per column after the first. */
+export type ComparisonRow = { label: string; cells: string[] };
+
+/** One back-of-envelope figure: the quantity, its value, and the arithmetic or source behind it. */
+export type EstimateRow = { quantity: string; value: string; derivation?: string };
+
 /** Fields shared by every section, regardless of kind — the spine of the discriminated union. */
 type SectionBase = {
   /** Optional sub-heading rendered above the section body. */
@@ -273,6 +291,30 @@ export type Section = SectionBase &
         nodes: TreeNodeSpec[];
         frames: TreeWalkthroughFrame[];
       }
+    | {
+        kind: "architecture";
+        /** Components, in any order — the renderer columns them by `tier`, so authors give no coordinates. */
+        nodes: ArchitectureNode[];
+        edges: ArchitectureEdge[];
+        caption?: string;
+      }
+    | {
+        kind: "sequence";
+        /** Lifelines, left to right. Every step's `from`/`to` must name one of these. */
+        actors: string[];
+        steps: SequenceStep[];
+        caption?: string;
+      }
+    | {
+        kind: "comparison";
+        /** Header cells. The first heads the row-label column and is usually the empty string. */
+        columns: string[];
+        /** Each row's `cells` must be `columns.length - 1` long. Cells take the inline formatter. */
+        rows: ComparisonRow[];
+        caption?: string;
+      }
+    /** A back-of-envelope estimate table. Every row shows its arithmetic or cites a source — never a bare number. */
+    | { kind: "numbers"; rows: EstimateRow[]; caption?: string }
     /** A bulleted aside in one of three tones — pitfalls (warn), corner cases (info), interview tips (tip). */
     | { kind: "callout"; tone: CalloutTone; items: string[] }
     /**
@@ -308,7 +350,9 @@ export type ArticlePartKey =
   | "relatedStructures"
   | "implementation"
   | "example"
+  | "tradeoffs"
   | "pitfalls"
+  | "interviewAngle"
   | "cornerCases"
   | "practice"
   | "resources";
@@ -328,10 +372,12 @@ export const ARTICLE_PARTS = {
   operations: { label: "Operations", parent: "definition" },
   whenToUse: { label: "When to use" },
   techniques: { label: "Techniques", parent: "whenToUse" },
-  relatedStructures: { label: "Related structures", parent: "whenToUse" },
+  relatedStructures: { label: "Related concepts", parent: "whenToUse" },
   implementation: { label: "Implementation" },
   example: { label: "Worked examples" },
+  tradeoffs: { label: "Tradeoffs" },
   pitfalls: { label: "Things to look out for" },
+  interviewAngle: { label: "In the interview" },
   cornerCases: { label: "Corner cases" },
   practice: { label: "Practice" },
   resources: { label: "Learning resources" },
@@ -351,7 +397,15 @@ export type LearnTag =
   | "rendering"
   | "scalability"
   | "networking"
-  | "api";
+  | "api"
+  | "distributed-systems"
+  | "messaging"
+  | "storage"
+  | "architecture"
+  | "security"
+  | "observability"
+  | "devops"
+  | "data-engineering";
 
 /**
  * How strongly an interview candidate should prioritize a topic — the study-plan ordering axis, *not* difficulty
@@ -362,6 +416,12 @@ export type Priority = "high" | "mid" | "low";
 
 /** A reference link, rendered in the article's Sources footer. */
 export type Source = { label: string; url: string };
+
+/**
+ * What kind of lesson this is, which is what decides its required part set — see
+ * `docs/features/system-design-authoring.md` §2. Authoring metadata only; nothing renders it.
+ */
+export type LessonArchetype = "orientation" | "mechanism" | "distinction" | "procedure";
 
 /**
  * A learning article. `parts` is keyed content: omit a part that doesn't apply; render order and nesting
@@ -384,6 +444,8 @@ export type LearnTopic = {
   priority?: Priority;
   /** Rough time to study the topic, in minutes — feeds the study-plan time budget. */
   estimatedMinutes?: number;
+  /** `systems` track only: the lesson shape whose part set this page is graded against. Defaults to `mechanism`. */
+  archetype?: LessonArchetype;
   parts: Partial<Record<ArticlePartKey, Section[]>>;
   sources?: Source[];
 };

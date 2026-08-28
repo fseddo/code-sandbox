@@ -41,6 +41,16 @@ import { serverSideRendering } from "./serverSideRendering";
 import { staticSiteGeneration } from "./staticSiteGeneration";
 import { restApis } from "./restApis";
 import { cachingAndCdns } from "./cachingAndCdns";
+import { whatIsSystemDesign } from "./whatIsSystemDesign";
+import { systemDesignInterviewFramework } from "./systemDesignInterviewFramework";
+import { scalability } from "./scalability";
+import { availability } from "./availability";
+import { reliability } from "./reliability";
+import { singlePointOfFailureSpof } from "./singlePointOfFailureSpof";
+import { latencyVsThroughput } from "./latencyVsThroughput";
+import { consistentHashing } from "./consistentHashing";
+import { capTheorem } from "./capTheorem";
+import { consistencyModels } from "./consistencyModels";
 
 /**
  * The learning bank, keyed by slug, in study-plan order: data structures, then algorithms/techniques,
@@ -96,6 +106,18 @@ export const topics = {
   "rest-apis": restApis,
   // Systems
   "caching-and-cdns": cachingAndCdns,
+  // System design — Introduction to system design
+  "what-is-system-design": whatIsSystemDesign,
+  "system-design-interview-framework": systemDesignInterviewFramework,
+  // System design — Core concepts
+  scalability,
+  availability,
+  reliability,
+  "single-point-of-failure-spof": singlePointOfFailureSpof,
+  "latency-vs-throughput": latencyVsThroughput,
+  "consistent-hashing": consistentHashing,
+  "cap-theorem": capTheorem,
+  "consistency-models": consistencyModels,
 } satisfies Record<string, LearnTopic>;
 
 export type TopicSlug = keyof typeof topics;

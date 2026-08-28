@@ -3,6 +3,7 @@ import { getTopic } from "@/learn/data/topics";
 import { listProblemSummaries, type ProblemSummary } from "@/problems/data/problems";
 import { TRACKS, resolveTrack, type TrackId } from "@/learn/data/curriculum";
 import { LearnArticle } from "@/learn/article/LearnArticle";
+import { TopicReadToggle } from "@/learn/guide/TopicReadToggle";
 
 // Prerender each track's chapter-intro topic pages; the valid {track, slug} pairs come from the curriculum.
 export const generateStaticParams = () =>
@@ -21,7 +22,14 @@ const GuideTopicPage = async ({ params }: { params: Promise<{ track: string; slu
     listProblemSummaries().map((problem) => [problem.id, problem]),
   );
 
-  return <LearnArticle topic={topic} problemsById={problemsById} />;
+  return (
+    <>
+      <div className="mx-auto flex max-w-5xl justify-end px-6 pt-6">
+        <TopicReadToggle slug={topic.slug} />
+      </div>
+      <LearnArticle topic={topic} problemsById={problemsById} />
+    </>
+  );
 };
 
 export default GuideTopicPage;

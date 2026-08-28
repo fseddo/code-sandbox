@@ -12,6 +12,8 @@ docs/
                   # — read the relevant one when working in that area
   improvements/   # remaining work, organized by area
                   # — punch lists, not explanations
+  briefs/         # per-chapter research records for the System design track
+                  # — the claim chain behind each authored lesson
 ```
 
 `features/` is the most-populated section (see [features/pad.md](features/pad.md)); `improvements/` holds the punch-lists ([improvements/algo-tester-gaps.md](improvements/algo-tester-gaps.md), [improvements/database-migration.md](improvements/database-migration.md)). `architecture/` fills in as cross-cutting patterns emerge; resist writing aspirational docs for code that doesn't exist yet.
@@ -23,6 +25,7 @@ docs/
 - **Touching the home page, problem catalog, routing, or progress tracking** → [features/navigation.md](features/navigation.md).
 - **Touching the Learn feature** (study topics, articles, `src/learn/`) → [features/learn.md](features/learn.md).
 - **Authoring or sourcing problems** (the problem bank, the catalog) → [features/problem-authoring.md](features/problem-authoring.md).
+- **Authoring a system design lesson** (the System design track, `src/learn/data/topics/`) → [features/system-design-authoring.md](features/system-design-authoring.md), with the chapter list + check-off state in [system-design-lesson-manifest.md](system-design-lesson-manifest.md).
 - **Adding a new feature area** → write a new `features/<area>.md` as a side effect; link it from the table in [`CLAUDE.md`](../CLAUDE.md).
 
 ## Principles for keeping docs useful

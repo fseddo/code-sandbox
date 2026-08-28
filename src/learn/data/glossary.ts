@@ -35,22 +35,26 @@ export type ResolvedTerm = { label: string; blurb: string; href?: string };
 
 /**
  * Look a `[[term]]` or `[[term|display label]]` up (term case-insensitive). Checks the curated glossary first,
- * then falls back to a direct topic-slug match. Returns null for an unknown term so prose falls back to plain text.
+ * then falls back to a direct topic-slug match. With no explicit display label, a matched topic renders under
+ * its own `title`. Returns null for an unknown term, which the caller degrades to a marked-but-unlinked span.
  */
 export const resolveTerm = (raw: string): ResolvedTerm | null => {
   const [term, displayLabel] = raw.split("|");
-  const label = displayLabel ?? term;
   const key = term.toLowerCase();
 
   const entry = GLOSSARY[key as keyof typeof GLOSSARY];
   if (entry) {
     if ("topicSlug" in entry) {
       const topic = getTopic(entry.topicSlug);
-      return topic ? { label, blurb: topic.summary, href: `/concepts/${entry.topicSlug}` } : { label, blurb: "" };
+      if (!topic) return { label: displayLabel ?? term, blurb: "" };
+      return { label: displayLabel ?? topic.title, blurb: topic.summary, href: `/concepts/${entry.topicSlug}` };
     }
-    return { label, blurb: entry.definition };
+    return { label: displayLabel ?? term, blurb: entry.definition };
   }
 
   const topic = getTopic(key);
-  return topic ? { label, blurb: topic.summary, href: `/concepts/${key}` } : null;
+  if (!topic) return null;
+  // No alias given: show the topic's own title rather than its slug, so `[[dynamic-programming]]` reads as
+  // prose instead of leaking kebab-case into a sentence.
+  return { label: displayLabel ?? topic.title, blurb: topic.summary, href: `/concepts/${key}` };
 };

@@ -11,6 +11,6 @@ export default defineConfig({
     // The integration suite spawns the judge worker per problem and races it against the 8s Submit
     // budget, so a single test can legitimately run several seconds — well past vitest's 5s default.
     testTimeout: 20000,
-    include: ["src/**/*.test.{ts,mjs}"],
+    include: ["src/**/*.test.{ts,tsx,mjs}"],
   },
 });

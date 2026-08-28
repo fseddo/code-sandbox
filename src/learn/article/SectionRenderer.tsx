@@ -11,6 +11,10 @@ import { NodeChainDiagram } from "./sections/NodeChainDiagram";
 import { PartitionDiagram } from "./sections/PartitionDiagram";
 import { MergeWalkthroughDiagram } from "./sections/MergeWalkthroughDiagram";
 import { TreeWalkthroughDiagram } from "./sections/TreeWalkthroughDiagram";
+import { ArchitectureDiagram } from "./sections/ArchitectureDiagram";
+import { SequenceDiagram } from "./sections/SequenceDiagram";
+import { ComparisonTable } from "./sections/ComparisonTable";
+import { NumbersTable } from "./sections/NumbersTable";
 import { CalloutSection } from "./sections/CalloutSection";
 import { PracticeList } from "./sections/PracticeList";
 import { ResourceList } from "./sections/ResourceList";
@@ -46,6 +50,14 @@ const renderBody = ({ section, problemsById }: SectionRendererProps) => {
       return <MergeWalkthroughDiagram section={section} />;
     case "treeWalkthrough":
       return <TreeWalkthroughDiagram section={section} />;
+    case "architecture":
+      return <ArchitectureDiagram section={section} />;
+    case "sequence":
+      return <SequenceDiagram section={section} />;
+    case "comparison":
+      return <ComparisonTable section={section} />;
+    case "numbers":
+      return <NumbersTable section={section} />;
     case "callout":
       return <CalloutSection section={section} />;
     case "practice":
@@ -70,12 +82,12 @@ const renderBody = ({ section, problemsById }: SectionRendererProps) => {
 };
 
 /** Figure kinds render their own heading (so heading + media + caption stay one aligned stack); others get it here. */
-const SELF_TITLED: readonly SectionKind[] = ["graph", "matrix"];
+const SELF_TITLED: readonly SectionKind[] = ["graph", "matrix", "architecture", "sequence"];
 
 export const SectionRenderer = (props: SectionRendererProps) => (
-  <div className="space-y-2">
+  <div className="space-y-3">
     {props.section.heading && !SELF_TITLED.includes(props.section.kind) && (
-      <h4 className="text-sm font-medium text-foreground">{props.section.heading}</h4>
+      <h4 className="text-sm font-semibold tracking-tight text-foreground">{props.section.heading}</h4>
     )}
     {renderBody(props)}
   </div>

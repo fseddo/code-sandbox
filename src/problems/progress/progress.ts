@@ -50,6 +50,12 @@ export const subscribeProgress = (onChange: () => void): (() => void) => {
   };
 };
 
+/**
+ * Namespace a study-guide topic's slug before using it as a progress key. Problems and topics share one
+ * localStorage map, and a topic slug can collide with a problem id — the prefix keeps them apart.
+ */
+export const topicProgressKey = (slug: string): string => `topic:${slug}`;
+
 export const loadProgress = (): ProgressMap => read();
 
 export const getEntry = (id: string): ProgressEntry | undefined => read()[id];

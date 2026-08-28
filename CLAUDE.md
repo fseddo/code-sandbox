@@ -4,7 +4,9 @@
 
 noodle — a CoderPad + LeetCode hybrid. Single Next.js 16 (App Router) app, React 19, no separate backend yet. The CoderPad pane is built; the algo problems feature (a typed bank of 100+ problems + a server-side judge running each submission in a terminable worker thread) is in [src/problems/](src/problems/) — see [docs/features/algo.md](docs/features/algo.md). Reference-type problems (linked lists, binary trees) and in-place problems are supported via the `io` / `checker` harness extensions documented in [problem-authoring.md](docs/features/problem-authoring.md).
 
-**Tests:** `npm test` (vitest) runs the io-converter unit tests plus every problem's reference solution through the real judge worker; `node scripts/verifyProblems.mjs [slug]` is the standalone equivalent. Run one of these after touching the tester, the problem bank, or `problem.ts`.
+**Tests:** `npm test` (vitest) runs the io-converter unit tests, the section-renderer geometry tests, plus every problem's reference solution through the real judge worker; `node scripts/verifyProblems.mjs [slug]` is the standalone equivalent. Run one of these after touching the tester, the problem bank, or `problem.ts`.
+
+**Prose gate:** `node scripts/lintTopics.mjs <slug>` (or `--chapter <slugs…>` / `--all`) checks a Learn topic for restatement, length-budget breaches in both directions (per part *and* whole-page), filler, and structural drift from the shape its declared `archetype` calls for — the mechanical floor under [system-design-authoring.md](docs/features/system-design-authoring.md) §6a. Run it on any topic you author or edit. It is a floor, not a ceiling: it catches near-verbatim repetition, not paraphrase.
 
 ## Stack notes
 
@@ -109,6 +111,7 @@ Auto-loaded CLAUDE files are not enough for area-specific work — read the rele
 | [src/learn/](src/learn/) — study topics, articles, section renderers | [docs/features/learn.md](docs/features/learn.md) |
 | [src/learn/data/topics/](src/learn/data/topics/) — authoring/deepening a study topic | [docs/features/learn-authoring.md](docs/features/learn-authoring.md) |
 | [src/learn/data/problemGuides.ts](src/learn/data/problemGuides.ts) — authoring a study-guide problem page | [docs/features/study-guide-authoring.md](docs/features/study-guide-authoring.md) |
+| A **System design** track lesson (`category: "systems"`) or a chapter build | [docs/features/system-design-authoring.md](docs/features/system-design-authoring.md) + [docs/system-design-lesson-manifest.md](docs/system-design-lesson-manifest.md) |
 
 Touching an area not listed here? That's a doc gap — flag it before writing.
 

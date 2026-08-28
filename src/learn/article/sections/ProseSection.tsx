@@ -5,7 +5,7 @@ type ProseSection = Extract<Section, { kind: "prose" }>;
 
 /** A blank-line-separated block whose every line starts with "- " renders as a bullet list; otherwise a paragraph. */
 export const ProseSection = ({ section }: { section: ProseSection }) => (
-  <div className="space-y-3 text-sm leading-relaxed text-muted-foreground">
+  <div className="space-y-4 text-sm leading-relaxed text-muted-foreground">
     {section.body.split(/\n\n+/).map((block, index) => {
       const lines = block.split("\n");
       const isList = lines.every((line) => line.trim().startsWith("- "));

@@ -25,11 +25,10 @@ export const GuideSidebar = ({
   const status = useProgress();
   const [overrides, setOverrides] = useState<Record<number, boolean>>({});
 
-  const problemIds = chapters.flatMap((chapter) =>
-    chapter.entries.flatMap((entry) => (entry.kind === "problem" ? [entry.id] : [])),
-  );
-  const completed = problemIds.filter((id) => status(id) === "complete").length;
-  const pct = problemIds.length ? Math.round((completed / problemIds.length) * 100) : 0;
+  // Every entry counts, article or problem — a curriculum step is done when the reader says it is.
+  const keys = chapters.flatMap((chapter) => chapter.entries.map((entry) => entry.progressKey));
+  const completed = keys.filter((key) => status(key) === "complete").length;
+  const pct = keys.length ? Math.round((completed / keys.length) * 100) : 0;
 
   return (
     <aside className="flex w-72 shrink-0 flex-col gap-4 overflow-y-auto border-r border-sidebar-border bg-sidebar px-3 py-5">
@@ -37,7 +36,7 @@ export const GuideSidebar = ({
         <h2 className="text-lg font-semibold tracking-tight">{trackTitle}</h2>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span className="tabular-nums">
-            {completed} / {problemIds.length} completed
+            {completed} / {keys.length} completed
           </span>
         </div>
         <div className="h-1.5 overflow-hidden rounded-full bg-muted">
@@ -82,10 +81,10 @@ export const GuideSidebar = ({
                             : "text-muted-foreground hover:bg-muted hover:text-foreground",
                         )}
                       >
-                        {entry.kind === "topic" ? (
-                          <LuFileText className="size-3.5 shrink-0 opacity-70" />
-                        ) : status(entry.id) === "complete" ? (
+                        {status(entry.progressKey) === "complete" ? (
                           <LuCircleCheck className="size-3.5 shrink-0 text-success" />
+                        ) : entry.kind === "topic" ? (
+                          <LuFileText className="size-3.5 shrink-0 opacity-70" />
                         ) : (
                           <LuCircle className={cn("size-3.5 shrink-0", DIFFICULTY_DOT[entry.difficulty])} />
                         )}

@@ -24,9 +24,13 @@ export const LearnArticle = ({
   const accent = CATEGORY_ACCENT[topic.category];
   // A facet of a broader topic (e.g. BFS under Graphs) — resolved server-side, same posture as `problemsById`.
   const parentTopic = topic.parent ? getTopic(topic.parent) : undefined;
+  // A part nests only when its parent part is actually present — an archetype that omits `whenToUse`
+  // (see system-design-authoring.md §2) would otherwise render `techniques` as a subsection of nothing.
+  const isNested = (detail: ArticlePartDetail) =>
+    Boolean(detail.parent && (topic.parts[detail.parent]?.length ?? 0) > 0);
   // Top-level parts that have content — the "On this page" jump list (nested subsections are omitted).
   const navParts = typedEntries<ArticlePartKey, ArticlePartDetail>(ARTICLE_PARTS).filter(
-    ([key, detail]) => !detail.parent && (topic.parts[key]?.length ?? 0) > 0,
+    ([key, detail]) => !isNested(detail) && (topic.parts[key]?.length ?? 0) > 0,
   );
 
   return (
@@ -75,7 +79,7 @@ export const LearnArticle = ({
         {typedEntries<ArticlePartKey, ArticlePartDetail>(ARTICLE_PARTS).map(([key, detail]) => {
           const blocks = topic.parts[key];
           if (!blocks?.length) return null;
-          const nested = Boolean(detail.parent);
+          const nested = isNested(detail);
           return (
             <ArticleSection
               key={key}

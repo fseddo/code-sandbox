@@ -114,6 +114,11 @@ The two kinds reach `complete` differently, and the asymmetry is deliberate:
   [`BuildToolbar`](../../src/problems/build/BuildToolbar.tsx) has a "Mark as done" toggle (`toggleComplete`), and opening
   one marks it `in-progress`. Build completions carry no `solution` — there's no graded answer to keep.
 
+Study-guide **articles** are a third case: they have no oracle either, so [TopicReadToggle](../../src/learn/guide/TopicReadToggle.tsx)
+marks one read via the same `toggleComplete`. Their keys are namespaced `topic:<slug>` (`topicProgressKey`) because
+topics and problems share one map and a slug can collide with a problem id. The guide sidebar's `x/N` counts every
+entry, article and problem alike — so the algos track's denominators now include each chapter's intro page.
+
 The store is **subscribable** (`subscribeProgress`): same-tab writes notify in-process listeners (the `storage`
 event only fires cross-tab). [`useProgress`](../../src/problems/progress/useProgress.ts) wraps it in `useSyncExternalStore`
 with a cached snapshot (re-renders only on a real content change) and an empty server snapshot so SSR markup
