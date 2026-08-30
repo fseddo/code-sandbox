@@ -85,10 +85,10 @@ the per-operation rule belongs to `cap-theorem` with the sibling pointing at it.
 Curriculum order (the table above) is the **reading** order and stays fixed — the reference sequences it
 beginner → advanced and later chapters lean on earlier ones. **Build** order front-loads interview weight:
 
-1. **02 Core Concepts** → **05 Load Balancing** → **08 Caching** → **09 Databases** → **10 Database Scaling** — the five chapters that carry most mid-level interviews, and the vocabulary every later chapter reuses.
-2. **04 Networking** → **06 API Fundamentals** → **07 Communication Patterns** → **11 Tradeoffs** — the second tier, plus the `Tradeoffs` chapter, which is cheap once the pairs it compares already exist.
+1. **02 Core Concepts** → **04 Load Balancing** → **07 Caching** → **08 Databases** → **09 Database Scaling Techniques** — the five chapters that carry most mid-level interviews, and the vocabulary every later chapter reuses.
+2. **03 Networking** → **05 API Fundamentals** → **06 Communication Patterns** → **11 Tradeoffs** — the second tier, plus the `Tradeoffs` chapter, which is cheap once the pairs it compares already exist.
 3. **12 Architectural Patterns** → **13 Microservices Patterns** → **14 Distributed System Fundamentals** → **15 Distributed Transactions** — senior/staff territory.
-4. **01 Introduction** → **10 Storage Systems** → **16 Data Structures for Scale** → **17 Big Data** → **18 Deployment** → **19 Observability** → **20 Advanced Security** — round out. Chapter 01 lands late on purpose: the 4-step framework page is easiest to write once the concepts it points at exist.
+4. ~~**01 Introduction**~~ (built first instead) → **10 Storage Systems** → **16 Data Structures for Scale** → **17 Big Data** → **18 Deployment** → **19 Observability** → **20 Advanced Security** — round out. Chapter 01 lands late on purpose: the 4-step framework page is easiest to write once the concepts it points at exist.
 
 **One chapter per run.** A chapter is a full slice — source → author every lesson → verify → audit → commit —
 matching how the algos track was built.
@@ -105,7 +105,7 @@ matching how the algos track was built.
 
 | ✓ | Lesson | Topic slug | Seed / notes |
 | --- | --- | --- | --- |
-| ☑ | What is system design? | `what-is-system-design` | Built + audited 2026-08-25. |
+| ☑ | What is system design? | `what-is-system-design` | Built 2026-08-25; re-audited to the current rubric 2026-08-30. **Ours by design**: the functional/non-functional requirement taxonomy has no counterpart lesson anywhere in the reference, and `system-design-interview-framework` depends on this page to define it (§1a case 4). Track anchor; `archetype: orientation`. |
 | ☑ | The 4-step interview framework | `system-design-interview-framework` | **Ours, not the reference's** — borders [`what-is-system-design`](https://algomaster.io/learn/system-design/what-is-system-design) §"How to Approach a Design Problem", which is what §1a's delta runs against. Requirements → estimation → high-level design → deep dives. Phase 2 case studies render against this skeleton — see [the mockup](improvements/mockups/detail-system-design.html). |
 
 ## 02. Core Concepts (8)

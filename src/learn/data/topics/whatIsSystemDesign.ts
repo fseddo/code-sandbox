@@ -27,7 +27,8 @@ export const whatIsSystemDesign = {
           "latency is bought with duplicated data you then have to keep fresh ([[what-is-caching|caching]]); high " +
           "availability is bought with redundancy, and redundancy is bought with hardware, coordination and " +
           "weaker consistency ([[cap-theorem|the CAP theorem]]).\n\n" +
-          "Nobody holds low latency, strong consistency, low cost and high availability at once. So a design is " +
+          "In practice no design holds low latency, strong consistency, low cost and high availability at once. " +
+          "So a design is " +
           "judged less by what it achieves than by whether you can say what you gave up first, and why that was " +
           "the cheapest thing to lose.",
       },
@@ -81,7 +82,7 @@ export const whatIsSystemDesign = {
             ],
           },
         ],
-        caption: "The vocabulary the rest of the track reuses: functional says what, non-functional says how well.",
+        caption: "The vocabulary the rest of the track reuses.",
       },
       {
         kind: "prose",
@@ -89,14 +90,17 @@ export const whatIsSystemDesign = {
         body:
           "The non-functional half is drawn from a small reusable list — named here, taught one lesson at a " +
           "time later.\n\n" +
-          "- **[[availability|Availability]]** — the fraction of time the system serves requests successfully.\n" +
+          "- **[[availability|Availability]]** — the fraction of time, or of requests, the system serves " +
+          "successfully.\n" +
           "- **[[latency-vs-throughput|Latency and throughput]]** — how long one request takes, quoted at a " +
           "percentile, against how many requests per second the system absorbs. Two different problems.\n" +
+          "- **[[reliability|Reliability]]** — whether it keeps producing the *right* answer, which is a " +
+          "different question from whether it answers at all.\n" +
           "- **Durability** — the probability that data, once acknowledged, survives.\n" +
           "- **[[consistency-models|Consistency]]** — whether a read is guaranteed to see the most recent write.\n" +
           "- **[[scalability|Scalability]]** — whether adding capacity keeps up with load.\n" +
-          "- **Cost** and **maintainability** — the two candidates forget, and the two that decide most real " +
-          "designs.\n\n" +
+          "- **Cost** and **maintainability** — the two candidates forget. AWS's Well-Architected framework " +
+          "makes them two of its six pillars.\n\n" +
           "Each of these gets a measurement (an **SLI**), a target for that measurement (an **SLO**), and " +
           "sometimes a customer contract with penalties attached (an **SLA**). The [[availability]] lesson owns " +
           "those three and the arithmetic that turns a target into minutes of downtime.",
@@ -113,21 +117,21 @@ export const whatIsSystemDesign = {
           "**[[database-types|database]]** holds what has to survive a restart. A " +
           "**[[message-queues|message queue]]** takes work the caller shouldn't wait for. " +
           "**[[three-pillars-observability|Observability]]** watches all of it.\n\n" +
-          "Design is deciding which of these you actually need, how many, and what each one costs you — a " +
-          "cache costs you staleness, a queue costs you ordering guarantees, a second region costs you " +
-          "consistency. The diagram below is the arrangement to reach for when a prompt gives you no reason " +
-          "to do anything cleverer.",
+          "Design is deciding which of these you actually need and how many. Start from the smallest thing " +
+          "that could work — client, load balancer, application servers, database — and add a box only when a " +
+          "requirement demands it. The diagram below shows where each one sits *when it is present*, not a " +
+          "starting point to trim down.",
       },
       {
         kind: "architecture",
         nodes: [
           { id: "client", label: "Client", tier: "client", note: "browser, mobile app, another service" },
           { id: "lb", label: "Load balancer", tier: "edge", note: "spreads load, hides dead hosts" },
-          { id: "app", label: "Application servers", tier: "service", note: "stateless — scale by adding" },
-          { id: "queue", label: "Message queue", tier: "service", note: "work the caller needn't wait for" },
+          { id: "app", label: "Application servers", tier: "service", note: "interchangeable; any one can serve any request" },
+          { id: "queue", label: "Message queue", tier: "service", note: "buffers a spike the workers absorb later" },
           { id: "worker", label: "Workers", tier: "service", note: "consume the queue" },
           { id: "cache", label: "Cache", tier: "data", note: "fast, small, allowed to be stale" },
-          { id: "db", label: "Database", tier: "data", note: "durable, slower, the source of truth" },
+          { id: "db", label: "Database", tier: "data", note: "the one box every other box defers to" },
         ],
         edges: [
           { from: "client", to: "lb", label: "request" },
@@ -139,7 +143,8 @@ export const whatIsSystemDesign = {
           { from: "worker", to: "db" },
         ],
         caption:
-          "The default arrangement. Every box is a later lesson, and every box is a cost — the value of the " +
+          "Where each component sits once a requirement has bought it. Every box is a later lesson, and the " +
+          "value of the " +
           "picture is knowing which one to remove when the requirements don't justify it.",
       },
     ],
@@ -174,18 +179,6 @@ export const whatIsSystemDesign = {
           "durability. Choose the wrong menu and your targets measure nothing anyone cares about.",
       },
     ],
-    pitfalls: [
-      {
-        kind: "callout",
-        tone: "warn",
-        items: [
-          "Stating a quality with no number. \"It should be scalable / highly available / fast\" cannot be violated, so it cannot be designed against — and it reads as junior.",
-          "Collapsing \"scale\" into a single figure. It is at least four: read QPS, write QPS, stored data size, and fan-out. They pull the design in different directions.",
-          "Reaching for a big-company architecture before any requirement demands it. Microservices, a message bus and a cache tier proposed at minute two are a signal against you ([[microservices-architecture|microservices]]).",
-          "Naming a component without naming what it costs. Every box above buys one quality and charges you in another; a design that only lists what it added has skipped the argument.",
-        ],
-      },
-    ],
     interviewAngle: [
       {
         kind: "prose",
@@ -203,8 +196,9 @@ export const whatIsSystemDesign = {
         tone: "tip",
         items: [
           "Give every non-functional number a unit and a window. \"p99 under 200 ms over a rolling 28 days\" invites a design discussion; \"fast\" invites nothing.",
+          "Don't reach for a big-company architecture before a requirement demands it — microservices, a message bus and a cache tier proposed at minute two are a signal against you ([[microservices-architecture|microservices]]).",
           "When two requirements fight, say so out loud and pick. Naming the conflict is worth more than resolving it quietly — and some sets are jointly unsatisfiable, which is a real answer ([[cap-theorem|the CAP theorem]]).",
-          "Two candidate designs can both be right. If you catch yourself hunting for the one intended solution, you are still in coding-interview mode: Meta describes its 45-minute design round as almost never involving code, opening instead with clarifying questions about scale, latency and storage.",
+          "Two candidate designs can both be right — the track takes that as its own position, and Meta describes its 45-minute design round as almost never involving code. If you catch yourself hunting for the one intended solution, you are still in coding-interview mode.",
         ],
       },
     ],

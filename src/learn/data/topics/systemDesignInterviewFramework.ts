@@ -43,7 +43,7 @@ export const systemDesignInterviewFramework = {
         kind: "prose",
         heading: "The four steps",
         body:
-          "**Step 1 · Understand the problem and scope (~5 min).** Get the functional list and two or three " +
+          "**Step 1 · Understand the problem and scope.** Get the functional list and two or three " +
           "*quantified* non-functional targets out of the interviewer, and write them where you can both see " +
           "them. [[what-is-system-design]] defines what those two kinds of requirement are; the move here is " +
           "purely how to extract them fast. Ask four questions and stop: what scale (users, writes per day)? " +
@@ -51,18 +51,20 @@ export const systemDesignInterviewFramework = {
           "**propose the answers yourself** — \"let's say 100M new links a day, 100:1 reads, p99 under " +
           "100 ms\" — and let the interviewer correct you. Proposing is faster than asking, and a corrected " +
           "number is a requirement you didn't have to negotiate for.\n\n" +
-          "**Step 2 · Back-of-the-envelope estimation (~5 min).** Convert the requirements into queries per " +
+          "**Step 2 · Back-of-the-envelope estimation.** Convert the requirements into queries per " +
           "second, storage and bandwidth. For every number you compute, name the decision it settles, out loud " +
           "and in the same breath — and if you can't name the decision, don't compute the number.\n\n" +
-          "**Step 3 · High-level design (~15 min).** Sketch the request path for the dominant operation " +
+          "**Step 3 · High-level design.** Sketch the request path for the dominant operation " +
           "first, not the whole system. Then name the datastore, and get explicit " +
           "agreement before going deeper — a wrong assumption is still cheap to fix here and expensive to fix " +
           "at minute 35.\n\n" +
-          "**Step 4 · Design deep dive (~15 min).** Pick the expansions off whichever step-1 target is hardest " +
-          "to hit, and announce each one with its *why* before you draw it. \"Reads are 100× " +
+          "**Step 4 · Design deep dive.** Pick the expansions off whichever step-1 target is hardest " +
+          "to hit, and announce each one with its *why* before you draw it. Make one of them a *failure* " +
+          "rather than a bottleneck — what breaks when this box dies, and what the system does about it " +
+          "([[single-point-of-failure-spof|single points of failure]]). \"Reads are 100× " +
           "writes, so I'll expand the read path\" does two jobs; the same expansion with no preamble does one.\n\n" +
-          "That is 40 minutes, not 45. The residue is the interviewer's introduction and your questions at the " +
-          "end; planning for a full 45 is a reliable way to get caught short. Keep the last minute for a recap " +
+          "That is 40 minutes, not 45: Meta publishes the round as 45 with the last five reserved for your " +
+          "questions, so planning for a full 45 is a reliable way to get caught short. Keep the last minute for a recap " +
           "of the tradeoffs you took.",
       },
       {
@@ -113,17 +115,18 @@ export const systemDesignInterviewFramework = {
           "Before the first question, put four headings on the board with their budgets — **Requirements** (5), " +
           "**Estimates** (5), **High-level design** (15), **Deep dives** (15) — and leave a blank block under " +
           "the first for functional bullets, non-functional numbers, and a labelled assumption list. The " +
-          "headings do two jobs: they make your pacing legible without you narrating it, and an empty block " +
+          "headings do two jobs: they hold the plan where you can both see it, so a transition costs three words " +
+          "rather than a sentence, and an empty block " +
           "under *Estimates* is a visible prompt to ask whether the arithmetic is wanted at all.\n\n" +
           "The arithmetic is the part worth rehearsing, because it has to run in your head while you talk. " +
           "Four shortcuts cover almost every prompt:\n\n" +
           "**A day is ~10⁵ seconds.** 86,400 rounds to 100,000, so *per day ÷ 10⁵ = per second* — 100M/day is " +
-          "~1,000/s. The 16% error is far inside the precision anything else here deserves.\n\n" +
+          "~1,000/s. The 16% error is far inside the precision anything else here deserves — the worked run below divides by the exact 86,400 and reports ~1.2k, and either is a fine interview answer.\n\n" +
           "**1M/day ≈ 12/s**, and scale from there. **Reads = writes × the ratio**, so pin the write rate " +
           "first and never estimate reads directly.\n\n" +
           "**For bytes, round the record to a power of ten, then multiply by the daily count.** 100M × 500 B = " +
           "5 × 10¹⁰ = 50 GB/day; × 365 for a year. A year is ~3 × 10⁷ seconds if you need to go the other way.\n\n" +
-          "**Carry one significant figure.** \"~1.2k writes/s\" is the answer; `1,157.4` is the same answer " +
+          "**Carry one or two significant figures.** \"~1.2k writes/s\" is the answer; `1,157.4` is the same answer " +
           "with two extra chances to slip under pressure.",
       },
     ],
@@ -220,7 +223,9 @@ export const systemDesignInterviewFramework = {
           "table, not the capacity number. The 50 GB a day is why a TTL or an archival tier is worth " +
           "proposing before anyone asks.\n\n" +
           "*5 GB hot set — so argue **against** a distributed cache.* The top 10M links fit in a single node's " +
-          "memory, so start with one cache and defer [[consistent-hashing|consistent hashing]] until the working set outgrows it. " +
+          "memory — though at 232k reads/s it is throughput, not capacity, that decides how many nodes you " +
+          "end up with, and that is the number to say out loud. Start with one cache and defer " +
+          "[[consistent-hashing|consistent hashing]] until one of the two outgrows it. " +
           "An estimate that buys you *simplicity* is the strongest use of this step; using a number to justify " +
           "adding a component is the easy direction.\n\n" +
           "*232k peak reads/s against ~1.2k writes/s.* The read path is the system. [[what-is-caching|caching]] and " +
@@ -268,38 +273,11 @@ export const systemDesignInterviewFramework = {
           "interviewer if back-of-the-envelope is necessary before diving into it\"*. `system-design-primer` " +
           "opens its worked solutions the same way. Hello Interview says to calculate only when it will " +
           "directly influence the design, and folds the API contract into its own step besides. All three make " +
-          "estimation conditional.",
-      },
-      {
-        kind: "comparison",
-        columns: ["", "Estimate upfront, as its own step (ours)", "Estimate on demand (all three sources)"],
-        rows: [
-          {
-            label: "What it buys",
-            cells: [
-              "Every later choice has a number behind it — you can't hand-wave shard count or cache size",
-              "Minutes back for the design itself, and no dead arithmetic left on the board",
-            ],
-          },
-          {
-            label: "What it costs",
-            cells: [
-              "Minutes spent on numbers the design never consults",
-              "You can reach a decision point with no number and stall there",
-            ],
-          },
-          {
-            label: "When it bites",
-            cells: [
-              "Product-design prompts, where the constraint is the feature set rather than the load",
-              "Prompts where one number flips the architecture — does the working set fit one node, or must it shard?",
-            ],
-          },
-        ],
-        caption:
-          "We hoist it as a *learning* scaffold: dropping a step you can already execute is far easier than " +
-          "inventing one under time pressure. In a real interview, follow the sources — do the arithmetic when " +
-          "the number changes a decision, say which decision, and otherwise ask whether it's wanted.",
+          "estimation conditional.\n\n" +
+          "We hoist it anyway, as a *learning* scaffold: dropping a step you can already execute is far easier " +
+          "than inventing one under time pressure. In a real interview, follow the sources — do the arithmetic " +
+          "when the number changes a decision, say which decision, and otherwise ask whether it is wanted at " +
+          "all.",
       },
     ],
     pitfalls: [
@@ -309,14 +287,10 @@ export const systemDesignInterviewFramework = {
         items: [
           "Spending 15 of your 45 minutes on requirements. It is the most common way to run out of time inside " +
             "the deep dives, which is where the senior signal actually lives.",
-          "Dead arithmetic — computing storage and QPS you never refer to again. This is every major framework's " +
-            "objection to upfront estimation and it is a fair one: a number that settles nothing consumed " +
-            "minutes and produced no decision.",
           "Estimating without stating assumptions. An unstated assumption makes the number unfalsifiable, and " +
             "reasoning the interviewer can't follow is reasoning you don't get credit for.",
-          "Going deep before the skeleton exists — a beautifully specified cache in front of a system whose " +
-            "write path was never drawn. The same bullet covers expanding a component without saying which " +
-            "non-functional target the expansion protects.",
+          "Expanding one component to production detail while another still has no arrow into it. A design " +
+            "with a fully specified cache and an undrawn write path reads as unfinished, not deep.",
           "Restarting the table when the scale moves (\"now make it 100\u00d7 that\"). Recompute only the rows " +
             "that change the design — usually storage, and whether the hot set still fits one node.",
         ],

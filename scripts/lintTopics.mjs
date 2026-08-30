@@ -275,7 +275,7 @@ const FIGURE_KINDS = ["architecture", "sequence", "comparison", "numbers"];
 const ARCHETYPE = {
   orientation: {
     required: ["definition", "techniques", "relatedStructures", "resources"],
-    discouraged: ["whenToUse", "tradeoffs", "implementation", "cornerCases"],
+    discouraged: ["whenToUse", "tradeoffs", "implementation", "cornerCases", "pitfalls"],
   },
   mechanism: {
     required: ["definition", "whenToUse", "techniques", "example", "tradeoffs", "pitfalls", "interviewAngle", "resources"],

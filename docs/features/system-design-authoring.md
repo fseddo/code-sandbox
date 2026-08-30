@@ -65,7 +65,13 @@ line; the **auditor** re-runs it against the finished page. Both produce the sam
 1. **Depth the track adds on purpose** — a sourced figure, a real-system worked example, the interview angle.
    This is the track's whole reason to exist; the reference is thin here and we outrank it.
 2. **A concept the reference teaches in a *different* lesson**, and the manifest assigns it to this one.
-3. **Ours by design** — a lesson or section the manifest records as our addition.
+3. **Ours by design** — a lesson or section the manifest records as our addition. If the content is right
+   and the manifest simply doesn't say so yet, the fix is a manifest row, **which the auditor opens at audit
+   time rather than reporting as a defect**.
+4. **Vocabulary a later lesson explicitly depends on.** Chapter 01's functional/non-functional taxonomy has no
+   counterpart lesson anywhere in the reference, isn't a figure or an example, and was only "ours by design"
+   because nobody had written the row — yet `system-design-interview-framework` names it as a prerequisite.
+   A term a sibling cites as already-defined is justified wherever it is defined.
 
 Anything else is drift, and drift is the mechanism by which a page about *what system design is* acquires four
 paragraphs on the economics of the fourth nine. **The commonest drift is a page annexing its sibling's
@@ -129,6 +135,11 @@ opinion. A chapter-02 brief put one reference at ~4,500 words when it is 1,781 �
 downstream figure inherited the error, including the per-lesson budget the author then wrote to. A brief whose
 altitude column is wrong is worse than one with no altitude column.
 
+**An over-2× ratio with a clean Extraneous column means the surplus is §7.13, not annexation.** Say so, and
+quantify it: count the words your restatement findings remove before pronouncing on altitude. On one chapter-01
+page that turned a vague "too long" into a specific 315-word cut list, and the residual was the worked example
+— the one thing §6a says never to cut.
+
 This is **corroboration, not a verdict**. Check *scope* first: if we cover strictly more concepts than the
 reference does, the delta's Extraneous column is the real finding and length is only its symptom. A page can't
 fail altitude without failing §7.21, and a comfortable ratio is useful mainly as licence to stop hunting for a
@@ -144,7 +155,7 @@ required, so something was written into it. **A part you have nothing to say in 
 
 | Archetype | The lesson is | Required parts | Omit unless the lesson genuinely has one |
 | --- | --- | --- | --- |
-| **Orientation** | A framing or vocabulary page — "what is X", "why this chapter exists". Teaches the map and the words, not a component. *Not* simply "the chapter anchor": anchor-ness is a fact about `parent`, and chapter 02's anchor is a Mechanism page. | `definition`, `techniques` (the vocabulary), `relatedStructures`, one figure, `resources` | `whenToUse` (you don't *choose* a framing), `tradeoffs`, `implementation`, `cornerCases` |
+| **Orientation** | *Falsifier: how many vocabularies does the page install?* One axis is Distinction; several unrelated word-lists handed off to later lessons is Orientation. A framing or vocabulary page — "what is X", "why this chapter exists". Teaches the map and the words, not a component. *Not* simply "the chapter anchor": anchor-ness is a fact about `parent`, and chapter 02's anchor is a Mechanism page. | `definition`, `techniques` (the vocabulary), `relatedStructures`, one figure, `resources` | `whenToUse` (you don't *choose* a framing), `tradeoffs`, `implementation`, `cornerCases`, **`pitfalls`** — vocabulary can't be got *wrong* in an interview-costing way, so its pitfalls come out as restatements of the thesis or as the next lesson's subject (3 of 4 bullets, on the first Orientation page audited) |
 | **Mechanism** | A component or technique you can adopt — caching, load balancing, WAL — **or a property you design toward, or a failure you design against**, where the adoptable thing is its remedy (availability → redundancy; SPOF → removing it). **The default archetype**, and the one §4's full part list was written for. | `definition`, `whenToUse`, `techniques`, `example`, `tradeoffs`, `pitfalls`, `interviewAngle`, `resources` | — (`implementation`, `cornerCases`, `relatedStructures` are the Full tier) |
 | **Distinction** | An X-vs-Y comparison — latency vs throughput, SQL vs NoSQL, strong vs eventual. The teaching *is* the axis that separates them. | `definition`, `techniques` + its `comparison`, `tradeoffs`, **`pitfalls`**, `interviewAngle`, `resources` | `implementation`, `example` (unless one real system makes the axis land) |
 | **Procedure** | A method the reader executes — the interview framework, a deployment or migration sequence. | `definition`, `techniques` (the steps), one worked run in `example` or `implementation`, `pitfalls`, `interviewAngle`, `resources` | `cornerCases` (fold into `pitfalls`), `relatedStructures` |
