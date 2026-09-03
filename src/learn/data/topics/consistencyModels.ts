@@ -41,7 +41,8 @@ export const consistencyModels = {
         body:
           "Reach for this vocabulary the moment a design has replicas **and** a read path that can land " +
           "somewhere other than where the write did — a follower, a cache, a second region.\n\n" +
-          "Then ask the question per data class, never per system: would a user notice the staleness, and would " +
+          "Then ask the question per data class — [[cap-theorem]] owns why the call is never per system — and " +
+          "ask it as: would a user notice the staleness, and would " +
           "it be *wrong*? A like count three seconds behind is nobody's incident. A comment missing from the " +
           "page immediately after you posted it is noticed within one second, by the one user who is certain " +
           "they are right. Those two answers buy different machinery, at very different prices.",

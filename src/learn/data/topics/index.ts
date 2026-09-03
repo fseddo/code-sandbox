@@ -51,6 +51,10 @@ import { latencyVsThroughput } from "./latencyVsThroughput";
 import { consistentHashing } from "./consistentHashing";
 import { capTheorem } from "./capTheorem";
 import { consistencyModels } from "./consistencyModels";
+import { loadBalancers } from "./loadBalancers";
+import { loadBalancingAlgorithms } from "./loadBalancingAlgorithms";
+import { dnsLoadBalancing } from "./dnsLoadBalancing";
+import { anycastRouting } from "./anycastRouting";
 
 /**
  * The learning bank, keyed by slug, in study-plan order: data structures, then algorithms/techniques,
@@ -118,6 +122,11 @@ export const topics = {
   "consistent-hashing": consistentHashing,
   "cap-theorem": capTheorem,
   "consistency-models": consistencyModels,
+  // System design — Load balancing
+  "load-balancers": loadBalancers,
+  "load-balancing-algorithms": loadBalancingAlgorithms,
+  "dns-load-balancing": dnsLoadBalancing,
+  "anycast-routing": anycastRouting,
 } satisfies Record<string, LearnTopic>;
 
 export type TopicSlug = keyof typeof topics;

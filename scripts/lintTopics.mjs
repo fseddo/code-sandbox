@@ -95,12 +95,22 @@ const knownSlugs = () =>
 const builtSlugs = knownSlugs();
 
 // ─── text extraction ────────────────────────────────────────────────────────
-/** Every reader-facing string in a section, tagged with the part it came from. `code.source` is excluded. */
+/**
+ * Every reader-facing string in a section, tagged with the part it came from. A `code` block's comments
+ * are prose the reader reads, so they go into the repetition pass — a chapter-04 page shipped code comments
+ * that duplicated two `pitfalls` bullets through a clean run, because `source` was skipped entirely. Only the
+ * comment lines are taken; the code itself is not prose and would poison the token matcher.
+ */
 const textsOf = (section, part, out) => {
   const push = (text, role) => {
     if (typeof text === "string" && text.trim()) out.push({ part, role, text });
   };
   push(section.heading, "heading");
+  if (typeof section.source === "string")
+    for (const line of section.source.split("\n")) {
+      const comment = line.match(/^\s*(?:\/\/|#|\*)\s?(.+)$/);
+      if (comment) push(comment[1], "prose");
+    }
   push(section.caption, "caption");
   push(section.body, "prose");
   (section.items ?? []).forEach((item) => push(item, "item"));
@@ -141,7 +151,9 @@ const sentences = (text) =>
     // A `- ` line renders as its own <li> (see ProseSection), so it is a unit regardless of punctuation.
     .flatMap((para) => para.split(/\n(?=\s*- )/))
     // Tolerate closing markup after the terminator — `…here?*` and `…settles.**` must still split.
-    .flatMap((para) => para.split(/(?<=[.!?][*`)"']{0,2})\s+(?=[*`"'—A-Z])/))
+    // `[` is in the lookahead because a sentence often opens with a `[[cross-link]]`, and without it
+    // the whole passage reads as one long sentence and trips the 45-word cap spuriously.
+    .flatMap((para) => para.split(/(?<=[.!?][*`)"']{0,2})\s+(?=[*`"'—\[A-Z])/))
     .map((s) => s.trim())
     .filter((s) => s && !/^\*\*[^*]+\*\*[.:]?$/.test(s))
     .map(stripMarkup)
@@ -343,10 +355,15 @@ const checkConsistency = (topic, findings, slugs) => {
 
   if (!kinds.some((k) => FIGURE_KINDS.includes(k)))
     fail(`No \`${FIGURE_KINDS.join("`/`")}\` section — §7.4 requires one load-bearing figure.`);
+  // §4 prescribes a `comparison` for `tradeoffs` *and* for `techniques` (the variant table), so neither is a
+  // discretionary figure. The budget is about how many pictures the author chose to add on top of the shape.
   const figureCount = kinds.filter((k) => FIGURE_KINDS.includes(k)).length;
-  const tradeoffFigures = (topic.parts?.tradeoffs ?? []).filter((s) => FIGURE_KINDS.includes(s.kind)).length;
-  if (figureCount - tradeoffFigures > 2)
-    fail(`${figureCount - tradeoffFigures} figures outside \`tradeoffs\`; §5 says three is a sign the page should split.`, "nice-to-fix");
+  const shapeFigures = ["tradeoffs", "techniques"].reduce(
+    (sum, part) => sum + (topic.parts?.[part] ?? []).filter((s) => s.kind === "comparison").length,
+    0,
+  );
+  if (figureCount - shapeFigures > 2)
+    fail(`${figureCount - shapeFigures} discretionary figures; §5 says three is a sign the page should split.`, "nice-to-fix");
 
   const linkMatches = [...JSON.stringify(topic.parts).matchAll(/\[\[([a-z0-9-]+)(\|[^\]]+)?\]\]/g)];
   const links = linkMatches.map((m) => m[1]);

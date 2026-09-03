@@ -110,6 +110,17 @@ Two further failures, both seen in chapter 02, both silent:
 - **Some reference lessons are paywalled.** When the body is unobtainable, the honest output is *unmeasurable*
   — say so and fall back to the scope check. An estimated ratio derived from a "N min read" byline is not a
   measurement, and §1a already bars reading times as inputs.
+  - **Run the delta against the lesson's neighbours instead.** Fetch the free lessons either side of it in the
+    reference's own order and grep them for the gated lesson's subject. A curriculum's neighbours declare their
+    handoffs: what they defer to it is its Missing column, and what they draw or tabulate about it is the best
+    candidate for the loss §1a requires you to name. Record it as a *neighbour-derived* scope check.
+  - **The gated page's nav payload still carries `difficulty`, `level` and `priority` per lesson.** Those
+    survive the paywall and are a free cross-check on our `priority` and tier.
+  - **"A delta with no losses" is unenforceable against a gated body**, and pushing on it invites the
+    manufactured opponent §1 forbids. "I looked and could not tell" is the correct Shared verdict there; a
+    confident one is suspect.
+  - **§7.21 falls back to the brief's owns/defers list** as the scope contract, since there is no counterpart
+    page to derive an Extraneous column from.
 
 **When your delta contradicts the brief's, the finding is against the brief.** A chapter-02 brief listed six
 sections that do not exist on its reference lesson, missed one that does, and overstated the reading time by
@@ -175,8 +186,20 @@ that tells you when not to read it proves a choice exists.
 **For `pitfalls`: can you name the passage elsewhere on the page that *fails to prevent* each mistake?** A
 pitfall exists because the page taught something and a reader could still get it wrong. If the answer is "the
 definition already says exactly this", the bullet is a restatement; if the answer is "nothing here teaches the
-thing you'd get wrong", the bullet belongs to another lesson. Both failure modes shipped in one chapter-02
+thing you'd get wrong", the bullet belongs to another lesson. A third case: if the bullet's payload is a
+*technique* with a warning bolted on the front so it would fit the part, let it be what it is and move it. And
+if you find yourself naming **three** passages, the page has a §7.13 cluster and the bullet is its third
+statement, not its first. Both failure modes shipped in one chapter-02
 `pitfalls` part, alongside a bullet the page's own worked example refuted.
+
+**`example` is what decides Mechanism against Distinction; `implementation` decides nothing.** Both
+archetypes list `implementation` as optional, so its absence cannot discriminate — a chapter-04 brief argued
+Distinction from exactly that and was wrong. The test that works: §2 omits `example` from Distinction *unless
+one real system makes the axis land*. If the page's worked example makes one **rung** land rather than the
+axis, it is a Mechanism page whose `techniques` happens to be a table.
+
+**For `interviewAngle`: name the passage the bullet would be redundant with if the reader had already read
+it.** The same shape as the `pitfalls` falsifier, and it caught two recycled bullets on its first outing.
 
 **A further falsifier, at row level, because the part-level ones cannot see the defect they miss.** For every
 `tradeoffs` row: *does it name a cost stated nowhere else on the page, with a condition under which it bites?*
@@ -274,8 +297,9 @@ theme-aware, searchable, and diffable. Four kinds carry this track:
 
 One diagram minimum per Core page, and it must be the *load-bearing* one — the diagram that makes the idea
 click, not decoration beside prose that already said it. A second is fine when it shows a different axis
-(topology *and* timing); three is usually a sign the page should split. The `tradeoffs` part's own
-`comparison` doesn't count against that budget — it's the shape §4 prescribes for that part, not a third figure.
+(topology *and* timing); three is usually a sign the page should split. **The `comparison` in `tradeoffs` and
+the variant table in `techniques` don't count against that budget** — both are the shape §4 prescribes for
+their part, not figures the author chose to add. The budget is about discretionary pictures.
 
 ## 6. Prose rules
 
@@ -331,6 +355,11 @@ themselves were calibrated from real pages — so writing to them is circular. T
 drift. It cannot catch a paraphrase that says the same thing in different words, padding that is merely
 uninteresting, or a diagram that is decorative — those stay the auditor's judgment (§7.13, §7.14). A finding
 it raises that you believe is *correct as written* must be justified in the run report, not silently ignored.
+
+**Read code-block comments as prose.** A `code` section's comments are the only prose inside it, and they are a
+favourite home for a point the page already made — a chapter-04 page shipped comments that restated two
+`pitfalls` bullets through a clean run. The linter now feeds comment lines into the repetition pass, but the
+budgets still exclude them, so an auditor reads them like any other passage.
 
 ## 7. Acceptance criteria — one lesson
 

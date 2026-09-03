@@ -88,6 +88,15 @@ export const TRACKS: Record<TrackId, Track> = {
           "consistency-models",
         ],
       },
+      {
+        title: "Load balancing",
+        topics: [
+          "load-balancers",
+          "load-balancing-algorithms",
+          "dns-load-balancing",
+          "anycast-routing",
+        ],
+      },
     ],
   },
 };

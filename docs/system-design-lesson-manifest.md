@@ -44,9 +44,9 @@ unblocked.
 | # | Chapter | Lessons | Built |
 | --- | --- | --- | --- |
 | 01 | Introduction to System Design | 2 | ☑ |
-| 02 | Core Concepts | 8 | ◐ |
+| 02 | Core Concepts | 8 | ☑ |
 | 03 | Networking | 7 | ☐ |
-| 04 | Load Balancing | 4 | ☐ |
+| 04 | Load Balancing | 4 | ☑ |
 | 05 | API Fundamentals | 14 | ☐ |
 | 06 | Communication Patterns | 11 | ☐ |
 | 07 | Caching | 11 | ☐ |
@@ -63,6 +63,23 @@ unblocked.
 | 18 | Deployment Patterns | 9 | ☐ |
 | 19 | Observability | 8 | ☐ |
 | 20 | Advanced Security | 6 | ☐ |
+
+**Chapters 01, 02 and 04 are complete** — authored, audited page-by-page, and the chapter-level §8.8 delta
+run (2026-09-03). Two of chapter 04's four reference lessons are premium-gated, so their altitude is recorded
+as unmeasurable and their delta is a neighbour-derived scope check (§1a).
+
+**§8.8 findings, applied:**
+
+- **Chapter 02** — `cap-theorem` and `consistency-models` each stated "the call is never per system"
+  independently. They choose *different objects* (a CAP letter vs a consistency model), so both pages keep
+  their own question; `cap-theorem` owns the general rule and `consistency-models` now links to it.
+- **Chapter 04** — the reference teaches three TLS patterns by name; our page taught all three behaviours and
+  named none, so a reader could describe pass-through and bridging without recognising the words. Named now.
+- **Chapter 04** — cookie-based session affinity, the commonest mechanism in practice, appeared only as an L7
+  routing input and never as the affinity mechanism. `load-balancers` owns affinity, so it now says how the
+  pin is carried.
+- **Chapter 04** — the reference's Kubernetes section stays a deliberate drop, recorded in the brief with a
+  reason: this is not a Kubernetes course, and the failure shapes are covered vendor-neutrally.
 
 **Chapter 02 is authored and all 8 audited** (2026-08-27). All 8 pages exist, are registered, wired into
 [curriculum.ts](../src/learn/data/curriculum.ts), and pass `lintTopics --chapter`, `tsc`, `eslint` and `npm test`.
@@ -137,10 +154,10 @@ matching how the algos track was built.
 
 | ✓ | Lesson | Topic slug | Seed / notes |
 | --- | --- | --- | --- |
-| ☐ | What are Load Balancers? | `load-balancers` | — |
-| ☐ | Load Balancing Algorithms | `load-balancing-algorithms` | — |
-| ☐ | DNS Load Balancing | `dns-load-balancing` | — |
-| ☐ | Anycast Routing | `anycast-routing` | — |
+| ☑ | What are Load Balancers? | `load-balancers` | Built + audited 2026-09-03. Chapter anchor; `archetype: mechanism`. Discharges the health-check/failover promises made by six earlier pages. |
+| ☑ | Load Balancing Algorithms | `load-balancing-algorithms` | Built + audited 2026-09-03. `archetype: mechanism` — the brief's Distinction call was corrected by audit; `example` decides this, not `implementation`. |
+| ☑ | DNS Load Balancing | `dns-load-balancing` | Built + audited 2026-09-03. **Reference premium-gated** — altitude unmeasurable, delta is a neighbour-derived scope check. |
+| ☑ | Anycast Routing | `anycast-routing` | Built + audited 2026-09-03. **Reference premium-gated** — altitude unmeasurable. |
 
 ## 05. API Fundamentals (14)
 
